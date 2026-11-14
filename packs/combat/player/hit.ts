@@ -4,6 +4,7 @@ import { kS } from '../stats';
 import { PS, NSRC, type CombatState } from '../state';
 import type { HitData } from '../moves';
 import { dealDamage } from './damage';
+import { endSpell } from './spell';
 
 const inEdge = (s: CombatState, p: number): boolean => s.x[p]! < s.edge || s.y[p]! < s.edge || s.x[p]! > s.mapW - s.edge || s.y[p]! > s.mapH - s.edge;
 
@@ -12,7 +13,7 @@ const inEdge = (s: CombatState, p: number): boolean => s.x[p]! < s.edge || s.y[p
  * hit-stop (so the victim can DI), combo count, wall pips. `src` is the hit-source id (moves.ts `SRC`) for the stun-repeat reduction.
  * `dx,dy` points from attacker to victim (knockback direction). TODO(spells): spell-break / chip damage branch; item hooks (chHit).
  */
-export function hit(w: World, s: CombatState, v: number, a: number, dx: number, dy: number, m: HitData, src: number, mult: number, heavy: boolean): void {
+export function hit(w: World, s: CombatState, v: number, a: number, dx: number, dy: number, m: HitData, src: number, mult: number, heavy: boolean, melee = false): void {
   // stun-repeat reduction (legacy wrapper around hit, runs even when the hit is then rejected): same source on the same victim
   // within the window shortens stun by 8 % per repeat (floor 40 %)
   let stun = m.stun;
@@ -23,6 +24,16 @@ export function hit(w: World, s: CombatState, v: number, a: number, dx: number, 
   }
   if (a !== v) { s.lastBy[v] = a; s.lastByF[v] = s.gf; }
   if (s.inv[v]! > 0 || s.state[v] === PS.dead) return;
+  if (s.state[v] === PS.spell && !melee) { // a spell card is only broken by melee or a very big hit; small hits just chip
+    const raw = m.dmg * mult;
+    if (raw < 16 && s.hp[v]! > raw * 1.6) {
+      const dmg = dealDamage(w, s, v, a, raw, heavy);
+      s.hp[v] = s.hp[v]! - dmg; s.flash[v] = 8; s.spirit[a] = Math.min(T.SPIRIT_MAX, s.spirit[a]! + dmg * T.HIT_GAIN);
+      w.emit('combat:spell-chip', { victim: v, attacker: a, dmg }); return;
+    }
+  }
+  if (s.state[v] === PS.spell) { endSpell(w, s, v, false); w.emit('combat:spell-break', { victim: v, attacker: a }); }
+  if (s.state[a] === PS.spell) s.spellHit[v] = 1;
   const dmg = dealDamage(w, s, v, a, m.dmg * mult, heavy);
   s.hp[v] = s.hp[v]! - dmg; s.flash[v] = 8; s.combo[v] = s.combo[v]! + 1; s.comboN[a] = s.combo[v]!; s.comboT[a] = 100; s.charging[v] = 0; s.mvId[v] = 0;
   s.spirit[a] = Math.min(T.SPIRIT_MAX, s.spirit[a]! + dmg * T.HIT_GAIN); s.spirit[v] = Math.min(T.SPIRIT_MAX, s.spirit[v]! + dmg * T.HURT_GAIN);

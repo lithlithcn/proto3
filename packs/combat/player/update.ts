@@ -12,6 +12,7 @@ import { breakerBullet } from '../bullets/spawn';
 import { MV } from '../moves';
 import { ko } from './ko';
 import { respawn } from './respawn';
+import { spellInput, startSpell, updSpell } from './spell';
 
 const inEdge = (s: CombatState, p: number): boolean => s.x[p]! < s.edge || s.y[p]! < s.edge || s.x[p]! > s.mapW - s.edge || s.y[p]! > s.mapH - s.edge;
 
@@ -27,6 +28,11 @@ export function updatePlayer(w: World, s: CombatState, p: number): void {
 
 /** The state machine itself (legacy `updP`, ported incrementally). The order of statements is the legacy order and is parity-tested. */
 function step(w: World, s: CombatState, p: number): void {
+  { // spell cancel out of hit-stun: rising edge of the spell button with a full gauge (legacy wrapper; R72)
+    const down = (w.buttons(p) & BTN.spell) !== 0;
+    if (down && !s.spHv[p] && s.state[p] === PS.hitstun && s.spirit[p]! >= T.SPELL_COST) { s.state[p] = PS.idle; startSpell(w, s, p, false); }
+    s.spHv[p] = down ? 1 : 0;
+  }
   const c = begin(w, s, p);
   const st = s.state[p];
   if (held(c, BTN.parry) && (st === PS.idle || st === PS.parry || st === PS.parrylag || st === PS.dashlag)) { // parry + melee = grab (only catches a parrying foe); parry + heavy = breaker (heavy batch)
@@ -52,7 +58,9 @@ function step(w: World, s: CombatState, p: number): void {
   s.focus[p] = held(c, BTN.focus) ? 1 : 0;
   const sp = s.spirit[p]!;
   if (sp >= T.SPELL_COST) { if (!s.spReady[p]) { s.spReady[p] = 1; w.emit('combat:spell-ready', { p }); } } else s.spReady[p] = 0;
+  if (spellInput(c, pr(c, BTN.spell))) return;
   switch (s.state[p]) {
+    case PS.spell: updSpell(c); return;
     case PS.dash: updDash(c); return;
     case PS.dashlag: updDashLag(c); return;
     case PS.hitstun: updHitstun(c); return;

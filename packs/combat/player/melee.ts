@@ -69,6 +69,6 @@ function strike(w: World, s: CombatState, p: number, o: number, m: MoveDef): voi
   }
   const mult = 1 + s.charge[p]! / (m.charge || 1) * 0.7;
   s.mHit[p] = 1;
-  hit(w, s, o, p, dx, dy, m, SRC_OF[name]!, mult, name !== 'jab');
+  hit(w, s, o, p, dx, dy, m, SRC_OF[name]!, mult, name !== 'jab', true);
   if (m.multi) { s.hitDone[p] = 0; s.nextHit[p] = s.t[p]! + (m.every ?? 1); }
 }
