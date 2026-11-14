@@ -11,7 +11,7 @@ const { createLegacy } = require_('../../tools/parity/legacy.cjs') as { createLe
 interface LegacyInput { x?: number; y?: number; b?: Record<string, boolean> }
 interface Legacy { step(i: LegacyInput[]): void; obs(): { f: number; P: LP[]; C: { x: number; y: number; on: number; age: number; type: string; cp: number[] }[]; E: { k: number; t: number; x: number; y: number; vx: number; vy: number; g: number; a: number }[]; K: { o: number; x: number; y: number; a: number; t: number; dep: number }[]; B: LB[] }; eval(c: string): unknown }
 interface LP { elx: number; imm: number; mirror: number; giant: number; x: number; y: number; vx: number; vy: number; hp: number; state: string; t: number; boost: number; spirit: number; power: number; graze: number; inv: number; run: boolean; slide: number; shotCd: number; aim: number; stocks: number; kos: number; sd: number; pips: number; spit: number }
-interface LB { x: number; y: number; vx: number; vy: number; r: number; owner: number; dmg?: number; life: number; heavy?: number; mult?: number; dist?: number; refl: number }
+interface LB { x: number; y: number; vx: number; vy: number; r: number; owner: number; dmg?: number; life: number; fz: number; heavy?: number; mult?: number; dist?: number; refl: number }
 
 const BIT: Record<string, number> = { shot: BTN.shot, heavy: BTN.heavy, melee: BTN.melee, dash: BTN.dash, parry: BTN.parry, spell: BTN.spell, focus: BTN.focus, prev: BTN.prev, next: BTN.next };
 export interface FrameIn { x?: number; y?: number; btn?: string[] }
@@ -22,7 +22,7 @@ const q = (v: number | undefined): number => Math.max(-127, Math.min(127, Math.r
 const STATE_NAME = Object.fromEntries(Object.entries(PS).map(([k, v]) => [v, k]));
 
 /** Item name → pool index of the ported items (pool order = legacy order), rainbow = Last Word card. */
-const KIND: Record<string, number> = { yellow: 0, green: 1, purple: 2, orange: 3, mirror: 4, oni: 5, elixir: 6, rainbow: -2 };
+const KIND: Record<string, number> = { yellow: 0, green: 1, purple: 2, orange: 3, mirror: 4, gap: 5, freeze: 6, oni: 7, elixir: 8, bumpers: 9, rainbow: -2 };
 export interface PairOpt { items?: string[]; maxCards?: number }
 export function makePair(chars: string[], seed = 1, opt: PairOpt = {}) {
   const legacy = createLegacy({ chars, seed, items: !!opt.items });
@@ -64,7 +64,7 @@ export function makePair(chars: string[], seed = 1, opt: PairOpt = {}) {
       expect(s.nkb, `${tag} f${o.f} KO beam count`).toBe(o.K.length);
       o.K.forEach((lk, i) => { expect(s.kbO[i], `${tag} f${o.f} K${i}.o`).toBe(lk.o); near(s.kbX[i]!, lk.x, `K${i}.x`); near(s.kbY[i]!, lk.y, `K${i}.y`); near(s.kbA[i]!, lk.a, `K${i}.a`); near(s.kbT[i]!, lk.t, `K${i}.t`); expect(s.kbDep[i], `${tag} f${o.f} K${i}.dep`).toBe(lk.dep); });
       expect(s.nb, `${tag} f${o.f} bullet count`).toBe(o.B.length);
-      o.B.forEach((lb, i) => { near(s.bx[i]!, lb.x, `B${i}.x`); near(s.by[i]!, lb.y, `B${i}.y`); near(s.bvx[i]!, lb.vx, `B${i}.vx`); near(s.bvy[i]!, lb.vy, `B${i}.vy`); if (lb.heavy) { near(s.bmult[i]!, lb.mult!, `B${i}.mult`); near(s.bdist[i]!, lb.dist!, `B${i}.dist`); expect(s.brefl[i], `${tag} f${o.f} B${i}.refl`).toBe(lb.refl); near(s.br[i]!, lb.r, `B${i}.r`); } else near(s.bdmg[i]!, lb.dmg!, `B${i}.dmg`); near(s.blife[i]!, lb.life, `B${i}.life`); expect(s.bowner[i]).toBe(lb.owner); });
+      o.B.forEach((lb, i) => { expect(s.bflags[i]! & 32 ? 1 : 0, `${tag} f${o.f} B${i}.frozen`).toBe(lb.fz); near(s.bx[i]!, lb.x, `B${i}.x`); near(s.by[i]!, lb.y, `B${i}.y`); near(s.bvx[i]!, lb.vx, `B${i}.vx`); near(s.bvy[i]!, lb.vy, `B${i}.vy`); if (lb.heavy) { near(s.bmult[i]!, lb.mult!, `B${i}.mult`); near(s.bdist[i]!, lb.dist!, `B${i}.dist`); expect(s.brefl[i], `${tag} f${o.f} B${i}.refl`).toBe(lb.refl); near(s.br[i]!, lb.r, `B${i}.r`); } else near(s.bdmg[i]!, lb.dmg!, `B${i}.dmg`); near(s.blife[i]!, lb.life, `B${i}.life`); expect(s.bowner[i]).toBe(lb.owner); });
     },
     /** Run scripts for `frames` frames, comparing after every frame. */
     run(tag: string, scripts: Script[], frames: number): void { for (let f = 1; f <= frames; f++) { this.step(scripts, f); this.compare(tag); } },

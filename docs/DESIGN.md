@@ -586,6 +586,7 @@ No other runtime network dependency is allowed without an entry here.
 | R86 | Dropped dead code: legacy `elixir` (`p.star`: invincible burn) is shadowed by `GIVE.elixir` (status `fx.elx`, port with the statuses batch); the `inEdge` helper is now one shared function that honours Warp | |
 | R87 | Statuses (`fx`): one timer column per player indexed by stable slot (`FXS`, content type `status` = slot + `end` hook), ticked by system `status`. Deviation: legacy iterated `for k in fx` (insertion order, and a timer set by an end hook sometimes ticked the same frame, depending on key history); port ticks in slot order and a timer set by an end hook starts next frame | parity `elixir` |
 | R88 | KO guards (Immortal) are `combat:ko:before` hooks that cancel the KO, not wrappers around `ko` | `touhou/hooks/imm-guard.ts` |
+| R89 | Item entities (holes, bumpers, bombs, orbs) are ownerless (`eo -1`, holder stored in a spare column) so they outlive a KO like in the legacy lists; frozen bullets are a flag (`BF.frozen`) skipped by the bullet loop, not a separate list | parity `Black Hole, Bumpers, Perfect Freeze` |
 | R66 | Stun-repeat reduction is a wrapper around `hit` that records the hit even when the victim is invulnerable and the hit is rejected | `hit()` computes it before the invulnerability return |
 
 ## 26. Owner decisions log

@@ -22,7 +22,7 @@ function segD(px: number, py: number, ax: number, ay: number, bx: number, by: nu
 export function updateBullets(w: World, s: CombatState): void {
   const k = kB(s), nb = s.nb;
   for (let i = 0; i < nb; i++) {
-    if (s.bflags[i]! & BF.dead) continue;
+    if (s.bflags[i]! & (BF.dead | BF.frozen)) continue; // frozen bullets hang in the air (Perfect Freeze)
     const home = s.bhome[i]!;
     if (home) { // homing: turn toward the owner's target by at most `home` rad/frame
       const o = s.bowner[i]!, tq = s.tgt[o]! >= 0 ? s.tgt[o]! : (o + 1) % s.n;

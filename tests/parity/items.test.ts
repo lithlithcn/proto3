@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { giveItem } from '../../packs/combat/api';
 import { type Script, makePair } from './harness';
 
-const ALL = ['yellow', 'green', 'purple', 'orange', 'mirror', 'oni', 'elixir'];
+const ALL = ['yellow', 'green', 'purple', 'orange', 'mirror', 'oni', 'elixir', 'gap', 'freeze', 'bumpers'];
 type Pair = ReturnType<typeof makePair>;
 /** Walk P0 onto the oldest armed card (parity guarantees both sides agree on positions) and stay there. */
 const walker = (k: Pair, who = 0): Script => () => {
@@ -22,7 +23,7 @@ describe('parity: item cards and the first items (vs legacy)', () => {
         const it = k.legacy.eval('P[0].lastIt') as string | undefined; if (it) seen.add(it);
       }
     }
-    expect(seen.size, `kinds given: ${[...seen]}`).toBeGreaterThanOrEqual(5);
+    expect(seen.size, `kinds given: ${[...seen]}`).toBeGreaterThanOrEqual(7);
   }, 60000);
   it('Last Word card (items off): appears at ULT_EVERY, gives the ultimate', () => {
     const k = makePair(['reimu', 'reimu'], 5);
@@ -76,5 +77,20 @@ describe('parity: item cards and the first items (vs legacy)', () => {
       if ((k.legacy.eval('P[0].fx.imm>0&&P[0].hp===1?1:0') as number)) saved = 1;
     }
     expect(immSeen).toBe(1); expect(saved, 'a KO was prevented').toBe(1);
+  });
+  it('Black Hole, Bumpers, Perfect Freeze (given directly, with a foe shooting): pull + swallow, bounce + launch, freeze + shatter x2', () => {
+    const kinds: [string, number][] = [['gap', 5], ['bumpers', 9], ['freeze', 6]];
+    for (const [name, kind] of kinds) {
+      const k = makePair(['reimu', 'reimu'], 21, { items: ['green'] });
+      const foe: Script = f => ({ x: f < 40 ? -1 : f < 200 ? Math.sin(f / 25) : 0, btn: ['shot', ...(f % 70 === 0 ? ['heavy'] : [])] });
+      const me: Script = f => ({ x: f < 150 ? 0.4 : 0, y: Math.sin(f / 40) * 0.3 });
+      let cnt = 0, fz = 0;
+      for (let f = 1; f <= 520; f++) {
+        if (f === 120) { k.legacy.eval(`give(P[0],'${name}')`); giveItem(k.world, k.s, 0, kind, k.s.x[0]!, k.s.y[0]!); }
+        k.step([me, foe], f); k.compare(name);
+        cnt = Math.max(cnt, k.legacy.eval('HOLES.length+BUMPS.length') as number); fz = Math.max(fz, k.legacy.eval('B.filter(b=>b.fz).length') as number);
+      }
+      if (name !== 'freeze') expect(cnt, name).toBeGreaterThan(0); else expect(fz, name).toBeGreaterThan(0);
+    }
   });
 });

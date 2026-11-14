@@ -3,12 +3,16 @@ import { PS, type CombatState } from '../state';
 import { type World, hypot } from '@kernel';
 import { explodeBombs, spawnBombs } from './bombs';
 import { updateBlade } from './blade';
+import { updateFreeze } from './freeze';
+import { updateHoles } from './hole';
+import { updateBumpers } from './bumpers';
 
 /** Entity kind of the healing orbs (item `green`); kinds >= 100 are reserved for items. Owner is -1 (ownerless: they outlive every player). */
 export const EK_HEAL = 100;
 
-/** Legacy updWorld, item part, in the legacy order: timers + elixir, Warp countdown, blades + bomb spawns, bomb explosions, healing orbs. */
+/** Legacy updWorld, item part, in the legacy order: ice, holes, bumpers, timers + elixir, Warp countdown, blades + bomb spawns, bomb explosions, healing orbs. */
 export function updateItemWorld(w: World, s: CombatState): void {
+  updateFreeze(s); updateHoles(w, s); updateBumpers(w, s);
   for (let p = 0; p < s.n; p++) {
     if (s.state[p] === PS.dead) continue;
     if (s.mirror[p]! > 0) s.mirror[p]!--;
