@@ -1,0 +1,557 @@
+# Proto3 — Design Guideline
+
+Status: design approved in discussion (2026-11-14). No code yet. This file moves to the Proto3 repo as `docs/DESIGN.md` on day 1.
+Every rule below exists because of a concrete failure mode. When code disagrees with this document, either the code is wrong or this document must be updated in the same commit (with an ADR if the decision changes).
+
+---
+
+## 0. Goals and non-goals
+
+Goals, in priority order:
+1. **Same game.** Proto3 plays and looks like the current `shmup-fighter.html` (balance values identical; only invisible float decimals may differ).
+2. **Sandbox engine.** Everything except a tiny kernel is a *pack*. The base game is a set of packs in the exact format mods use. Anything can be added, replaced or removed without touching unrelated code.
+3. **AI-editable.** Any request maps to a small, predictable set of files. One file answers one question.
+4. **Debuggable by construction.** Every bug is reproducible from a replay; every desync names the field that diverged.
+5. **Online-safe.** Deterministic simulation, rollback netcode, 2–32 players.
+6. **One link, no install.** Static site on GitHub Pages.
+
+Non-goals (for now): mod editor UI, auto-translation, leaderboard server, mod sandboxing. Formats must not prevent them later.
+
+### 0.1 How to use this document
+Read §0–§2 and §21 before any task. §25 is the risk register: every new failure mode found during work is added there with its mitigation. When the repo exists, this file is split into `docs/ARCHITECTURE.md`, `docs/CONVENTIONS.md`, `docs/DEBUG.md`, `docs/TESTING.md`, `docs/MODDING.md` with this file kept as the index.
+
+### 0.15 Build now vs later (anti over-engineering)
+Formats and interfaces are fixed now; implementations arrive when needed.
+- **Phase 2 (skeleton) builds:** kernel, schemas + generated snapshot/hash/diff, RNG streams, `sim.math`, pack loader for built-in packs, events/hooks with phases, commands, world config, replays, headless runner, `pnpm check`, scaffolding, CI, docs skeleton.
+- **Built when the port reaches it:** each combat system, render, UI, online, audio, YouTube, i18n FR, quality tiers, interpolation, lab UI.
+- **After parity:** mod folder loader, in-browser TS transpiler, mod API compatibility suite, spectators, replay sharing, new modes.
+Anything not listed must justify itself in an ADR before being built.
+
+### 0.2 Requirements traceability (owner's requirements → where they are satisfied)
+| # | Requirement (from the Proto3 brief and the design discussion) | Sections |
+|---|---|---|
+| Q1 | Full rewrite, not a reorganisation; nothing removed; same game, same look | §0, §17, §14 (parity), §20.12 |
+| Q2 | Architecture built for AI editing: clear responsibilities, explicit dependencies, no hidden globals, predictable names, no duplication, centralised config | §2, §4.2, §15, §20.1–20.3 |
+| Q3 | Smart modularity: one concept per file, character moves in separate files (Rivals workshop style), not hundreds of trivial files | §15 |
+| Q4 | Everything is a pack/mod reading each other; sandbox engine with total freedom | §2, §11, §18 |
+| Q5 | Whole features (bosses, adventure, classic, minigames) by adding a folder | §18, §21 |
+| Q6 | Exceptional debug: per system, calls, values, states, events, interactions, config changes, perf; levels and categories; near-zero cost when off | §12 |
+| Q7 | Modifications isolated; contracts between systems; no circular deps; testable in isolation | §2.1, §5, §14, §19 |
+| Q8 | Tests: unit, integration, regression, data validation, workers, broken dependencies, comparison with the old game | §14, §19 |
+| Q9 | Documentation made for Claude, kept in sync (PROJECT_MAP, guides) | §16 |
+| Q10 | Performance and memory optimised but measurable, never at the cost of readability | §9, §14 (benchmarks), §20.6 |
+| Q11 | Phased method (audit → design → repo → rewrite → verification → finalisation), validated by the owner at each phase | §17, §24 |
+| Q12 | One link, no install; any technology allowed if that holds; external dependencies identified | §1, §23 |
+| Q13 | TypeScript, English code and docs, HTML/CSS menus, GitHub Pages, current PeerJS + TURN | §1 |
+| Q14 | Translations (per-language text files, maybe auto-translate later) | §8.4 |
+| Q15 | Mods: zip files in a `mods/` folder, characters/maps/items/…, JS or TS, Rivals-style hot reload key, extreme debug for modders | §11, §12, §20.13 |
+| Q16 | Bug lab with dozens/hundreds of parallel matches, unlocked by typing `ewekeks` on the title screen | §13 |
+| Q17 | Dev options off by default in Options; no separate dev site | §12, §20.3 |
+| Q18 | No visual effect shown for a rolled-back prediction | §7 |
+| Q19 | Mobile fully usable by touch only | §8.1, §14 |
+| Q20 | Epilepsy safety (Effects OFF) | §7, §14 |
+| Q21 | No AI-generated assets; no religious references or pentagrams | §20.7 |
+| Q22 | Online 2–32 players, host features (music sharing, rules), spectators | §10, §18.8 |
+| Q23 | Each future request is analysed for how it integrates with the environment; organising questions asked, feasibility questions not | §21 |
+
+---
+
+## 1. Stack (decided)
+
+| Concern | Choice | Why / rejected |
+|---|---|---|
+| Language | TypeScript, `strict`, no `any` | Errors caught before running. Rust/WASM rejected: slower iteration, game is not CPU-bound. |
+| Build | Vite | Static output, HMR in dev. |
+| Menus | Svelte (pinned major) | One file per screen with markup+logic+CSS+transitions. React rejected (heavier), raw DOM rejected (mess at 15+ screens). |
+| Fight rendering | Own WebGL2 renderer, Canvas2D fallback | Current game already batches bullets in WebGL. PixiJS only if a benchmark proves it faster (ADR required). |
+| Tests | Vitest (headless sim), Playwright (UI, mobile, screenshots) | |
+| Hosting | GitHub Pages, deploy by GitHub Actions only after all checks pass | Pages cannot set COOP/COEP headers → no SharedArrayBuffer → sim stays on main thread (see §9). |
+| Online | Keep current PeerJS + WebRTC + Cloudflare TURN (`sf-turn` worker), host relay (star) | Works today. |
+| Workers | `sf-turn` (TURN creds), `sort-maker` (YouTube playlist/search/thumb proxy) live in `workers/` | Deployment mode decided later. |
+| Runtime deps | PeerJS, small TS transpiler for mods (lazy-loaded), small schema validator, small zip reader (lazy-loaded, mods) | Minimise deps: 10–20 year horizon. |
+
+---
+
+## 2. Kernel vs packs
+
+### 2.1 Kernel (frozen, tiny, no gameplay)
+- Fixed-step loop (60 Hz) + render interpolation hook.
+- State container built from pack schemas (§4).
+- Deterministic math (`sim.math`) and seeded RNG streams (§3).
+- Snapshot / restore / hash / diff generated from schemas.
+- Pack loader: manifest validation, dependency resolution, deterministic load order, overrides.
+- Event bus + hook phases (§5).
+- Input frame format and command format (§6).
+- Entity handle allocator (§4.3).
+- Error isolation (§5.5).
+
+The kernel never imports a pack. Packs import only the kernel API (`@kernel`) and the public API of packs they declare as dependencies.
+
+### 2.2 Packs (everything else)
+```
+packs/
+  combat/        group of composable system packs (§18.2): movement, bullets, collision, health, statuses,
+                 stocks-ko, parry, spells, items, camera-rules, spawning, cpu-ai
+  touhou/        characters/, items/, maps/, rules/      (Touhou content)
+  modes/         versus, training, playground, online-match, cpu-battle
+  ui/            screens and menus (Svelte)
+  hud/           in-fight HUD (drawn by render, not Svelte — §8.3)
+  render/        fight renderer, effects, camera
+  audio/         sfx, music, special tracks priority
+  input/         keyboard, gamepad, touch, mouse-buttons, bindings
+  online/        transport, lobby, relay, rollback driver, spectators
+  youtube/       playlist player, video background
+  lab/           bug lab (secret code "ewekeks" on title screen)
+  dev-tools/     inspector, logs, overlays (disabled by default in Options)
+  i18n/          string tables (en, fr), language switch
+  std/           shared library: vectors, shapes, collisions, grids, tilemaps, pathfinding, easing, noise
+  minigames/<id>/  bosses/<id>/  (any new feature = a new folder, see §18)
+```
+
+### 2.3 Pack manifest (`pack.ts`)
+```ts
+export default definePack({
+  id: 'touhou',                 // namespace; all ids inside are 'touhou:<name>'
+  version: '1.0.0',
+  requires: ['core-combat@^1'], // semver ranges
+  provides: ['characters', 'items', 'maps'],   // named public APIs / content it contributes
+  overrides: [],                // explicit ids this pack replaces, e.g. 'touhou:reimu'
+  state: touhouStateSchema,     // this pack's state slice (§4)
+});
+```
+Packs live in one Vite app (TS path aliases `@pack/<id>`); boundaries are enforced by dependency-cruiser, not by separate npm packages.
+Content files are discovered by folder convention (`import.meta.glob` for built-in packs, zip listing for mods). No hand-maintained registries.
+
+### 2.4 Overrides and load order
+- Ids are namespaced: `touhou:reimu`, `mymod:reimu`.
+- Replacing content is explicit: `overrides: ['touhou:reimu']`. Silent collisions are a load error.
+- A load-order list in Options decides conflicts. Same list + same pack hashes are required for online play (§10.2).
+
+---
+
+## 3. Determinism rules (the online contract)
+
+1. Sim code uses only `+ - * / %`, comparisons, `Math.sqrt`, `Math.floor/ceil/round/trunc/abs/min/max/sign`, and `sim.math` (`sin, cos, atan2, hypot, pow, exp, log, lerp, angle helpers`). `Math.sin/cos/tan/atan/atan2/hypot/pow/exp/log/cbrt/random` are banned in `sim` and `packs/*/sim`. Enforced by lint.
+2. No `Date`, `performance`, `setTimeout`, DOM, `localStorage`, or network in sim code. Enforced by import-boundary lint.
+3. **RNG streams.** `rng.stream('touhou:items')` — each pack/system has its own seeded stream derived from match seed + stream id. Adding a random call in one mod never shifts another pack's randomness (keeps replays and parity stable).
+4. **Sorting.** Only `sim.sort(arr, key)` which breaks ties by entity id. `Array.prototype.sort` banned in sim.
+5. **Iteration order.** Iterate arrays or id-ordered collections. No iteration over object keys that may differ by insertion history.
+6. **Floats.** Float64 everywhere in sim (`Float64Array` for typed storage). No Float32 in sim state.
+7. **Runtime sanitizer** (dev, lab): during each sim step, `Math.random`, `Date.now`, `performance.now` and banned `Math.*` are trapped and throw with file/line. Catches mods, which lint cannot see.
+8. **Input quantisation.** Analog values are int8 before entering the sim.
+9. Everything that affects the sim is an **input** or a **command** at a frame (§6). Nothing else.
+10. Also banned in sim: `localeCompare`, `Intl`, `toLocaleString`, `JSON.stringify` for hashing (hashing walks schemas in schema order), recursion without a depth bound (stack limits differ between browsers, so an overflow would not be deterministic).
+
+---
+
+## 4. State
+
+### 4.1 Data only
+State contains numbers, strings, booleans, arrays, typed arrays and plain objects. Never functions, class instances, DOM nodes or closures. Behaviour is referenced by id (`{ item: 'touhou:black-hole', t0: 900, params }`). This makes snapshots, hashing, replays, spectator joins, and hot reload work.
+
+### 4.2 Schemas
+Each pack declares its state slice with a schema (field types, defaults, sizes). The kernel generates from schemas:
+- preallocated snapshot slots and copy functions (no per-frame allocation),
+- hash function (whole state, per-section hashes),
+- field-level diff (desync reports),
+- inspector UI (dev-tools),
+- validation (dev asserts, loaded saves).
+Slices are namespaced: `state.packs['touhou']`. A pack may only write its own slice; reading another pack's slice goes through that pack's public API.
+
+### 4.3 Entities
+- Handles = index + generation. A stale handle (entity died, slot reused) is detected, never confused with the new entity.
+- Kinds stay separate: players (≤32, objects), bullets (thousands, struct-of-arrays typed storage behind a small API: `spawn`, `kill`, `forEach`, `query(area)`), world entities (hundreds, objects).
+- Spatial uniform grid for collision queries, rebuilt per frame from typed arrays.
+- Hard cap `MAX_BULLETS` enforced in the single `spawn` function (old bug: `spawnH` bypassed the cap). Cap policy is explicit and tested (heavy shots replace the oldest light bullet).
+
+### 4.4 Statuses and stat pipeline
+All rule-changing effects are statuses in state: `{ id, owner, source, t0, duration, stacks, params }`. Derived values are computed: `stat(player, 'damageOut')` = base × all active modifiers, in a deterministic order. Items, spells, rules and mods add statuses; they never sprinkle `if (flag)` checks through other systems.
+
+### 4.5 Special cases that must be designed for (from the old game)
+- **History Rewritten** (restores past state) → kernel service `history` storing compact snapshots *inside* state (schema type `blob`), so rollback stays correct. A history blob never contains the history slice itself (no nested snapshots), and its size is capped.
+- **Body Swap / control remap** → sim-level controller indirection table (`controllerOf[player]`) in state.
+- **View-affecting items** (darkness, fog, inverted colours, camera swap) → sim exposes *view modifiers* in state; render reads them. Render never decides gameplay.
+- **Time stop, slow motion, x2 speed** → kernel time-scale owned by the sim (frames still advance deterministically).
+- **Echoes/clones repeating attacks** (Four of a Kind) → scheduled actions queue in state.
+
+---
+
+## 5. Events and hooks
+
+### 5.1 Events
+Typed events emitted by sim systems: `hit`, `parry`, `ko`, `spell:start`, `item:pickup`, `bullet:spawn`, `frame`, ... Each event type is declared in one file with its payload schema and documentation (catalog generated).
+
+### 5.2 Phases instead of priorities
+Hooks attach to named phases (`damage:before`, `damage:apply`, `damage:after`) with optional `after: ['core-combat:parry']`. Ties are broken by pack id. Numeric priorities are banned (they degenerate into priority wars).
+
+### 5.3 Mutation contract
+`*:before` hooks may modify declared fields of the event (e.g. damage multiplier) or cancel it. `*:after` hooks are read-only for that event. Contract per event documented in its file.
+
+### 5.4 Re-entrancy
+Events emitted inside hooks are queued and processed in deterministic FIFO order with a max chain depth. Exceeding it is an error naming the hook chain.
+
+### 5.5 Error isolation
+An exception in a hook disables that hook from that frame on, records a report, and the match continues. Same code + same state ⇒ every client disables it at the same frame ⇒ no desync.
+
+### 5.6 Hot paths
+No per-bullet-per-frame dynamic hook dispatch. Systems iterate typed arrays directly. Packs act on events, or replace a whole system (allowed via override).
+
+---
+
+## 6. Input and commands
+- `InputFrame` per player per frame: buttons bitmask + quantised analog.
+- `Command` = `{ frame, type, payload }` for anything else that changes the sim (host rule change mid-match, pause in offline, debug spawns in training). Commands travel in the net stream and are stored in replays.
+- Devices (keyboard, pads, touch, mouse buttons) live in `packs/input` and produce InputFrames. Bindings are UI/settings, never sim.
+- Online input delay is configurable; prediction repeats last input.
+
+---
+
+## 7. Presentation: FX, audio, interpolation
+- Sim emits events; render and audio derive particles, flashes, shakes, sounds from them. FX are not in sim state → lighter rollback, trivial *Effects OFF*.
+- **Rollback cancel:** each FX/sound is tagged with its source event key `(frame, eventId)`. After a resimulation, FX whose event no longer exists are removed immediately; long sounds stop. Short sounds already played cannot be undone (accepted).
+- Duplicate events from resimulation are deduplicated by the same key.
+- **Interpolation:** render draws between the last two sim states for 120/144 Hz screens. Must never be worse than the old game; can be disabled in Options.
+- *Effects* setting: FULL / REDUCED / OFF (OFF removes shakes, flashes, zooms, inversions, particles; keeps gameplay-critical visuals). Epilepsy safety is a requirement, tested by Playwright.
+- Special music (results, last stock) has priority over the YouTube player (pause video, resume after).
+
+---
+
+## 8. UI
+### 8.1 Screens
+One folder per screen in `packs/ui/screens/<screen>/` (screen component + panels as separate files + its strings). Navigation is a small router with a stack; every screen works with keyboard, gamepad, mouse and **touch only** (tested).
+### 8.15 Screen interface (framework-agnostic)
+The router only knows `Screen = { id, mount(el, ctx) → { destroy, onAction? } }`. Built-in screens are Svelte components compiled at build time behind this interface; mods (which cannot compile Svelte in the browser) implement the same interface with plain DOM or their own pre-built bundle. Replacing Svelte later only touches the `ui` pack.
+### 8.2 Style
+Reproduce the current look (skewed cards, italic heavy titles, glass sidebar, Limbus-like frames). Shared design tokens (colors, fonts, easing) in one file.
+### 8.3 HUD
+In-fight HUD is drawn by `render`/`hud` (canvas/WebGL), not Svelte, to avoid DOM work and GC every frame.
+### 8.4 Text
+No user-visible string in code. All text via `t('pack:key')`, string tables per pack per language (`en.json`, `fr.json`), Rivals-style. Auto-translation may be added later as a fallback for missing keys.
+
+---
+
+## 9. Threads and timing
+- Sim on main thread (no SharedArrayBuffer on GitHub Pages).
+- Hidden tab: rAF is throttled → a Web Worker clock keeps net ticks alive (as today).
+- Budget: a rollback re-simulates several frames inside one display frame, so the **sim step budget is ≤ 1.5 ms** (4 players, heavy bullets, mid laptop) so that an 8-frame rollback fits in ~12 ms. With many players the netcode adapts: larger input delay and smaller prediction window, measured live. Budgets are checked by CI benchmarks and by the lab.
+- Zero allocations per frame in sim hot paths (pools, preallocated snapshots).
+
+---
+
+## 10. Online
+### 10.1 Netcode
+Rollback with max prediction window (stall beyond it, as today), star topology with host relay, bundled messages, bandwidth guard, heartbeat drop. Spectators receive the input stream (not a video); mid-match join = full state snapshot (from schema serializer) + inputs.
+### 10.2 Handshake
+Protocol version + game version + content hash (all packs, mods, load order). Mismatch → refused with the exact differing pack named. Later: host can send mods.
+### 10.3 Locks
+Hot reload disabled during online matches. Content locked per match.
+### 10.4 Desync
+Periodic hash per section. On mismatch: exchange snapshot, field-level diff, report names system + field + frame; replay attached.
+### 10.5 Scale
+32 players: inputs bit-packed and run-length encoded; host bandwidth measured; warning above 12 players kept.
+
+---
+
+## 11. Mods
+- Mods = zip files in a `mods/` folder chosen once via the File System Access API (Chrome/Edge/Opera). Fallback: drag & drop zip (Firefox/Safari/mobile). Browser re-asks folder permission each session (one click).
+- Zip layout mirrors packs: `pack.ts|js`, `characters/`, `items/`, `maps/`, `rules/`, `i18n/`, `assets/`.
+- JS or TS; TS transpiled in-browser by a lazy-loaded transpiler. A `.d.ts` of the kernel + core-combat API ships for editor autocompletion.
+- Hot reload key re-reads the folder; offline/training only. Schema changes on reload: new fields get defaults, removed fields dropped.
+- Load-time validation: missing fields, impossible values, id collisions → clear panel before playing.
+- Runtime error panel: file, line, attack/item, values at failure; the faulty hook is disabled.
+- Security: mods run with page privileges. Warning before enabling a mod from an unknown source. Sandboxing later.
+- Built-in packs are written against the same public API (dogfooding guarantees mods can do anything the game does).
+
+---
+
+## 12. Debug system (`packs/dev-tools`, off by default in Options)
+- **Logger:** categories × levels, ring buffer, stripped from production builds (zero cost).
+- **Event journal:** last N seconds of sim events (who, what, values, frame).
+- **Inspector:** click an entity → live state from schema; frame step; rewind using rollback snapshots; trigger any item/status.
+- **Invariants:** NaN, out-of-range HP/positions, stale handles, schema violations → first failure produces a report.
+- **Determinism sanitizer:** §3.7.
+- **Profiler:** time per system per frame, allocation counter.
+- **Bug report = replay** (seed, settings, content hash, inputs, commands) + logs + last snapshots. Headless CLI replays it to a given frame and dumps state.
+- **Error file auto-download** option (kept from the old game).
+- **Trace mode** (deep debug, per category): records each hook call with pack/file, event payload before and after the hook, and the system that emitted it; records every settings/config change with old → new value and source. Off by default; sampled to stay cheap.
+- **Dependency diagnostics:** on boot, prints the resolved pack graph, overrides applied, hooks per phase, and warns about unused/duplicate hooks (same output as `pnpm graph`).
+
+---
+
+## 13. Bug lab (`packs/lab`, secret code `ewekeks` on title screen)
+Config screen (number of parallel matches, characters, items, rules, duration, forced random rollbacks, simulated lag/loss) → runs matches in Web Workers with CPUs → each match is verified twice (straight replay, and with random rollbacks); any hash difference, invariant failure or exception is collected with its replay. Live counters; export one report file. Same lab runs headless in Node for me.
+
+---
+
+## 14. Tests and CI
+- Scenario DSL: `scenario().players('touhou:reimu','touhou:marisa').give(0,'touhou:black-hole').run(120).expect(...)`. One test file next to every attack/item.
+- Determinism tests (fuzz inputs twice, and with random rollbacks) — mandatory for every pack.
+- Golden replays with stored final hashes; intentional balance change = explicit golden update in the same commit.
+- Parity harness vs old game: a frozen copy of the old game lives in `legacy/shmup-fighter.html`. Same inputs run in both; compare observables (damage, durations, speeds, positions, statuses) with tolerance. **Parity scenarios are short and isolate one mechanic** (one attack, one item, one interaction, ≤ ~2 s): the new deterministic trig makes long full matches diverge chaotically, so full-match parity is checked by humans, not by numbers.
+- Playwright: every screen with keyboard, pad emulation and touch-only; mobile viewport; screenshots.
+- Benchmarks: sim step time, snapshot time, bullets throughput, with budgets; CI fails when a budget regresses by more than 10 %.
+- Workers: unit tests for each route (playlist, search, thumb, TURN credentials) run locally with Wrangler's test environment; a scheduled health check calls the deployed workers and opens an issue on failure; the game shows a clear message when a worker is down.
+- Data validation tests: every content file, string table, map and setting schema is validated in CI.
+- CI order: typecheck → lint (boundaries, determinism bans, file size) → unit/scenario → determinism → goldens → build → Playwright → deploy. Any failure blocks deploy.
+
+---
+
+## 15. Conventions
+- Files `kebab-case`, file name = content id. One file answers one question; split when a file exceeds ~300 lines or holds two concepts; never create files of a few trivial lines.
+- Character layout:
+```
+packs/touhou/characters/reimu/
+  character.ts  shot.ts  heavy/{neutral,forward,back}.ts
+  melee/{jab,lunge,strong,dash-attack}.ts  spell.ts
+  skills/{skill-1,skill-2}.ts  passive.ts  cpu.ts
+  visuals/{body,weapon}.ts  sounds.ts  i18n/{en,fr}.json  tests/
+```
+- Items: `packs/touhou/items/<family>/<item>/{item.ts, item.test.ts, visuals.ts?}`.
+- Balance numbers live in the content file that uses them (typed `params`), never as magic numbers in systems. Shared constants in `packs/core-combat/tuning/`.
+- No global mutable variables outside the kernel state container.
+
+---
+
+## 16. Documentation
+- `CLAUDE.md`: rules for working in the repo, commands, checklist per change.
+- `PROJECT_MAP.md`: "to change X, open Y" table.
+- `docs/ARCHITECTURE.md`, short `README.md` per pack (entry points, public API, events used).
+- `docs/adr/NNNN-title.md`: one per important decision with context and rejected options.
+- Generated (CI fails if stale): catalog of packs, characters, attacks, items, events, statuses, commands, settings, strings.
+- Required guides: `docs/DEBUG.md` (tools, how to diagnose a bug or desync step by step), `docs/ADDING.md` (recipes: new character, item, map, boss, mode, minigame, content type, screen, setting), `docs/MODIFYING.md` (how to change an existing system safely), `docs/MODDING.md` (mod format and API), `docs/errors.md` (error codes), `docs/EXTERNAL.md` (§23).
+- Any architectural change updates the relevant doc in the same commit (checklist item in §24).
+
+---
+
+## 17. Porting plan (validated phase by phase)
+1. **Audit** the old game: inventory of every system, character move, item, mode, option, net message, worker route, special case. Output: `docs/INVENTORY.md` with checkboxes (the parity checklist).
+2. **Skeleton:** repo, CI, kernel, schemas, snapshot/hash, determinism tests, replay format, lab skeleton, docs skeleton.
+3. **core-combat + 2 characters + training mode**, with parity harness.
+4. **Online** (rollback, lobby, TURN), determinism under rollback.
+5. **Remaining characters**, then **items** in families, each with tests and parity checks.
+6. **UI screens**, HUD, audio, YouTube pack, map maker, results, select screen.
+7. **Mods loader**, hot reload, i18n FR.
+8. Full parity review against INVENTORY.md; switch the main link only then.
+
+---
+
+## 18. Whole features as folders (modes, bosses, adventure, minigames)
+
+Requirement: a complete feature (boss fights, adventure mode, classic/arcade mode, minigames, anything unique) is added by **adding one pack folder**, without editing other packs. Sections 2–6 assumed "everything is a versus match"; this section removes that assumption.
+
+### 18.1 The kernel knows worlds, not matches
+- A **world** = a set of systems + the state slices they own + a controller list. The kernel steps, snapshots, hashes and rolls back *any* world. "Versus match" is just one world recipe.
+- A **mode** pack declares a *flow*: a state machine of steps (`screen`, `world`, `cutscene`, `results`, `branch`) and which world recipe each step uses. Examples:
+  - `modes/versus`: select → versus world → results → back.
+  - `modes/classic`: ladder of 8 versus worlds against CPUs + final boss + ending.
+  - `modes/boss-rush`, `modes/adventure`, `minigames/<name>`.
+- Flows nest: any world or flow can be a step of another flow. A minigame is playable standalone (hub slot) *and* as a step inside adventure/classic, with no extra code. Every mode is designed local-first with online co-op/versus available through capabilities (§18.8); online uses the host's profile data.
+- A minigame may use **none** of core-combat: it declares its own systems (e.g. platformer physics) and still gets determinism, rollback, replays, lab and debug for free.
+
+### 18.2 core-combat is split into composable system packs
+`movement`, `bullets`, `collision`, `health`, `statuses`, `stocks-ko`, `parry`, `spells`, `items`, `camera-rules`, `spawning`. A world recipe lists the systems it uses. A boss fight can drop `stocks-ko` and add `boss-phases`; a minigame can use only `collision` + its own system.
+
+### 18.3 Actors and controllers
+- Players, CPUs, bosses, enemies and NPCs are all **actors**. An actor has an archetype (character, boss, enemy…) and a **controller** (human input, CPU AI, boss script, network).
+- A boss is built from the same move files as characters (`shot.ts`, `melee/*.ts`, `spell.ts`…) plus `phases/*.ts` and a script controller. Any character move can be reused by a boss and vice versa.
+
+### 18.4 Scripts that survive rollback
+JS generators/coroutines cannot be snapshotted. Scripts (boss patterns, cutscenes, tutorials, adventure events) are **serializable state machines**: instruction pointer + local variables stored in state, authored with a builder (`wait(60)`, `until(cond)`, `spawnPattern(...)`, `say('adventure:line-12')`, `branch(...)`). They rewind and replay like everything else. Ban generators in sim code (lint).
+
+### 18.5 Content types are extensible
+The kernel does not know "character", "item" or "map". Packs **declare content types** (name, schema, folder convention, loader, validator): `core-combat` declares `character`, `item`, `map`; `adventure` can declare `region`, `dialogue`, `quest`; a mod can declare a brand-new type. The catalog generator and the mod loader work for any declared type.
+
+### 18.6 Extension points for UI and flow
+- Hub cards, title menu entries, options panels, results panels, pause-menu entries are **slots** filled by packs (`ui.slot('hub', {...})`). A new mode appears in the hub by existing.
+- Screens are registered by packs; the router only knows ids.
+- Render **layers** (background, world, bullets, fx, hud, overlay) with explicit z-order; packs add layers instead of patching the renderer.
+- Input **action maps** per context (fight, menu, adventure, minigame X); devices map to actions, modes read actions.
+
+### 18.7 Two kinds of persistent data
+- **World state**: inside the sim, rolled back, hashed.
+- **Profile data**: progression, unlocks, adventure saves, stats, settings, achievements. Outside the sim, schema-versioned with migrations, namespaced per pack. A world receives the profile data it needs as read-only input at start and returns changes as a result (so worlds stay pure and replayable).
+
+### 18.8 Capabilities
+Each mode/world recipe declares: players min/max, local/online, rollback-safe, spectatable, needs assets X. The UI and netcode read capabilities instead of hard-coding rules per mode.
+
+### 18.9 Shared standard library (`packs/std`)
+Vector math, shapes and collision tests (circle, rect, segment, polygon), spatial grid, tilemaps, pathfinding, easing, deterministic noise, timers. Minigames and bosses build on it instead of copying code from core-combat.
+
+---
+
+## 19. My working environment (built in phase 2, before any porting)
+
+The goal is that I never guess: I can run, see, query and compare anything from the command line.
+
+- **One command:** `pnpm check` = typecheck + lint + tests related to changed files (fast); `pnpm check:all` = everything CI runs.
+- **Scaffolding:** `pnpm new character <id>`, `pnpm new item <family>/<id>`, `pnpm new mode <id>`, `pnpm new minigame <id>`, `pnpm new boss <id>`, `pnpm new content-type <id>`. Each generates the folder, manifest, typed stubs, a failing test to fill, README and i18n keys, so every new thing starts correct and consistent.
+- **Headless runner:** `pnpm sim run <scenario|replay> --frames N --dump state.json --journal` runs any world without a browser and prints state/events.
+- **Journal queries:** `pnpm sim why --replay r.json --entity p1 --frame 1200` lists the events, hooks and values that changed that entity, with the pack/file responsible.
+- **Divergence bisect:** `pnpm sim bisect a.json b.json` finds the first frame and first field where two runs differ (desyncs, regressions, parity vs old game).
+- **Deep links:** the game boots straight into any situation by URL, e.g. `?world=versus&p1=touhou:reimu&p2=touhou:marisa&give=0:touhou:black-hole&frame=300&pause=1`. Playwright and humans use the same links; bug reports include one.
+- **Frame screenshots:** `pnpm shot "<deep link>" --frames 0,60,120` renders those frames to PNG (Playwright, fixed seed) so I can look at visual results without manual play; screenshot diffs catch visual regressions.
+- **Pack graph:** `pnpm graph` prints the dependency graph of packs, hooks per event phase, and which pack overrides what.
+- **Generated catalogs** (§16) are my index: I read the catalog first, then only the files it points to.
+- **Old-game bridge:** the old `shmup-fighter.html` runs headless with the same scenario API (parity harness), so "is this the same as before?" is a command, not a guess.
+- **Fast feedback:** TypeScript project references per pack, Vitest related-file mode, Vite HMR for UI; content hot reload in dev uses the same path as mods.
+
+---
+
+## 20. Conventions and systems that every pack relies on
+
+### 20.1 Units (no exceptions)
+Durations in **frames** (integers, 60 per second); distances in arena pixels at scale 1; angles in radians, 0 = right, clockwise positive (screen y down); speeds in px/frame; percentages as 0–1. Helpers `sec(2)`/`deg(45)` convert when authoring. Units appear in field names when ambiguous (`durationF`, `radiusPx`).
+
+### 20.2 World config (the first record of every replay)
+`{ kernelVersion, contentHash, seed, worldRecipe, rules, players[{slot, actor, controller, team, color}], loadOrder }`. Rules (lives, timer, items, teams, map…) are part of the config, hashed, chosen by the host online. Changing them mid-world is a command (§6).
+
+### 20.3 Settings registry
+Packs declare settings `{ id, schema, default, scope, ui }`. Scope is either **client** (volume, effects, bindings, video opacity — never read by the sim) or **rule** (goes into world config). The Options screen and the rules screen are generated from the registry plus optional custom panels. Dev options are client settings, off by default.
+
+### 20.4 CPU AI and scripts produce inputs
+CPU and boss controllers output `InputFrame`s (or script actions for bosses), they never write state directly. Same rules for humans and AI ⇒ fair, replayable, debuggable. Per-actor `cpu.ts` files; difficulty levels are params.
+
+### 20.5 Viewports and cameras
+Render supports N viewports (local split views, spectator, picture-in-picture). Cameras are presentation, driven by sim view modifiers (§4.5). Transparent layers allow the YouTube video background behind the arena.
+
+### 20.6 Quality tiers
+`low / medium / high`, auto-detected on first run, client setting: particle budget, resolution scale, blur, interpolation. Gameplay never depends on tier.
+
+### 20.7 Assets and content policy
+- No AI-generated assets (sounds, music, images, sprites). Every asset file has an entry in the pack's `assets/CREDITS.md` (origin, author). CI fails on unlisted assets.
+- No religious references, deities or pentagrams in content; neutral equivalents. Review checklist item for every content change.
+- Assets are loaded lazily per world/screen from a pack manifest.
+- Touhou fan-work guidelines are respected (non-commercial fan game, credit to Team Shanghai Alice).
+- Accessibility: full remapping, Effects OFF, readable colour choices for teams/players (colour-blind-safe palette option).
+
+### 20.8 Public API versioning
+`@kernel` and each pack's public API follow semver. Breaking changes need an ADR, a migration note and a version bump; deprecated APIs keep working for one major version. A compatibility test suite runs a set of sample mods against the current API.
+
+### 20.9 Kernel change policy
+The kernel changes only through an ADR plus the full determinism and golden suite. Most "kernel" ideas belong in a pack.
+
+### 20.10 Error codes
+Every reported error has a stable code (`E-NET-003`, `E-MOD-012`…) documented in `docs/errors.md` with cause and fix. Error panels and reports show the code; I can search it.
+
+### 20.11 Failure containment outside the sim
+Each UI screen has an error boundary (fallback panel + report, rest of the app alive). Render or audio errors never stop the sim or the netcode.
+
+### 20.12 Migration from the old game
+Proto3 is served from the same origin (`lithlithcn.github.io`) as the old game, so it can import the old `localStorage` data on first run: nickname, picture, stats, bindings, settings, YouTube player state, custom maps (format converter). Import is idempotent and logged.
+
+### 20.13 Mods can ship tests
+A mod may include `tests/` scenarios; dev-tools and the lab can run them, so mod authors get the same safety net as the base game.
+
+---
+
+## 21. Feature integration checklist (answer before coding any new feature)
+
+For every new request (character, item, boss, mode, minigame, screen, system…), write the answers in the PR/commit notes and ask the owner only the questions that are about taste or game design:
+1. Which **pack** owns it? New pack or existing one?
+2. Which **content types** does it add or use? Need a new content type?
+3. Which **world recipe(s)** and **systems** run it? New system or composition of existing ones?
+4. What **state** does it add (schema slice)? What must survive rollback?
+5. Which **events/hooks** does it emit or listen to, in which phase?
+6. Does it need **commands** (changes during a world)?
+7. Which **settings** (client vs rule)?
+8. Which **UI slots/screens**, which **input action map**?
+9. **Text** keys (en/fr), **assets** (+ credits), **sounds/music** (priority vs YouTube)?
+10. **Capabilities**: players min/max, online, spectate, mobile/touch.
+11. **Effects OFF / photosensitivity** behaviour, quality tiers.
+12. **Profile data**: progression, unlocks, saves (+ migration).
+13. **Performance** budget impact (bullets, entities, draw calls).
+14. **Tests**: scenarios, determinism, goldens, Playwright, lab coverage.
+15. **Docs**: catalog regenerated, PROJECT_MAP/README/ADR if architecture moved.
+
+---
+
+## 23. External dependencies (all of them, explicitly)
+| Dependency | Used for | If it fails |
+|---|---|---|
+| GitHub Pages | hosting the game | game unreachable; static build can be moved to any host |
+| PeerJS public signalling server (`0.peerjs.com`) | players finding each other online (kept by owner's choice) | online lobby cannot be created/joined; clear error; local play unaffected |
+| Cloudflare Worker `sf-turn` + Cloudflare Realtime TURN | relay when direct WebRTC fails | fallback to Metered TURN, then direct-only; diagnostics show relay status |
+| Cloudflare Worker `sort-maker` | YouTube playlist, search, thumbnail proxy | player shows message, game music used |
+| YouTube IFrame API | music/video playback | player disabled, game music used |
+| Google STUN servers | NAT discovery | other STUN entries, then TURN |
+No other runtime network dependency is allowed without an entry here.
+
+---
+
+## 24. Working method for every task (from the Proto3 brief §10)
+1. Understand the expected result; ask taste/design questions early (owner prefers questions over wasted work).
+2. Identify the packs/systems concerned (PROJECT_MAP, catalogs).
+3. Check their dependencies (`pnpm graph`).
+4. Choose the most targeted architectural solution; run the §21 checklist.
+5. Evaluate regression risks (goldens, parity, determinism).
+6. Make the smallest correct change; never rewrite a whole system when a targeted change suffices; no new abstraction without a reason.
+7. Test the concerned systems (`pnpm check`), then everything (`pnpm check:all`) before pushing.
+8. Verify nothing else broke (goldens, Playwright, lab smoke run).
+9. Update docs/catalog/ADR in the same commit.
+10. Push; CI deploys only if everything passes.
+
+**Real-device check:** emulators are not enough; each phase ends with the owner testing on his PC and phone (list of things to try provided by me).
+
+**Definition of done for a ported feature:** behaviour matches the old game (parity scenario passes), tests exist next to the code, works on keyboard/pad/touch, works online if capable, respects Effects OFF, documented in the catalog, ticked in `docs/INVENTORY.md`.
+
+---
+
+## 25. Risk register (keep adding)
+| # | Risk | Mitigation |
+|---|---|---|
+| R1 | Transcendental Math differs across browsers | §3.1 ban + `sim.math` |
+| R2 | Mods call non-deterministic APIs | §3.7 sanitizer + lab double runs |
+| R3 | Unstable sort tie order | §3.4 |
+| R4 | Old replays after updates | content hash in replay; refuse with message |
+| R5 | Mid-match setting changes | commands only (§6) |
+| R6 | Hot reload online | locked (§10.3) |
+| R7 | Stale entity references | handles with generation (§4.3) |
+| R8 | Snapshot cost / GC at 32 players | schema-generated preallocated copies (§4.2) |
+| R9 | Mod state/name collisions | namespaces + explicit overrides (§2.4, §4.2) |
+| R10 | Priority wars between hooks | phases + constraints (§5.2) |
+| R11 | Infinite event loops | queued events + max depth (§5.4) |
+| R12 | Mod exception mid-match online | deterministic disable (§5.5) |
+| R13 | Dependencies dying | minimal pinned deps; static output |
+| R14 | Over-engineering up front | fix formats now, implement on demand (§17) |
+| R15 | RNG shift when content changes | per-pack RNG streams (§3.3) |
+| R16 | DOM/GC hitches during fights | HUD in render, Svelte idle during match (§8.3) |
+| R17 | Items that rewind/inspect state | `history` service inside state (§4.5) |
+| R18 | Render deciding gameplay | view modifiers in sim state (§4.5) |
+| R19 | Bullet cap bypass | single spawn path + test (§4.3) |
+| R20 | Rollback ghost FX/sounds | event-keyed FX cancel (§7) |
+| R21 | Interpolation making things look worse | toggle + screenshot tests (§7) |
+| R22 | Mods unavailable on Firefox/Safari/mobile folder API | zip drag & drop fallback (§11) |
+| R23 | Host bandwidth at 32 players | packed inputs, measurement (§10.5) |
+| R24 | Spectator mid-join needs full state | schema serializer (§10.1) |
+| R25 | Docs drifting from code | generated catalogs + CI check (§16) |
+| R26 | Hidden-tab throttling stalls net | worker clock (§9) |
+| R27 | Parity impossible to exact decimal | tolerance-based parity harness (§14) |
+| R28 | localStorage size limits | saves/settings in localStorage (small, versioned); mods/replays in IndexedDB |
+| R29 | Save/settings format changes | schema version + migrations |
+| R30 | Photosensitive effects | Effects OFF tested; no full-screen flash in OFF |
+| R31 | Kernel assumes "a match", blocking new modes | worlds + flows (§18.1) |
+| R32 | New mode needs combat internals | composable system packs + std lib (§18.2, §18.9) |
+| R33 | Coroutines not snapshottable (boss scripts, cutscenes) | serializable script machines, generators banned (§18.4) |
+| R34 | New kinds of content need kernel changes | packs declare content types (§18.5) |
+| R35 | Adding a mode requires editing hub/menus | UI slots, screen registry (§18.6) |
+| R36 | Progression mixed with sim state breaks replays | world state vs profile data (§18.7) |
+| R37 | Per-mode rules hard-coded in UI/netcode | capabilities (§18.8) |
+| R38 | Inconsistent new content (missing tests, i18n, docs) | scaffolding generators (§19) |
+| R39 | Guessing instead of observing | headless runner, journal queries, bisect, deep links, frame screenshots (§19) |
+| R40 | Online co-op in story/adventure worlds with save data | world receives read-only profile input, returns results; host's profile used online |
+| R41 | Unit confusion (frames vs seconds, deg vs rad) | units convention (§20.1) |
+| R42 | Client settings leaking into sim | settings scopes (§20.3) |
+| R43 | AI cheating / unreplayable AI | AI outputs inputs only (§20.4) |
+| R44 | Untracked or AI-generated assets | CREDITS.md + CI check (§20.7) |
+| R45 | Mods broken by engine updates | semver public API + compatibility suite (§20.8) |
+| R46 | Kernel bloat over time | kernel change policy (§20.9) |
+| R47 | One UI crash kills the app | error boundaries (§20.11) |
+| R48 | Players lose their old data | origin-shared import (§20.12) |
+| R49 | New features integrated inconsistently | integration checklist (§21) |
+| R50 | Building future features too early | build-now/later list (§0.15) |
+| R51 | Rollback resimulation too slow at many players | 1.5 ms step budget + adaptive delay (§9) |
+| R52 | Long parity scenarios diverge chaotically | short single-mechanic parity scenarios (§14) |
+| R53 | Mods cannot use Svelte screens | framework-agnostic screen interface (§8.15) |
+| R54 | Locale/recursion-dependent behaviour | extra determinism bans (§3.10) |
+| R55 | Nested history snapshots explode memory | no nested history, capped size (§4.5) |
+| R56 | Emulator-only testing misses real bugs | owner real-device check per phase (§24) |
