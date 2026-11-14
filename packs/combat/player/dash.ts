@@ -4,6 +4,9 @@ import { T } from '../tuning';
 import { PS } from '../state';
 import { type PCtx, held, pr } from '../input';
 import { BTN } from '@kernel';
+import { charOf } from '../api';
+import { MV } from '../moves';
+import { startAtk } from './atkstart';
 
 /** Glide (legacy `glide`, a.k.a. wavedash): stick direction, else current momentum, else away from the foe. */
 export function glide(c: PCtx): void {
@@ -28,6 +31,12 @@ export function startDash(c: PCtx): void {
   c.w.emit('combat:dash', { p, x: s.x[p]!, y: s.y[p]! });
 }
 
+/** Dash entry point used by every dash source (idle, move cancels): the character may replace or refuse it (legacy dash wrapper). */
+export function doDash(c: PCtx): void {
+  const ch = charOf(c.w, c.s, c.p);
+  if (ch.dash) ch.dash(c, startDash); else startDash(c);
+}
+
 /** Dash state tick (legacy case 'dash'): steerable curve, glide cancel, then run (button held) or lag. */
 export function updDash(c: PCtx): void {
   const { s, p } = c;
@@ -38,7 +47,7 @@ export function updDash(c: PCtx): void {
     s.vx[p] = cos(na) * sp; s.vy[p] = sin(na) * sp;
   }
   if (pr(c, BTN.focus)) { glide(c); return; }
-  // TODO(next batch): pr(melee) → dash attack
+  if (pr(c, BTN.melee)) { startAtk(s, p, MV.dashatk); return; } // dash attack keeps the momentum
   s.t[p] = s.t[p]! - 1;
   if (s.t[p]! <= 0) {
     if (held(c, BTN.dash)) { s.state[p] = PS.idle; s.run[p] = 1; s.vx[p] = s.vx[p]! * 0.6; s.vy[p] = s.vy[p]! * 0.6; }

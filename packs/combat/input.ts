@@ -25,3 +25,23 @@ export function pr(c: PCtx, mask: number): boolean {
   return f > 0 && c.gf - f <= (mask === BTN.parry ? 3 : 8);
 }
 export const held = (c: PCtx, mask: number): boolean => (c.b & mask) !== 0;
+
+export function clearBuf(s: CombatState, p: number): void { for (let i = 0; i < NBTN; i++) s.bufF[p * NBTN + i] = 0; }
+
+/**
+ * Legacy end-of-step input wrapper: a press that the base logic did not stamp (because the buffer was just emptied by an action start)
+ * is stamped now, unless that key was stamped within the last 8 frames. Heavy is excluded for humans. Not run on frozen frames
+ * (hit-stop, KO slow-motion), where only the base step runs.
+ */
+export function bufferInputs(w: World, s: CombatState): void {
+  for (let p = 0; p < s.n; p++) {
+    const b = w.buttons(p), edge = b & ~s.bpv[p]!;
+    for (let i = 0; i < NBTN; i++) {
+      const m = 1 << i;
+      if (!(edge & m) || NOBUF & m || (m === BTN.heavy && !s.cpu[p])) continue;
+      const f = s.bufF[p * NBTN + i]!;
+      if (!(f > 0 && s.gf - f <= 8)) s.bufF[p * NBTN + i] = s.gf;
+    }
+    s.bpv[p] = b;
+  }
+}

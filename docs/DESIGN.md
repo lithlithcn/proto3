@@ -562,6 +562,9 @@ No other runtime network dependency is allowed without an entry here.
 | R61 | The sf-turn worker restricts origins to an allow-list (lithlithcn.github.io, html-classic.itch.zone) | Proto3 on lithlithcn.github.io/proto3 shares the origin, so no change needed; new hosts must be added deliberately |
 | R62 | The legacy game's behaviour is the sum of layered wrappers; first parity batch alone exposed 3 hidden ones (TAU=6.2832 used for angle wrapping, a step wrapper halving per-step spirit gains <25, Reimu's dash overridden to a 150 px teleport) | every ported mechanic needs a parity scenario; read the *final* effective behaviour from the running legacy game (`tools/parity/legacy.cjs`), not just the base function |
 | R63 | Scenario assertions that don't actually exercise the mechanic pass vacuously | scenarios assert their own precondition (e.g. a KO really happened) |
+| R64 | Hidden input-buffer wrappers in legacy: starting any non-idle action empties the whole press buffer, then an end-of-step wrapper re-stamps the same press (unless that key was stamped ≤ 8 frames ago); frozen frames (hit-stop, KO slow-mo) run only the base step, so the wrapper does not run there | ported as `updatePlayer` buffer clear + `input-buffer` system skipped when `skip`; found by the tech-timing divergence at a wall; scenarios with spam inputs |
+| R65 | Hit-stun/atk `pr('dash')` etc. read the buffer, but `atk` reads `p.prev.melee` AFTER prev was overwritten, i.e. "held now", not "held last frame" | `updAtk` uses `held()`; do not "fix" it |
+| R66 | Stun-repeat reduction is a wrapper around `hit` that records the hit even when the victim is invulnerable and the hit is rejected | `hit()` computes it before the invulnerability return |
 
 ## 26. Owner decisions log
 - 2026-11-14: legacy `.sfmap.json` maps do NOT need importing into Proto3.

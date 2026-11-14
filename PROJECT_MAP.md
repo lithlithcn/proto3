@@ -16,6 +16,8 @@
 | change movement / dash / glide / walls | `packs/combat/player/{idle,dash,physics}.ts` |
 | change a balance constant | `packs/combat/tuning.ts` (parity-tested against legacy) |
 | change bullets (spawn, move, graze, damage) | `packs/combat/bullets/`, `packs/combat/player/{graze,damage}.ts` |
+| change hits, hit-stun, DI, knockback, combos | `packs/combat/player/{hit,hitstun}.ts` (+ `moves.ts` data) |
+| change melee moves | `packs/combat/moves.ts` (defaults), `packs/combat/player/{melee,atkstart}.ts`, per-character `melee` in `CharacterDef` |
 | change KO / respawn | `packs/combat/player/{ko,respawn}.ts` |
 | add or change a character | `packs/touhou/characters/<id>/` (+ `CharacterDef` in `packs/combat/character.ts`) |
 | compare with the old game | `tests/parity/` + `tools/parity/legacy.cjs` |

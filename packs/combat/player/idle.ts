@@ -3,7 +3,9 @@ import { charOf } from '../api';
 import { type PCtx, held, pr } from '../input';
 import { powerMul, speedMul } from '../stats';
 import { T } from '../tuning';
-import { glide, startDash } from './dash';
+import { MV } from '../moves';
+import { doDash, glide } from './dash';
+import { rel, startAtk } from './atkstart';
 
 /** Idle locomotion + actions (legacy updP after the state switch). */
 export function updIdle(c: PCtx): void {
@@ -26,9 +28,10 @@ export function updIdle(c: PCtx): void {
   // TODO(next batches): parry start, melee, heavy (they return before the light shot in the legacy order)
   if (pr(c, BTN.dash) && s.boost[p]! >= T.DASH_COST) {
     if (focus) { s.boost[p] = s.boost[p]! - T.DASH_COST; s.dashCd[p] = T.DASH_REGEN_DELAY; glide(c); }
-    else { const ch = charOf(w, s, p); if (ch.dash) ch.dash(c, startDash); else startDash(c); }
+    else doDash(c);
     return;
   }
+  if (pr(c, BTN.melee)) { startAtk(s, p, focus ? MV.strong : rel(c) === 'F' ? MV.lunge : MV.jab); return; }
   if (held(c, BTN.shot) && s.shotCd[p]! <= 0) fireLight(c, focus);
 }
 

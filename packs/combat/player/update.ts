@@ -1,16 +1,28 @@
 import { BTN, atan2, type World } from '@kernel';
-import { begin, held, pr } from '../input';
+import { begin, clearBuf, held, pr } from '../input';
 import { T } from '../tuning';
 import { PS, type CombatState } from '../state';
 import { updDash, updDashLag } from './dash';
+import { updHitstun } from './hitstun';
 import { updIdle } from './idle';
+import { updAtk } from './melee';
 import { ko } from './ko';
 import { respawn } from './respawn';
 
 const inEdge = (s: CombatState, p: number): boolean => s.x[p]! < s.edge || s.y[p]! < s.edge || s.x[p]! > s.mapW - s.edge || s.y[p]! > s.mapH - s.edge;
 
-/** One player's frame (legacy `updP`, ported incrementally). The order of statements is the legacy order and is parity-tested. */
+/**
+ * One player's frame (legacy `updP` + the "action start empties the buffer" wrapper): starting any non-idle action, or
+ * restarting an attack, clears the press buffer (the same press is re-stamped by `bufferInputs` at the end of the step).
+ */
 export function updatePlayer(w: World, s: CombatState, p: number): void {
+  const st0 = s.state[p]!, t0 = s.t[p]!;
+  step(w, s, p);
+  if ((s.state[p] !== st0 && s.state[p] !== PS.idle) || (s.state[p] === PS.atk && s.t[p]! < t0)) clearBuf(s, p);
+}
+
+/** The state machine itself (legacy `updP`, ported incrementally). The order of statements is the legacy order and is parity-tested. */
+function step(w: World, s: CombatState, p: number): void {
   const c = begin(w, s, p);
   if (s.state[p] === PS.dead) { if (s.stocks[p]! > 0) { s.t[p] = s.t[p]! - 1; if (s.t[p]! <= 0) respawn(w, s, p); } return; }
   if (pr(c, BTN.dash) || pr(c, BTN.parry)) s.techBuf[p] = 10; else if (s.techBuf[p]! > 0) s.techBuf[p] = s.techBuf[p]! - 1;
@@ -34,6 +46,8 @@ export function updatePlayer(w: World, s: CombatState, p: number): void {
   switch (s.state[p]) {
     case PS.dash: updDash(c); return;
     case PS.dashlag: updDashLag(c); return;
-    default: updIdle(c); // TODO(next batches): hitstun, parry*, atk, spell, bursting, rifle, ...
+    case PS.hitstun: updHitstun(c); return;
+    case PS.atk: updAtk(c); return;
+    default: updIdle(c); // TODO(next batches): parry*, spell, bursting, rifle, ...
   }
 }

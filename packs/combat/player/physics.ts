@@ -1,9 +1,10 @@
-import { type World } from '@kernel';
+import { type World, hypot } from '@kernel';
 import { kP } from '../stats';
 import { T } from '../tuning';
 import { PS, type CombatState } from '../state';
+import { ko } from './ko';
 
-/** Wall contact (legacy `wall`). ax: 0 = x axis, 1 = y axis. TODO(next batch): hitstun bounce/tech/street-smash branch. */
+/** Wall contact (legacy `wall`). ax: 0 = x axis, 1 = y axis. */
 function wall(w: World, s: CombatState, p: number, ax: number): void {
   const v = ax ? s.vy : s.vx;
   if (s.state[p] === PS.dash) { // wall kick: one per dash, bounce with momentum, half charge back
@@ -14,6 +15,18 @@ function wall(w: World, s: CombatState, p: number, ax: number): void {
     return;
   }
   if (s.slide[p]! > 0) { v[p] = v[p]! * -0.8; return; } // glide bounces
+  if (s.state[p] === PS.hitstun && hypot(s.vx[p]!, s.vy[p]!) > T.WALL_MIN) {
+    if (s.techBuf[p]! > 0) { // tech: dash/parry pressed just before the impact → recover standing, brief invulnerability
+      s.vx[p] = 0; s.vy[p] = 0; s.state[p] = PS.idle; s.combo[p] = 0; s.inv[p] = 14; s.techBuf[p] = 0;
+      w.emit('combat:tech', { p, x: s.x[p]!, y: s.y[p]! });
+      return;
+    }
+    if (s.pips[p]! <= 0) { ko(w, s, p, 'street-smash'); return; } // no wall pips left: the wall kills
+    if (s.bounceN[p]! > 0) { s.bounceN[p] = s.bounceN[p]! - 1; v[p] = v[p]! * -0.85; w.emit('combat:wall-bounce', { p, x: s.x[p]!, y: s.y[p]!, big: 1 }); return; } // overpowered launch: bounces
+    v[p] = v[p]! * -0.5; s.t[p] = s.t[p]! + 6;
+    w.emit('combat:wall-bounce', { p, x: s.x[p]!, y: s.y[p]!, big: 0 });
+    return;
+  }
   v[p] = 0;
 }
 

@@ -15,6 +15,10 @@ export const T = {
   /** The spell gauge fills at half speed: per-step gains below SPIRIT_BIG are halved; large fills (items, spells) stay whole. */
   SPIRIT_SLOW: 0.5, SPIRIT_BIG: 25,
   LIGHT_CD: 6, LIGHT_CD_F: 4, COMBO_WIN: 8, KO_T: 130,
+  /** Hit system: hit-stop base, directional-influence max turn, stun decay per combo hit, knockback growth with lost HP, spirit cost of a move cancel. */
+  HITSTOP: 4, DI_MAX: 0.35, STUN_DECAY: 0.82, KB_SCALE: 1.3, CANCEL_COST: 25,
+  /** Stun-repeat reduction: same move on the same victim within STUN_REPEAT_WIN frames shortens stun by 8 % per repeat (floor 40 %). */
+  STUN_REPEAT_WIN: 120,
 } as const;
 /** Default map (legacy "Large"). */
 export const MAP_LARGE = { w: 2000, h: 1350, edge: 140 } as const;

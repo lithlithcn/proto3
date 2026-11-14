@@ -7,6 +7,7 @@ export * from './state';
 export type { CharacterDef, ShotCtx } from './character';
 export { lightBullet } from './bullets/spawn';
 export type { PCtx } from './input';
+export type { MoveDef, MeleeName, HitData } from './moves';
 
 export const combatOf = (w: World): CombatState => w.slice<CombatState>('combat');
 
