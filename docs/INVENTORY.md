@@ -13,11 +13,14 @@ Single 3.27 MB HTML, 1.24 MB script. 393 top-level functions, **69 functions wra
 - [ ] Characters (each move = 1 parity scenario): Reimu · Marisa · Flandre · Hecatia · Nue · Okina · Nazrin · Aya
 - [ ] 131 items, grouped in families (see generated list), ~70 statuses `fx.*`, ~68 world effects `CX.*`
 - [ ] 25 entity-logic kinds (EST) and 29 entity-draw kinds (EDR)
-- [ ] Maps: Large, Screen (fixed camera); Map Maker
-- [ ] CPU AI per character; levels
+- [ ] Maps: Large, Screen (fixed camera)
+- [ ] Map Maker (6 tabs): GRID (walls/teleporters, size 8–1000 cells, permanent item, bg), LAYERS (image/GIF/sprite-sheet, parallax, scroll, scale, opacity, tile, blend, frames), MUSIC (custom audio), RULES (events: at start / every N s / at N s / on each KO → item, ring, rain, wind, pull, shake, text, sound, layer, heal), SCRIPT (user JavaScript each frame; API: frame,P,T,mem,rng,item,ring,rain,bullet,text,sound,shake,wind,pull,layer,heal), FILE (export/import `.sfmap.json`, duplicate)
+- [ ] Network maps (`NETMAP`) shared by the host
+- [ ] CPU AI: levels 1–9+, styles zoner/mid/rush, per-level reaction, parry late-timing, action list (jab, lunge, strong, dashin, heavyF, glide, grab, breaker, heavyN), uses seeded rng
 - [ ] Modes/screens: title, hub (fight/online/train/rules/items/maps/opt/help), css, csel, game, binds, menu, items, sub, maker, info, online
 - [ ] Rules rows, Options rows, Profiles, Records, Teams, Sound
-- [ ] Training mode and How-to-play tutorials
+- [ ] Training mode (TEST: infinite, per-power testing)
+- [ ] Tutorial: 24 steps (MOVE, SHOOT, SKILLS, FOCUS, GRAZE, DASH, MELEE, HIT CANCEL, BIG DANMAKU, PARRY, PARRY MELEE, RALLY, GRAB, BREAKER, WALL PIPS, KO BEAM, YOUR KO BEAM, REFLECT THE BEAM, SPELL CARD, SPELL BREAKERS, SPELL BURST, TECH, CARDS & POWERS, DONE) with scripted dummy behaviours
 - [ ] Controls: keyboard, gamepad (L1/R1, second stick scrubbing), touch-only navigation, mouse
 - [ ] Online: PeerJS + TURN, lobby, rules sync, rollback, spectators, 2–32 players, host-shared music
 - [ ] Music/YouTube background: playlists, search, player, volume, seek (5 s / 1 s hold / 100 ms), special-music pause, World inversion
@@ -36,5 +39,8 @@ Single 3.27 MB HTML, 1.24 MB script. 393 top-level functions, **69 functions wra
 6. **Hidden worker**: sf-turn Worker source lives only in Cloudflare dashboard.
 7. **External deps**: PeerJS public server, Cloudflare TURN, YouTube IFrame API, Metered fallback.
 
+## Netcode as found (copy as defaults)
+Inputs-only rollback, 2–32 players, host relays. Input delay `D=2`, rollback window `NMAXP=10`, checksum every `NSUMEV=60` frames (full + detailed per-section diff), stall when remote confirmation lags > NMAXP+D, frame-skip when ahead, `drop` frames for leavers, `CX.mer` = extra step per frame, Worker timer (8 ms) drives ticks in hidden tabs, SFX muted during re-simulation, camera/shake preserved across rollback, protocol hash `NETV` from script content.
+
 ## Still to audit (before Phase 2 sign-off)
-Character move internals, item implementations (give0/GIVE/updItem), netcode (netTick/netGet/gameSave/gameLoad), Map Maker, tutorials/training, sf-turn worker.
+Character move internals (table at script lines ~4376–4630), per-item `GIVE` implementations (cards: `updItem` spawn every `ITEM_EVERY`, capture by standing on card, Last Word every `ULT_EVERY`), CPU decision details, lobby/online screen code. sf-turn worker: DONE (`legacy/workers/turn-worker.js`).

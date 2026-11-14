@@ -555,3 +555,8 @@ No other runtime network dependency is allowed without an entry here.
 | R54 | Locale/recursion-dependent behaviour | extra determinism bans (§3.10) |
 | R55 | Nested history snapshots explode memory | no nested history, capped size (§4.5) |
 | R56 | Emulator-only testing misses real bugs | owner real-device check per phase (§24) |
+| R57 | Legacy netcode snapshots the whole object graph generically (SNAPG roots + deep walk), including visual state (shake, flash, chroma); Proto3 snapshots are schema-based, so any state missing from a schema silently desyncs | invariants + double-run lab + "state not in schema" sanitizer (§12); parity scenarios with rollback |
+| R58 | Legacy maps embed user-written JavaScript (`new Function('api','frame','P','B',js)`) running every frame inside the sim, plus event rules, image/GIF layers, custom music, `.sfmap.json` import/export and maps sent over the network | map = a pack-like content type; scripts run through the mod sandbox API with `sim.math`/seeded rng only; imported legacy maps converted; network maps carry content hash; never trust remote code without explicit consent |
+| R59 | Legacy online keeps the game running in hidden tabs via a Worker-driven netTick loop | Worker clock kept (already §3), covered by Playwright hidden-tab test |
+| R60 | Legacy rollback params (input delay 2, window NMAXP=10, checksum every 60 frames, `CX.mer` double-step) are balance-adjacent | copy as defaults, parity-tested; any change goes through ADR |
+| R61 | The sf-turn worker restricts origins to an allow-list (lithlithcn.github.io, html-classic.itch.zone) | Proto3 on lithlithcn.github.io/proto3 shares the origin, so no change needed; new hosts must be added deliberately |
