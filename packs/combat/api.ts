@@ -1,6 +1,7 @@
 import { sortBy, type World } from '@kernel';
 import type { CharacterDef, SpellDef } from './character';
 import type { ItemDef } from './items/def';
+import type { StatusDef } from './fx';
 import type { CombatState } from './state';
 
 export { T, TAU, MAP_LARGE } from './tuning';
@@ -15,6 +16,7 @@ export { MOVES, SRC } from './moves';
 export { addEnt, entsOf } from './ents';
 export type { ItemDef, ItemCtx } from './items/def';
 export { giveItem } from './items/cards';
+export { fxOn, setFx, clearFx, FXS, MAX_FX, type StatusDef } from './fx';
 export { hit } from './player/hit';
 export { parryFx } from './player/parry';
 export { foe } from './target';
@@ -41,6 +43,13 @@ const itemPools = new WeakMap<World, ItemDef[]>();
 export function itemPool(w: World): ItemDef[] {
   let l = itemPools.get(w);
   if (!l) { l = sortBy(w.registry.list<ItemDef>('item').map(e => e[1]), d => d.order, d => d.order); itemPools.set(w, l); }
+  return l;
+}
+/** Statuses indexed by slot (sparse). */
+const statusPools = new WeakMap<World, (StatusDef | undefined)[]>();
+export function statusPool(w: World): (StatusDef | undefined)[] {
+  let l = statusPools.get(w);
+  if (!l) { l = []; for (const [, d] of w.registry.list<StatusDef>('status')) l[d.slot] = d; statusPools.set(w, l); }
   return l;
 }
 export const charOf = (w: World, s: CombatState, p: number): CharacterDef => characters(w)[s.charIdx[p]!]![1];

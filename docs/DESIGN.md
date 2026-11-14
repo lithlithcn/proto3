@@ -584,6 +584,8 @@ No other runtime network dependency is allowed without an entry here.
 | R84 | Deviation: a hit empties the victim's capture gauge on EVERY card (legacy: only `CARDS[0]`, an accident of the global `item`). Parity tests use one card at a time | `cards` test (maxCards 1) |
 | R85 | Hit-source ids for the stun-repeat reduction are explicit (`ISRC` 16-63 items, 64+ characters, `NSRC` 128) instead of legacy move-object identity: every move that should repeat-reduce needs a unique id | new moves/items must claim an id |
 | R86 | Dropped dead code: legacy `elixir` (`p.star`: invincible burn) is shadowed by `GIVE.elixir` (status `fx.elx`, port with the statuses batch); the `inEdge` helper is now one shared function that honours Warp | |
+| R87 | Statuses (`fx`): one timer column per player indexed by stable slot (`FXS`, content type `status` = slot + `end` hook), ticked by system `status`. Deviation: legacy iterated `for k in fx` (insertion order, and a timer set by an end hook sometimes ticked the same frame, depending on key history); port ticks in slot order and a timer set by an end hook starts next frame | parity `elixir` |
+| R88 | KO guards (Immortal) are `combat:ko:before` hooks that cancel the KO, not wrappers around `ko` | `touhou/hooks/imm-guard.ts` |
 | R66 | Stun-repeat reduction is a wrapper around `hit` that records the hit even when the victim is invulnerable and the hit is rejected | `hit()` computes it before the invulnerability return |
 
 ## 26. Owner decisions log

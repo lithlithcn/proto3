@@ -36,4 +36,5 @@ Everything gameplay-related will live under `packs/<id>/` (see DESIGN §2.2, §1
 - Spell cards: `packs/combat/player/spell.ts` (cast/update/end/input), card data per character in `packs/touhou/characters/<c>/spell.ts`, shared cards = content type `spell`.
 - Entities (orbs, bars…): `packs/combat/ents.ts`; Reimu's in `packs/touhou/characters/reimu/{orbs,inp,border,tick}.ts`; character hooks `inp/skill1/skill2` in `packs/combat/character.ts`.
 - Item cards / give: `packs/combat/items/cards.ts`; item defs (one file each, content type `item`): `packs/touhou/items/<id>.ts`; per-item logic: `items/{blade,bombs}.ts`, orchestrated in `items/world.ts` (legacy updWorld order); mirror bounce: `bullets/mirror.ts`.
+- Statuses (`fx`): framework `packs/combat/fx.ts` (slots `FXS`, tick, end hooks), one file per status in `packs/touhou/statuses/<id>.ts` (content type `status`), KO guards as hooks in `packs/touhou/hooks/`.
 - Bullet patterns/behaviours: `packs/combat/bullets/pattern.ts`; per-bullet columns list `bullets/arrays.ts`; shared cards `packs/touhou/spells/NN-name.ts`.

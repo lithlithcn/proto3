@@ -10,7 +10,7 @@ const { createLegacy } = require_('../../tools/parity/legacy.cjs') as { createLe
 
 interface LegacyInput { x?: number; y?: number; b?: Record<string, boolean> }
 interface Legacy { step(i: LegacyInput[]): void; obs(): { f: number; P: LP[]; C: { x: number; y: number; on: number; age: number; type: string; cp: number[] }[]; E: { k: number; t: number; x: number; y: number; vx: number; vy: number; g: number; a: number }[]; K: { o: number; x: number; y: number; a: number; t: number; dep: number }[]; B: LB[] }; eval(c: string): unknown }
-interface LP { mirror: number; giant: number; x: number; y: number; vx: number; vy: number; hp: number; state: string; t: number; boost: number; spirit: number; power: number; graze: number; inv: number; run: boolean; slide: number; shotCd: number; aim: number; stocks: number; kos: number; sd: number; pips: number; spit: number }
+interface LP { elx: number; imm: number; mirror: number; giant: number; x: number; y: number; vx: number; vy: number; hp: number; state: string; t: number; boost: number; spirit: number; power: number; graze: number; inv: number; run: boolean; slide: number; shotCd: number; aim: number; stocks: number; kos: number; sd: number; pips: number; spit: number }
 interface LB { x: number; y: number; vx: number; vy: number; r: number; owner: number; dmg?: number; life: number; heavy?: number; mult?: number; dist?: number; refl: number }
 
 const BIT: Record<string, number> = { shot: BTN.shot, heavy: BTN.heavy, melee: BTN.melee, dash: BTN.dash, parry: BTN.parry, spell: BTN.spell, focus: BTN.focus, prev: BTN.prev, next: BTN.next };
@@ -22,7 +22,7 @@ const q = (v: number | undefined): number => Math.max(-127, Math.min(127, Math.r
 const STATE_NAME = Object.fromEntries(Object.entries(PS).map(([k, v]) => [v, k]));
 
 /** Item name → pool index of the ported items (pool order = legacy order), rainbow = Last Word card. */
-const KIND: Record<string, number> = { yellow: 0, green: 1, purple: 2, orange: 3, mirror: 4, oni: 5, rainbow: -2 };
+const KIND: Record<string, number> = { yellow: 0, green: 1, purple: 2, orange: 3, mirror: 4, oni: 5, elixir: 6, rainbow: -2 };
 export interface PairOpt { items?: string[]; maxCards?: number }
 export function makePair(chars: string[], seed = 1, opt: PairOpt = {}) {
   const legacy = createLegacy({ chars, seed, items: !!opt.items });
@@ -57,7 +57,7 @@ export function makePair(chars: string[], seed = 1, opt: PairOpt = {}) {
       o.P.forEach((lp, i) => { expect(s.kos[i], `${tag} f${o.f} P${i}.kos`).toBe(lp.kos); expect(s.sd[i], `${tag} f${o.f} P${i}.sd`).toBe(lp.sd); expect(s.pips[i], `${tag} f${o.f} P${i}.pips`).toBe(lp.pips); expect(s.spit[i], `${tag} f${o.f} P${i}.spit`).toBe(lp.spit); });
       expect(s.ncard, `${tag} f${o.f} card count`).toBe(o.C.length);
       o.C.forEach((lc, i) => { near(s.cx[i]!, lc.x, `C${i}.x`); near(s.cy[i]!, lc.y, `C${i}.y`); expect(s.con[i], `${tag} f${o.f} C${i}.on`).toBe(lc.on); near(s.cage[i]!, lc.age, `C${i}.age`); expect(s.ckind[i], `${tag} f${o.f} C${i}.kind`).toBe(KIND[lc.type]); lc.cp.forEach((v, q) => near(s.ccp[i * 32 + q]!, v, `C${i}.cp${q}`)); });
-      o.P.forEach((lp, i) => { expect(s.mirror[i], `${tag} f${o.f} P${i}.mirror`).toBe(lp.mirror); expect(s.giant[i], `${tag} f${o.f} P${i}.giant`).toBe(lp.giant); });
+      o.P.forEach((lp, i) => { expect(s.fx[i * 128], `${tag} f${o.f} P${i}.elx`).toBe(lp.elx); expect(s.fx[i * 128 + 1], `${tag} f${o.f} P${i}.imm`).toBe(lp.imm); expect(s.mirror[i], `${tag} f${o.f} P${i}.mirror`).toBe(lp.mirror); expect(s.giant[i], `${tag} f${o.f} P${i}.giant`).toBe(lp.giant); });
       expect(s.nent, `${tag} f${o.f} entity count`).toBe(o.E.length);
       const idx = [...Array(s.nent).keys()].sort((a, b) => s.ek[a]! - s.ek[b]! || a - b); // legacy keeps one list per kind
       o.E.forEach((le, i) => { const j = idx[i]!; expect(s.ek[j], `${tag} f${o.f} E${i}.kind`).toBe(le.k); near(s.et[j]!, le.t, `E${i}.t`); near(s.ex[j]!, le.x, `E${i}.x`); near(s.ey[j]!, le.y, `E${i}.y`); near(s.evx[j]!, le.vx, `E${i}.vx`); near(s.evy[j]!, le.vy, `E${i}.vy`); expect(s.eg[j], `${tag} f${o.f} E${i}.g`).toBe(le.g); if (le.k === 2) near(s.ea[j]!, le.a, `E${i}.a`); });

@@ -9,6 +9,7 @@ export const MAX_CARD = 16;
 export const MAX_ITEMS = 160;
 /** Card kind of the Last Word (ultimate) card: not content, owned by combat. */
 export const CARD_ULT = -2;
+export const MAX_FX = 128;
 /** Hit sources tracked for the stun-repeat reduction (see moves.ts `SRC`). */
 export const NSRC = 128;
 /** Player states (legacy strings → ints). */
@@ -42,6 +43,7 @@ export const combatSchema: Schema = {
   nent: i32(), ek: i32s(MAX_ENT), eo: i32s(MAX_ENT), eg: i32s(MAX_ENT), et: f64s(MAX_ENT), ex: f64s(MAX_ENT), ey: f64s(MAX_ENT), evx: f64s(MAX_ENT), evy: f64s(MAX_ENT), ea: f64s(MAX_ENT), er: f64s(MAX_ENT), ew: f64s(MAX_ENT), eh: f64s(MAX_ENT), ebc: f64s(MAX_ENT), efl: f64s(MAX_ENT), ehc: f64s(MAX_ENT * MAXP),
   // item cards (legacy CARDS/itemT/ultT) and item-granted timers
   itemT: i32(), ultT: i32(), maxC: i32(1), itemsOn: i32(1), ncard: i32(), cx: f64s(MAX_CARD), cy: f64s(MAX_CARD), ckind: i32s(MAX_CARD), con: i32s(MAX_CARD), cage: i32s(MAX_CARD), ccont: i32s(MAX_CARD), ccp: f64s(MAX_CARD * MAXP), itemOn: i32s(MAX_ITEMS),
+  fx: i32s(MAXP * MAX_FX),
   mirror: i32s(MAXP), giant: i32s(MAXP), lastIt: i32s(MAXP), blade: i32s(MAXP), bombs: i32s(MAXP), bombN: i32s(MAXP), bA: f64s(MAXP), bCD: f64s(MAXP * MAXP), warp: i32(),
   // KO beams
   nkb: i32(), kbO: i32s(MAX_KB), kbPP: i32s(MAX_KB), kbDep: i32s(MAX_KB), kbX: f64s(MAX_KB), kbY: f64s(MAX_KB), kbA: f64s(MAX_KB), kbT: f64s(MAX_KB), kbTT: f64s(MAX_KB),
@@ -67,6 +69,7 @@ export interface CombatState {
   skPN: Int32Array; skPP: Int32Array; skC1: Float64Array; skC2: Float64Array;
   nent: number; ek: Int32Array; eo: Int32Array; eg: Int32Array; et: Float64Array; ex: Float64Array; ey: Float64Array; evx: Float64Array; evy: Float64Array; ea: Float64Array; er: Float64Array; ew: Float64Array; eh: Float64Array; ebc: Float64Array; efl: Float64Array; ehc: Float64Array;
   itemT: number; ultT: number; maxC: number; itemsOn: number; ncard: number; cx: Float64Array; cy: Float64Array; ckind: Int32Array; con: Int32Array; cage: Int32Array; ccont: Int32Array; ccp: Float64Array; itemOn: Int32Array;
+  fx: Int32Array;
   mirror: Int32Array; giant: Int32Array; lastIt: Int32Array; blade: Int32Array; bombs: Int32Array; bombN: Int32Array; bA: Float64Array; bCD: Float64Array; warp: number;
   nkb: number; kbO: Int32Array; kbPP: Int32Array; kbDep: Int32Array; kbX: Float64Array; kbY: Float64Array; kbA: Float64Array; kbT: Float64Array; kbTT: Float64Array;
   bx: Float64Array; by: Float64Array; bvx: Float64Array; bvy: Float64Array; br: Float64Array; bdmg: Float64Array; blife: Float64Array; bhome: Float64Array; bdist: Float64Array; bmult: Float64Array;

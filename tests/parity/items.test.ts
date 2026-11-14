@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { type Script, makePair } from './harness';
 
-const ALL = ['yellow', 'green', 'purple', 'orange', 'mirror', 'oni'];
+const ALL = ['yellow', 'green', 'purple', 'orange', 'mirror', 'oni', 'elixir'];
 type Pair = ReturnType<typeof makePair>;
 /** Walk P0 onto the oldest armed card (parity guarantees both sides agree on positions) and stay there. */
 const walker = (k: Pair, who = 0): Script => () => {
@@ -64,5 +64,17 @@ describe('parity: item cards and the first items (vs legacy)', () => {
       if (name === 'bombs') expect(zone, name).toBeGreaterThan(0);
       if (name === 'warp') expect(wrapped, name).toBe(1);
     }
+  });
+  it('Hourai Elixir: 5 s brewing, then 10 s immortal (a lethal blow leaves 1 HP and 30 frames of invincibility)', () => {
+    const k = makePair(['reimu', 'reimu'], 13, { items: ['green'] });
+    k.legacy.eval('P[0].fx.elx=300;P[0].hp=4'); k.s.fx[0] = 300; k.s.hp[0] = 4;
+    let immSeen = 0, saved = 0;
+    const foe: Script = f => ({ x: f < 60 ? -1 : 0, btn: [...(f > 310 ? ['shot'] : []), ...(f > 330 && f % 45 === 0 ? ['heavy'] : [])] });
+    for (let f = 1; f <= 930; f++) { // stops before the post-immortal KO: its beam angle hits the deliberate R71 deviation (friction residue)
+      k.step([() => ({}), foe], f); k.compare('elixir');
+      immSeen = Math.max(immSeen, k.legacy.eval('P[0].fx.imm>0?1:0') as number);
+      if ((k.legacy.eval('P[0].fx.imm>0&&P[0].hp===1?1:0') as number)) saved = 1;
+    }
+    expect(immSeen).toBe(1); expect(saved, 'a KO was prevented').toBe(1);
   });
 });
