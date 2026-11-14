@@ -16,7 +16,7 @@ export const NSRC = 128;
 export const PS = { idle: 0, dash: 1, dashlag: 2, dead: 3, hitstun: 4, atk: 5, spell: 6, parry: 7, parrylag: 8, parrystun: 9, eaten: 10, cocoon: 11, pray: 12, rifle: 13, bursting: 14, succeeded: 15, broken: 16 } as const;
 export type PlayerState = (typeof PS)[keyof typeof PS];
 /** Bullet flags. */
-export const BF = { heavy: 1, dead: 2, grazed: 4, breaker: 8, np: 16, frozen: 32, pierce: 64, oneshot: 128, rifle: 256, hgr: 512 } as const;
+export const BF = { heavy: 1, dead: 2, grazed: 4, breaker: 8, np: 16, frozen: 32, pierce: 64, oneshot: 128, rifle: 256, hgr: 512, fake: 1024 } as const;
 
 /** Combat state slice. Players: struct-of-arrays indexed by player id. Bullets: struct-of-arrays, compacted every frame (order preserved). */
 export const combatSchema: Schema = {

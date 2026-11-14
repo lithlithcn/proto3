@@ -45,7 +45,7 @@ export function updateBullets(w: World, s: CombatState): void {
     for (let t = 0; t < s.n; t++) {
       if (s.bflags[i]! & BF.dead) break;
       const owner = s.bowner[i]!; // live: a mirror bounce changes the owner mid-loop
-      if ((s.teams !== 0 && owner !== t && s.team[owner] === s.team[t]) || t === owner || s.state[t] === PS.dead) continue;
+      if ((s.teams !== 0 && owner !== t && s.team[owner] === s.team[t]) || t === owner || s.state[t] === PS.dead || (s.bflags[i]! & BF.fake)) continue; // `fake` = harmless decoy (Nue)
       const vx = s.bvx[i]!, vy = s.bvy[i]!; // live: a mirror bounce earlier in this loop changed them (legacy reads b.vx directly)
       const ax = s.x[t]! - bx, ay = s.y[t]! - by, mg = 82 + (fast ? Math.abs(vx) + Math.abs(vy) : 0);
       if (ax > mg || ax < -mg || ay > mg || ay < -mg) continue;
