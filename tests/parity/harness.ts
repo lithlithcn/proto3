@@ -9,8 +9,8 @@ const require_ = createRequire(import.meta.url);
 const { createLegacy } = require_('../../tools/parity/legacy.cjs') as { createLegacy(o: object): Legacy };
 
 interface LegacyInput { x?: number; y?: number; b?: Record<string, boolean> }
-interface Legacy { step(i: LegacyInput[]): void; obs(): { f: number; P: LP[]; E: { k: number; t: number; x: number; y: number; vx: number; vy: number; g: number; a: number }[]; K: { o: number; x: number; y: number; a: number; t: number; dep: number }[]; B: LB[] }; eval(c: string): unknown }
-interface LP { x: number; y: number; vx: number; vy: number; hp: number; state: string; t: number; boost: number; spirit: number; power: number; graze: number; inv: number; run: boolean; slide: number; shotCd: number; aim: number; stocks: number; kos: number; sd: number; pips: number; spit: number }
+interface Legacy { step(i: LegacyInput[]): void; obs(): { f: number; P: LP[]; C: { x: number; y: number; on: number; age: number; type: string; cp: number[] }[]; E: { k: number; t: number; x: number; y: number; vx: number; vy: number; g: number; a: number }[]; K: { o: number; x: number; y: number; a: number; t: number; dep: number }[]; B: LB[] }; eval(c: string): unknown }
+interface LP { mirror: number; giant: number; x: number; y: number; vx: number; vy: number; hp: number; state: string; t: number; boost: number; spirit: number; power: number; graze: number; inv: number; run: boolean; slide: number; shotCd: number; aim: number; stocks: number; kos: number; sd: number; pips: number; spit: number }
 interface LB { x: number; y: number; vx: number; vy: number; r: number; owner: number; dmg?: number; life: number; heavy?: number; mult?: number; dist?: number; refl: number }
 
 const BIT: Record<string, number> = { shot: BTN.shot, heavy: BTN.heavy, melee: BTN.melee, dash: BTN.dash, parry: BTN.parry, spell: BTN.spell, focus: BTN.focus, prev: BTN.prev, next: BTN.next };
@@ -21,11 +21,15 @@ export type Script = (f: number) => FrameIn;
 const q = (v: number | undefined): number => Math.max(-127, Math.min(127, Math.round((v ?? 0) * 127)));
 const STATE_NAME = Object.fromEntries(Object.entries(PS).map(([k, v]) => [v, k]));
 
-export function makePair(chars: string[], seed = 1) {
-  const legacy = createLegacy({ chars, seed });
+/** Item name → pool index of the ported items (pool order = legacy order), rainbow = Last Word card. */
+const KIND: Record<string, number> = { green: 0, mirror: 1, oni: 2, rainbow: -2 };
+export interface PairOpt { items?: string[]; maxCards?: number }
+export function makePair(chars: string[], seed = 1, opt: PairOpt = {}) {
+  const legacy = createLegacy({ chars, seed, items: !!opt.items });
+  if (opt.items) legacy.eval(`ITEMS.forEach(i=>itemOn[i.k]=${JSON.stringify(opt.items)}.includes(i.k));maxC=${opt.maxCards ?? 1}`);
   const world = new World({
     packs: [combat, touhou], seed, players: chars.length, sanitize: true, strict: true,
-    world: { players: chars.map(c => ({ char: `touhou:${c}` })) },
+    world: { players: chars.map(c => ({ char: `touhou:${c}` })), ...(opt.items ? { items: true, itemSet: opt.items.map(i => `touhou:${i}`), maxCards: opt.maxCards ?? 1 } : { items: false }) },
   });
   const s = world.slice<CombatState>('combat');
   return {
@@ -51,6 +55,9 @@ export function makePair(chars: string[], seed = 1) {
         expect(s.run[i] === 1, `${tag} f${o.f} P${i}.run`).toBe(lp.run);
       });
       o.P.forEach((lp, i) => { expect(s.kos[i], `${tag} f${o.f} P${i}.kos`).toBe(lp.kos); expect(s.sd[i], `${tag} f${o.f} P${i}.sd`).toBe(lp.sd); expect(s.pips[i], `${tag} f${o.f} P${i}.pips`).toBe(lp.pips); expect(s.spit[i], `${tag} f${o.f} P${i}.spit`).toBe(lp.spit); });
+      expect(s.ncard, `${tag} f${o.f} card count`).toBe(o.C.length);
+      o.C.forEach((lc, i) => { near(s.cx[i]!, lc.x, `C${i}.x`); near(s.cy[i]!, lc.y, `C${i}.y`); expect(s.con[i], `${tag} f${o.f} C${i}.on`).toBe(lc.on); near(s.cage[i]!, lc.age, `C${i}.age`); expect(s.ckind[i], `${tag} f${o.f} C${i}.kind`).toBe(KIND[lc.type]); lc.cp.forEach((v, q) => near(s.ccp[i * 32 + q]!, v, `C${i}.cp${q}`)); });
+      o.P.forEach((lp, i) => { expect(s.mirror[i], `${tag} f${o.f} P${i}.mirror`).toBe(lp.mirror); expect(s.giant[i], `${tag} f${o.f} P${i}.giant`).toBe(lp.giant); });
       expect(s.nent, `${tag} f${o.f} entity count`).toBe(o.E.length);
       o.E.forEach((le, i) => { expect(s.ek[i], `${tag} f${o.f} E${i}.kind`).toBe(le.k); near(s.et[i]!, le.t, `E${i}.t`); near(s.ex[i]!, le.x, `E${i}.x`); near(s.ey[i]!, le.y, `E${i}.y`); near(s.evx[i]!, le.vx, `E${i}.vx`); near(s.evy[i]!, le.vy, `E${i}.vy`); expect(s.eg[i], `${tag} f${o.f} E${i}.g`).toBe(le.g); if (le.k === 2) near(s.ea[i]!, le.a, `E${i}.a`); });
       expect(s.nkb, `${tag} f${o.f} KO beam count`).toBe(o.K.length);

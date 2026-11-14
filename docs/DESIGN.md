@@ -577,6 +577,10 @@ No other runtime network dependency is allowed without an entry here.
 | R77 | Generic entity pool (`combat/ents.ts`, `MAX_ENT` 128, per-entity per-player hit cooldown stamps `ehc`); characters own kinds (Reimu `EK_ORB/EK_BAR`) and tick them | pool full → spawn dropped; compaction keeps order; hash-checked by parity `E` compare |
 | R78 | Skill hooks: `CharacterDef.inp/skill1/skill2` run from `input.begin` (legacy outermost updP wrapper); next/prev are stripped from the input. Deviation: the lobby "switch character with prev/next in the first 120 frames" is NOT ported (belongs to the future lobby UI) | skills are edge-triggered; tests press at f≥150 |
 | R79 | Spirit slow-down (x0.5) applies only to gains before character `tick`s; tick gains (orb hits) stay whole, as in legacy (`settleSpirit` + re-snapshot in `char-tick`) | parity `orbs` test compares spirit every frame |
+| R80 | Item cards live in combat (`items/cards.ts`: spawn every ITEM_EVERY, Last Word every ULT_EVERY, capture gauge); item behaviours are content type `item` (`ItemDef.give`, ordered by `order` = legacy list index, so the card draw matches). Cards share the single legacy RNG stream with spells (`spRand`) | adding an item = one file in `packs/touhou/items/` + its `order`; parity test restricts the pool via `world.itemSet` |
+| R81 | Legacy bullet loop reads `b.vx/b.vy` live after a mirror bounce (collision margin and swept distance use the NEW velocity); port does the same, owner is re-read per target | parity `mirror-giant` |
+| R82 | Ownerless entities (`owner -1`, e.g. healing orbs, kind >= 100 reserved for items) survive every player's death | heal orbs compared as legacy `ORBS` |
+| R83 | Not yet ported (listed in INVENTORY): item `dowse` card placement (Nazrin), `itemOn.rainbow` toggle, card load sound/UI, test/training item mode | |
 | R66 | Stun-repeat reduction is a wrapper around `hit` that records the hit even when the victim is invulnerable and the hit is rejected | `hit()` computes it before the invulnerability return |
 
 ## 26. Owner decisions log

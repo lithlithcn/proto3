@@ -3,7 +3,8 @@ import { type World, atan2, clamp, cos, hypot, sin, PI } from '@kernel';
 import { TAU } from '../tuning';
 import { graze } from '../player/graze';
 import { lightHit } from '../player/damage';
-import { kB } from '../stats';
+import { bodyR, coreR, kB } from '../stats';
+import { mirrorRef } from './mirror';
 import { heavyClash, heavyContact } from './heavy';
 import { T } from '../tuning';
 import { PS, BF, type CombatState } from '../state';
@@ -37,19 +38,22 @@ export function updateBullets(w: World, s: CombatState): void {
     s.blife[i] = s.blife[i]! - k;
     const bx = s.bx[i]!, by = s.by[i]!;
     if (s.blife[i]! <= 0 || bx < -20 || by < -20 || bx > s.mapW + 20 || by > s.mapH + 20) { s.bflags[i] = s.bflags[i]! | BF.dead; continue; }
-    const vx = s.bvx[i]!, vy = s.bvy[i]!, fast = vx * vx + vy * vy > 144, owner = s.bowner[i]!;
+    const fast = s.bvx[i]! * s.bvx[i]! + s.bvy[i]! * s.bvy[i]! > 144;
     for (let t = 0; t < s.n; t++) {
       if (s.bflags[i]! & BF.dead) break;
+      const owner = s.bowner[i]!; // live: a mirror bounce changes the owner mid-loop
       if ((s.teams !== 0 && owner !== t && s.team[owner] === s.team[t]) || t === owner || s.state[t] === PS.dead) continue;
+      const vx = s.bvx[i]!, vy = s.bvy[i]!; // live: a mirror bounce earlier in this loop changed them (legacy reads b.vx directly)
       const ax = s.x[t]! - bx, ay = s.y[t]! - by, mg = 82 + (fast ? Math.abs(vx) + Math.abs(vy) : 0);
       if (ax > mg || ax < -mg || ay > mg || ay < -mg) continue;
       const d = fast ? segD(s.x[t]!, s.y[t]!, bx - vx, by - vy, bx, by) : hypot(ax, ay);
       if (d > 80) continue;
       if (s.bflags[i]! & BF.heavy) { heavyContact(w, s, i, t, d); continue; }
       const r = s.br[i]!;
+      if (s.mirror[t]! > 0 && d < bodyR(s, t) + r) { mirrorRef(s, i, t); continue; }
       if (s.state[t] === PS.parry && d < T.PARRY_R) { s.bflags[i] = s.bflags[i]! | BF.dead; continue; }
       if (!(s.bflags[i]! & BF.grazed) && d < r + T.GRAZE_R) { s.bflags[i] = s.bflags[i]! | BF.grazed; graze(w, s, t, bx, by, 1); }
-      if (s.state[t] !== PS.dash && s.inv[t]! <= 0 && d < r * 0.68 + T.CORE_R) { s.bflags[i] = s.bflags[i]! | BF.dead; lightHit(w, s, t, owner, s.bdmg[i]!); }
+      if (s.state[t] !== PS.dash && s.inv[t]! <= 0 && d < r * 0.68 + coreR(s, t)) { s.bflags[i] = s.bflags[i]! | BF.dead; lightHit(w, s, t, owner, s.bdmg[i]!); }
     }
   }
   heavyClash(s);

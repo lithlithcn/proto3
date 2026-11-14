@@ -14,6 +14,7 @@ export function updIdle(c: PCtx): void {
   if (s.run[p] && (il < 0.3 || focus || !held(c, BTN.dash))) s.run[p] = 0;
   let sp = focus ? T.FOCUS_SPEED : s.run[p] ? T.RUN_SPEED : T.SPEED;
   if (held(c, BTN.shot)) sp *= 0.8;
+  if (s.giant[p]! > 0) sp *= 0.9;
   sp *= speedMul(w, s, p);
   if (s.slide[p]! > 0) { // glide: momentum kept, still steerable
     s.slide[p] = s.slide[p]! - 1;

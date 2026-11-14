@@ -1,3 +1,4 @@
+import { bodyR } from './stats';
 import { BTN, type World, atan2, clamp, cos, hypot, sin } from '@kernel';
 import { MAX_KB, PS, type CombatState } from './state';
 import { SRC } from './moves';
@@ -22,7 +23,7 @@ function fire(w: World, s: CombatState, x: number, y: number, a: number, o: numb
   for (let q = 0; q < s.n; q++) {
     if (q === o || s.state[q] === PS.dead || s.inv[q]! > 0 || (s.teams && s.team[q] === s.team[o])) continue;
     const rx = s.x[q]! - x, ry = s.y[q]! - y, d = rx * c + ry * sn, e = Math.abs(ry * c - rx * sn);
-    if (d > 0 && e < 70 + T.BODY_R) hits.push({ q, d });
+    if (d > 0 && e < 70 + bodyR(s, q)) hits.push({ q, d });
   }
   for (let i = 1; i < hits.length; i++) { const h = hits[i]!; let j = i - 1; while (j >= 0 && hits[j]!.d > h.d) { hits[j + 1] = hits[j]!; j--; } hits[j + 1] = h; } // stable insertion sort by distance
   for (const { q, d } of hits) {

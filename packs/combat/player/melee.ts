@@ -3,6 +3,7 @@ import { type PCtx, held, pr } from '../input';
 import { MV, MV_NAMES, SRC, type MoveDef } from '../moves';
 import { T, TAU } from '../tuning';
 import { PS, type CombatState } from '../state';
+import { bodyR } from '../stats';
 import { doDash, glide } from './dash';
 import { fireHeavy } from './heavy';
 import { rel, startAtk } from './atkstart';
@@ -48,7 +49,7 @@ export function updAtk(c: PCtx): void {
 function strike(w: World, s: CombatState, p: number, o: number, m: MoveDef): void {
   if (s.state[o] === PS.dead || s.inv[o]! > 0) return;
   const dx = s.x[o]! - s.x[p]!, dy = s.y[o]! - s.y[p]!, d = hypot(dx, dy) || 1;
-  if (d > m.range + T.BODY_R) return;
+  if (d > m.range * (s.giant[p]! > 0 ? 1.6 : 1) + bodyR(s, o)) return;
   const da = Math.abs(((atan2(dy, dx) - s.atkA[p]!) % TAU + TAU * 1.5) % TAU - 3.141592653589793);
   if (da > m.arc / 2 && d > T.BODY_R * 2) return;
   const name = MV_NAMES[s.mvId[p]!]!;
@@ -67,7 +68,7 @@ function strike(w: World, s: CombatState, p: number, o: number, m: MoveDef): voi
     parryFx(w, s, o);
     return;
   }
-  const mult = 1 + s.charge[p]! / (m.charge || 1) * 0.7;
+  const mult = (1 + s.charge[p]! / (m.charge || 1) * 0.7) * (s.giant[p]! > 0 ? 1.5 : 1);
   s.mHit[p] = 1;
   hit(w, s, o, p, dx, dy, m, SRC_OF[name]!, mult, name !== 'jab', true);
   if (m.multi) { s.hitDone[p] = 0; s.nextHit[p] = s.t[p]! + (m.every ?? 1); }

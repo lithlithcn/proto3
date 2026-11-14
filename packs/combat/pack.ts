@@ -2,7 +2,8 @@ import { cos, definePack, sin, PI } from '@kernel';
 import { combatSchema, MAXP, PS, type CombatState } from './state';
 import { MAP_LARGE, T, TAU } from './tuning';
 import { systems } from './systems';
-import { characters, spellPool } from './api';
+import { characters, itemPool, spellPool } from './api';
+import type { ItemDef } from './items/def';
 
 /** World config read by this pack (DESIGN §20.2): `players: [{char, team?, cpu?}]`, `map?: {w,h,edge}`, `tempo?`, `stocks?`, `teams?`. */
 interface PlayerCfg { char: string; team?: number; cpu?: boolean }
@@ -10,9 +11,9 @@ interface PlayerCfg { char: string; team?: number; cpu?: boolean }
 export default definePack({
   id: 'combat',
   version: '0.1.0',
-  contentTypes: ['character', 'spell'],
+  contentTypes: ['character', 'spell', 'item'],
   events: [
-    'combat:graze', 'combat:power-up', 'combat:hit-light', 'combat:ko:before', 'combat:ko', 'combat:respawn', 'combat:spell-ready',
+    'combat:graze', 'combat:item', 'combat:card-spawn', 'combat:power-up', 'combat:hit-light', 'combat:ko:before', 'combat:ko', 'combat:respawn', 'combat:spell-ready',
     'combat:dash', 'combat:glide', 'combat:wall-kick', 'combat:hit', 'combat:wall-pip', 'combat:tech', 'combat:wall-bounce', 'combat:cancel', 'combat:parry', 'combat:shield-break', 'combat:clash', 'combat:grab', 'combat:reflect', 'combat:heavy', 'combat:kobeam-fire', 'combat:kobeam-reflect', 'combat:kobeam-cancel', 'combat:wall-push', 'combat:spell', 'combat:spell-break', 'combat:spell-capture', 'combat:spell-refused', 'combat:spell-chip', 'combat:skill-cooldown', 'combat:ent-spawn',
   ],
   state: combatSchema,
@@ -21,7 +22,8 @@ export default definePack({
     const s = w.slice<CombatState>('combat'), cfg = w.cfg.world ?? {}, ps = (cfg['players'] as PlayerCfg[] | undefined) ?? [];
     const map = { ...MAP_LARGE, ...((cfg['map'] as object | undefined) ?? {}) };
     const n = Math.min(MAXP, ps.length || w.players), chars = characters(w);
-    s.spSeed = (w.cfg.seed ?? 1) | 0; s.n = n; s.mapW = map.w; s.mapH = map.h; s.edge = map.edge; s.tempo = (cfg['tempo'] as number | undefined) ?? 10; s.teams = cfg['teams'] ? 1 : 0;
+    s.spSeed = (w.cfg.seed ?? 1) | 0; s.itemsOn = cfg['items'] === false ? 0 : 1; s.maxC = (cfg['maxCards'] as number | undefined) ?? 1;
+    { const on = cfg['itemSet'] as string[] | undefined, ids = w.registry.list<ItemDef>('item'); itemPool(w).forEach((d, i) => { s.itemOn[i] = on ? (on.includes(ids.find(e => e[1] === d)![0]) ? 1 : 0) : 1; }); } s.n = n; s.mapW = map.w; s.mapH = map.h; s.edge = map.edge; s.tempo = (cfg['tempo'] as number | undefined) ?? 10; s.teams = cfg['teams'] ? 1 : 0;
     const stocks = (cfg['stocks'] as number | undefined) ?? T.STOCKS;
     const pool = spellPool(w);
     for (let i = 0; i < n; i++) {

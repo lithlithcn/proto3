@@ -1,5 +1,6 @@
-import type { World } from '@kernel';
+import { sortBy, type World } from '@kernel';
 import type { CharacterDef, SpellDef } from './character';
+import type { ItemDef } from './items/def';
 import type { CombatState } from './state';
 
 export { T, TAU, MAP_LARGE } from './tuning';
@@ -12,6 +13,8 @@ export type { PCtx } from './input';
 export type { MoveDef, MeleeName, HitData } from './moves';
 export { MOVES, SRC } from './moves';
 export { addEnt, entsOf } from './ents';
+export type { ItemDef, ItemCtx } from './items/def';
+export { giveItem } from './items/cards';
 export { hit } from './player/hit';
 export { parryFx } from './player/parry';
 export { foe } from './target';
@@ -31,6 +34,13 @@ const pools = new WeakMap<World, SpellDef[]>();
 export function spellPool(w: World): SpellDef[] {
   let l = pools.get(w);
   if (!l) { l = [...w.registry.list<SpellDef>('spell').map(e => e[1]), ...characters(w).flatMap(c => (c[1].spell ? [c[1].spell] : []))]; pools.set(w, l); }
+  return l;
+}
+/** Items in legacy list order (`order`), the index every card/`lastIt` refers to. */
+const itemPools = new WeakMap<World, ItemDef[]>();
+export function itemPool(w: World): ItemDef[] {
+  let l = itemPools.get(w);
+  if (!l) { l = sortBy(w.registry.list<ItemDef>('item').map(e => e[1]), d => d.order, d => d.order); itemPools.set(w, l); }
   return l;
 }
 export const charOf = (w: World, s: CombatState, p: number): CharacterDef => characters(w)[s.charIdx[p]!]![1];

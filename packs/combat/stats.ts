@@ -1,6 +1,7 @@
 import { pow, type World } from '@kernel';
 import { charOf } from './api';
 import { PS, type CombatState } from './state';
+import { T } from './tuning';
 
 /**
  * Stat pipeline (DESIGN §4.4). Today: character multipliers only. Statuses (items, spells, rules) plug in here as modifiers,
@@ -18,6 +19,9 @@ export function damageMul(w: World, s: CombatState, victim: number, attacker: nu
   if (attacker >= 0 && s.pStk[attacker]! > 0 && (s.state[attacker] === PS.atk || !heavy)) d *= pow(1.3, s.pStk[attacker]!);
   return d;
 }
+/** Body / core collision radii (legacy bodyR / coreR): the Oni giant is twice as wide and an easier target. */
+export const bodyR = (s: CombatState, p: number): number => (s.giant[p]! > 0 ? T.BODY_R * 2 : T.BODY_R);
+export const coreR = (s: CombatState, p: number): number => (s.giant[p]! > 0 ? T.CORE_R * 2.5 : T.CORE_R);
 /** Tempo coefficients (legacy kP / kB / kS at the default tempo 10 → 1). kS scales hit-stun. */
 export const kP = (s: CombatState): number => 0.6 + 0.04 * s.tempo;
 export const kB = (s: CombatState): number => 0.5 + 0.05 * s.tempo;
