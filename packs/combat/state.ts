@@ -1,0 +1,40 @@
+import { type Schema, f64, f64s, i32, i32s } from '@kernel';
+
+export const MAXP = 32;
+export const MAX_B = 900;
+export const NBTN = 10;
+/** Player states (legacy strings → ints). */
+export const PS = { idle: 0, dash: 1, dashlag: 2, dead: 3, hitstun: 4, atk: 5, spell: 6, parry: 7, parrylag: 8, parrystun: 9, eaten: 10, cocoon: 11, pray: 12, rifle: 13, bursting: 14, succeeded: 15, broken: 16 } as const;
+export type PlayerState = (typeof PS)[keyof typeof PS];
+/** Bullet flags. */
+export const BF = { heavy: 1, dead: 2, grazed: 4 } as const;
+
+/** Combat state slice. Players: struct-of-arrays indexed by player id. Bullets: struct-of-arrays, compacted every frame (order preserved). */
+export const combatSchema: Schema = {
+  // match scalars
+  gf: i32(), n: i32(), nb: i32(), tempo: f64(10), mapW: f64(2000), mapH: f64(1350), edge: f64(140),
+  teams: i32(), winner: i32(-1), winT: i32(), hitstop: f64(), slow: i32(), skip: i32(),
+  // players (f64)
+  x: f64s(MAXP), y: f64s(MAXP), vx: f64s(MAXP), vy: f64s(MAXP), hp: f64s(MAXP), boost: f64s(MAXP), spirit: f64s(MAXP), power: f64s(MAXP), burst: f64s(MAXP),
+  aim: f64s(MAXP), shotCd: f64s(MAXP), dashCd: f64s(MAXP), slide: f64s(MAXP), inv: f64s(MAXP), flash: f64s(MAXP), t: f64s(MAXP), noSteer: f64s(MAXP),
+  spP: f64s(MAXP), graze: f64s(MAXP), gStreak: f64s(MAXP), gLast: f64s(MAXP), techBuf: f64s(MAXP), comboT: f64s(MAXP),
+  dmgDealt: f64s(MAXP), dmgTaken: f64s(MAXP), bigHit: f64s(MAXP), lastHitF: f64s(MAXP),
+  // players (i32)
+  state: i32s(MAXP), stocks: i32s(MAXP), run: i32s(MAXP), focus: i32s(MAXP), kicked: i32s(MAXP), spReady: i32s(MAXP), charIdx: i32s(MAXP), team: i32s(MAXP),
+  cpu: i32s(MAXP), pips: i32s(MAXP), tgt: i32s(MAXP), prevB: i32s(MAXP), lastHit: i32s(MAXP), pStk: i32s(MAXP), outAt: i32s(MAXP), bufF: i32s(MAXP * NBTN),
+  // bullets
+  bx: f64s(MAX_B), by: f64s(MAX_B), bvx: f64s(MAX_B), bvy: f64s(MAX_B), br: f64s(MAX_B), bdmg: f64s(MAX_B), blife: f64s(MAX_B), bhome: f64s(MAX_B), bdist: f64s(MAX_B), bmult: f64s(MAX_B),
+  bowner: i32s(MAX_B), bflags: i32s(MAX_B), bcol: i32s(MAX_B),
+};
+
+export interface CombatState {
+  gf: number; n: number; nb: number; tempo: number; mapW: number; mapH: number; edge: number; teams: number; winner: number; winT: number; hitstop: number; slow: number; skip: number;
+  x: Float64Array; y: Float64Array; vx: Float64Array; vy: Float64Array; hp: Float64Array; boost: Float64Array; spirit: Float64Array; power: Float64Array; burst: Float64Array;
+  aim: Float64Array; shotCd: Float64Array; dashCd: Float64Array; slide: Float64Array; inv: Float64Array; flash: Float64Array; t: Float64Array; noSteer: Float64Array;
+  spP: Float64Array; graze: Float64Array; gStreak: Float64Array; gLast: Float64Array; techBuf: Float64Array; comboT: Float64Array;
+  dmgDealt: Float64Array; dmgTaken: Float64Array; bigHit: Float64Array; lastHitF: Float64Array;
+  state: Int32Array; stocks: Int32Array; run: Int32Array; focus: Int32Array; kicked: Int32Array; spReady: Int32Array; charIdx: Int32Array; team: Int32Array;
+  cpu: Int32Array; pips: Int32Array; tgt: Int32Array; prevB: Int32Array; lastHit: Int32Array; pStk: Int32Array; outAt: Int32Array; bufF: Int32Array;
+  bx: Float64Array; by: Float64Array; bvx: Float64Array; bvy: Float64Array; br: Float64Array; bdmg: Float64Array; blife: Float64Array; bhome: Float64Array; bdist: Float64Array; bmult: Float64Array;
+  bowner: Int32Array; bflags: Int32Array; bcol: Int32Array;
+}

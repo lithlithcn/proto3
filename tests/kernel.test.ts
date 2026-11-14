@@ -53,7 +53,7 @@ describe('events', () => {
         { id: 'a-apply', event: 't:a', phase: 'apply', run: () => { log.push('a-apply'); } },
         { id: 'b-apply', event: 't:b', phase: 'apply', run: () => { log.push('b-apply'); } },
       ],
-      systems: [{ id: 's', phase: 'sim', run: w => { if (w.frame === 0) w.emit('t:a', 0); if (w.frame === 1) w.emit('t:a', 1); } }],
+      systems: [{ id: 's', phase: 'sim', run: w => { if (w.frame === 1) w.emit('t:a', 0); if (w.frame === 2) w.emit('t:a', 1); } }],
     });
     const w = new World({ packs: [p], seed: 1, players: 1, strict: true });
     w.step(newInput(1)); expect(log).toEqual(['a-before', 'a-before-end', 'a-apply', 'b-apply']);

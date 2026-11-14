@@ -11,6 +11,8 @@ export interface WorldConfig {
   loadOrder?: readonly string[];
   seed: number;
   players: number;
+  /** World config (DESIGN §20.2): everything that defines the match besides inputs (characters, map, rules). Plain JSON; first record of a replay. */
+  world?: Record<string, unknown>;
   /** Trap non-deterministic APIs during step (dev / lab / tests). */
   sanitize?: boolean;
   /** Rethrow hook/system errors instead of isolating them (tests). */
@@ -136,6 +138,7 @@ export class World {
   // ---- stepping ----
   step(input: InputFrame): void {
     this.cur = input;
+    this.k['frame'] = this.frame + 1; // frame = 1-based number of the step being executed (same convention as the legacy game)
     const run = (): void => {
       this.emit('frame', { frame: this.frame });
       const off = this.k['sysOff'] as Int32Array;
@@ -148,7 +151,6 @@ export class World {
     if (this.cfg.sanitize) withSanitizer(run); else run();
     const prev = this.k['prevBtn'] as Int32Array;
     for (let p = 0; p < this.players; p++) prev[p] = this.cur[p * 3 + 2]!;
-    this.k['frame'] = this.frame + 1;
   }
 
   // ---- snapshot / hash / diff (generated from schemas) ----

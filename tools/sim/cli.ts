@@ -20,7 +20,7 @@ if (cmd === 'run' && args[0]) {
   const frames = +(args[0] ?? 600), seed = +(args[1] ?? 1);
   let s = 7; const r = (): number => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
   const inputs = Array.from({ length: frames }, () => { const i = newInput(2); for (let p = 0; p < 2; p++) setInput(i, p, Math.round((r() - 0.5) * 254), Math.round((r() - 0.5) * 254), Math.floor(r() * 1024)); return i; });
-  const rep = record({ seed, players: 2, packs, loadOrder: [] }, inputs, { sanitize: true });
+  const rep = record({ seed, players: 2, packs, loadOrder: [], world: {} }, inputs, { sanitize: true });
   writeFileSync('demo-replay.json', JSON.stringify(rep));
   console.log(`wrote demo-replay.json  final hash ${rep.hashes.at(-1)![1].toString(16)}`);
 } else if (cmd === 'bisect' && args[0] && args[1]) {

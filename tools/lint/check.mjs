@@ -44,7 +44,9 @@ for (const f of files) {
       const packDir = join(root, 'packs', parts[1]) + '/';
       if (!target.startsWith(packDir)) errors.push(`${rel}: relative import escapes its pack (${m[1]}) — import '@kernel' or '@pack/<dep>'`);
     }
-    const reqs = [...(text.match(/requires:\s*\[([^\]]*)\]/)?.[1] ?? '').matchAll(/['"]([^'"@]+)/g)].map(x => x[1]);
+    let manifest = '';
+    try { manifest = readFileSync(join(root, 'packs', parts[1], 'pack.ts'), 'utf8'); } catch { /* no manifest: reported elsewhere */ }
+    const reqs = [...(manifest.match(/requires:\s*\[([^\]]*)\]/)?.[1] ?? '').matchAll(/['"]([^'"@]+)/g)].map(x => x[1]);
     for (const m of text.matchAll(/from ['"]@pack\/([^/'"]+)/g)) if (m[1] !== parts[1] && !reqs.includes(m[1])) errors.push(`${rel}: imports pack '${m[1]}' without listing it in requires`);
   }
   const isSim = (inKernel || inPack) && !isTest && !parts.some(p => NON_SIM_DIRS.has(p)) && !/loop\.ts$|sanitizer\.ts$/.test(rel);

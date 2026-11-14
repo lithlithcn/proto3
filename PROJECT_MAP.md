@@ -13,6 +13,12 @@
 | change replay / bug-report format | `src/kernel/replay.ts` |
 | add a sim rule check (banned API, boundaries, file size) | `tools/lint/check.mjs` |
 | run / compare replays headless | `tools/sim/cli.ts` (`pnpm sim …`) |
+| change movement / dash / glide / walls | `packs/combat/player/{idle,dash,physics}.ts` |
+| change a balance constant | `packs/combat/tuning.ts` (parity-tested against legacy) |
+| change bullets (spawn, move, graze, damage) | `packs/combat/bullets/`, `packs/combat/player/{graze,damage}.ts` |
+| change KO / respawn | `packs/combat/player/{ko,respawn}.ts` |
+| add or change a character | `packs/touhou/characters/<id>/` (+ `CharacterDef` in `packs/combat/character.ts`) |
+| compare with the old game | `tests/parity/` + `tools/parity/legacy.cjs` |
 | see how a pack looks | `packs/sandbox/pack.ts` (demo only) |
 | boot the game in the browser | `src/main.ts`, `src/packs.ts` (auto-discovers `packs/*/pack.ts`) |
 | CI / deploy | `.github/workflows/ci.yml` |

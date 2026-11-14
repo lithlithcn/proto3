@@ -15,5 +15,8 @@ All mutable state is in `world.state[<pack id>]` slices described by schemas; `s
 ## Failure containment
 A throwing hook/system is disabled from that frame on (flag stored in state, so rollback and every client agree) and reported in `world.reports`; `strict` rethrows (tests). With `sanitize`, non-deterministic APIs throw inside a step.
 
+## Parity harness
+`tools/parity/legacy.cjs` runs the frozen legacy game headless (VM + stubs) with injected inputs; `tests/parity/harness.ts` steps a legacy game and a Proto3 world with the same inputs and compares observables every frame (tolerance 1e-6). Scenarios are short and isolate one mechanic.
+
 ## Not built yet (see DESIGN)
-Bullet storage, spatial grid, statuses/stat pipeline, commands, history service, time scale, worlds/flows, UI screens, renderer, audio, online (rollback driver), lab, dev-tools, mods loader, i18n.
+Spatial grid, full statuses/stat pipeline, commands, history service, worlds/flows, UI screens, renderer, audio, online (rollback driver), lab, dev-tools, mods loader, i18n. Combat status: `packs/combat/README.md`.
