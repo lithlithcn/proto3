@@ -6,6 +6,11 @@ import { ko } from './ko';
 
 /** Wall contact (legacy `wall`). ax: 0 = x axis, 1 = y axis. */
 function wall(w: World, s: CombatState, p: number, ax: number): void {
+  if (s.spit[p] === 2) { // pushed to the edge by a parried KO beam: costs a wall pip, then free
+    if (s.beamPip[p]) { s.beamPip[p] = 0; s.pips[p] = Math.max(0, s.pips[p]! - 1); w.emit('combat:wall-pip', { p, pips: s.pips[p]! }); }
+    s.spit[p] = 0; s.state[p] = PS.idle; s.t[p] = 0; if (ax) s.vy[p] = 0; else s.vx[p] = 0;
+    w.emit('combat:wall-push', { p, x: s.x[p]!, y: s.y[p]! }); return;
+  }
   const v = ax ? s.vy : s.vx;
   if (s.state[p] === PS.dash) { // wall kick: one per dash, bounce with momentum, half charge back
     if (s.kicked[p]) { v[p] = 0; return; }

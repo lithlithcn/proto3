@@ -36,7 +36,7 @@ function createLegacy(opts = {}) {
     /** Read a JSON-able expression, e.g. get('P[0].x'). */
     get(expr) { return JSON.parse(R(`JSON.stringify(${expr})`)); },
     /** Snapshot of the observables used by parity tests. */
-    obs() { return JSON.parse(R(`JSON.stringify({f:frame,P:P.map(p=>({x:p.x,y:p.y,vx:p.vx,vy:p.vy,hp:p.hp,state:p.state,t:p.t,boost:p.boost,spirit:p.spirit,power:p.power,graze:p.graze,inv:p.inv,run:p.run,slide:p.slide,shotCd:p.shotCd,aim:p.aim,stocks:p.stocks})),B:B.map(b=>({x:b.x,y:b.y,vx:b.vx,vy:b.vy,r:b.r,owner:b.owner,dmg:b.dmg,heavy:b.heavy,life:b.life,mult:b.mult,dist:b.dist,refl:b.refl||0}))})`)); },
+    obs() { return JSON.parse(R(`JSON.stringify({f:frame,P:P.map(p=>({x:p.x,y:p.y,vx:p.vx,vy:p.vy,hp:p.hp,state:p.state,t:p.t,boost:p.boost,spirit:p.spirit,power:p.power,graze:p.graze,inv:p.inv,run:p.run,slide:p.slide,shotCd:p.shotCd,aim:p.aim,stocks:p.stocks,kos:p.kos||0,sd:p.sd||0,pips:p.pips,spit:p.spit||0})),K:KOB.map(k=>({o:k.o,x:k.x,y:k.y,a:k.a,t:k.t,dep:k.dep||0})),B:B.map(b=>({x:b.x,y:b.y,vx:b.vx,vy:b.vy,r:b.r,owner:b.owner,dmg:b.dmg,heavy:b.heavy,life:b.life,mult:b.mult,dist:b.dist,refl:b.refl||0}))})`)); },
   };
 }
 module.exports = { createLegacy };

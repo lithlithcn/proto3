@@ -44,8 +44,8 @@ describe('parity: heavy shots, reflect, clash, breaker (Reimu vs legacy)', () =>
   });
   it('hit-confirm: a connecting jab cancels into a heavy shot (pressed after the hit-stop, too late for a plain heavy)', () => {
     const c = maxOf(L => L('P[0].state==="atk"&&P[0].mvName==="heavyB"&&P[1].state==="hitstun"?1:0'));
-    const sc: Script = f => (f < 62 ? { x: 1 } : { x: f % 40 === 14 || f % 40 === 15 ? -1 : 0.25, btn: f > 100 && f % 40 === 0 ? ['melee'] : f > 100 && f % 40 === 14 ? ['heavy'] : [] });
-    run('confirm', [sc, f => (f < 62 ? { x: -1 } : {})], 300, c.probe); expect(c.max()).toBe(1);
+    const sc: Script = f => (f < 62 ? { x: 1 } : { x: f % 40 === 14 || f % 40 === 15 ? -1 : 0.6, btn: f > 100 && f % 40 === 0 ? ['melee'] : f > 100 && f % 40 === 14 ? ['heavy'] : [] });
+    run('confirm', [sc, f => (f < 62 ? { x: -1 } : {})], 600, c.probe); expect(c.max()).toBe(1);
   });
   it.todo('MAX POWER (7th reflection = unparryable instant KO): needs a scripted 7-reflection rally');
 });

@@ -19,5 +19,4 @@ describe('parity: light shot, bullets, graze, damage (Reimu vs legacy)', () => {
     k.run('ko', [hold(0, 0, 'shot'), hold(0, 0)], 2540);
     expect(k.legacy.obs().P[1]!.stocks, 'scenario must include a KO').toBeLessThan(3);
   });
-  it.todo('KO beam: aim, fire, damage via hit() — needs the hit/hitstun system (next batch)');
 });

@@ -14,7 +14,7 @@ export const T = {
   PIPS: 3, WALL_MIN: 3.5, EDGE_DMG: 0.04, SDI: 1.2, MAX_B: 900,
   /** The spell gauge fills at half speed: per-step gains below SPIRIT_BIG are halved; large fills (items, spells) stay whole. */
   SPIRIT_SLOW: 0.5, SPIRIT_BIG: 25,
-  LIGHT_CD: 6, LIGHT_CD_F: 4, COMBO_WIN: 8, KO_T: 130,
+  LIGHT_CD: 6, LIGHT_CD_F: 4, COMBO_WIN: 8, KO_T: 130, BEAM_PARRY: 16,
   /** Hit system: hit-stop base, directional-influence max turn, stun decay per combo hit, knockback growth with lost HP, spirit cost of a move cancel. */
   HITSTOP: 4, DI_MAX: 0.35, STUN_DECAY: 0.82, KB_SCALE: 1.3, CANCEL_COST: 25, DASH_PARRY: 1,
   /** Guard gauge: a whiffed parry costs GUARD_WHIFF; at 0 the guard crushes (stun GUARD_CRUSH_STUN, gauge back to GUARD_RESET); regen per frame outside parry. */

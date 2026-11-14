@@ -7,7 +7,7 @@ import { ko } from './ko';
 /** Hit-stun tick (legacy case 'hitstun'): launch velocity decays, then back to idle with the combo reset. */
 export function updHitstun(c: PCtx): void {
   const { s, p } = c;
-  s.vx[p] = s.vx[p]! * 0.93; s.vy[p] = s.vy[p]! * 0.93;
+  if (!s.spit[p]) { s.vx[p] = s.vx[p]! * 0.93; s.vy[p] = s.vy[p]! * 0.93; } else { s.t[p] = Math.max(s.t[p]!, 2); s.inv[p] = Math.max(s.inv[p]!, 2); } // thrown to the wall: no decay, can't be hit
   s.t[p] = s.t[p]! - 1;
   if (s.t[p]! <= 0) { s.state[p] = PS.idle; s.combo[p] = 0; }
 }
