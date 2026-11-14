@@ -30,7 +30,7 @@ export function begin(w: World, s: CombatState, p: number): PCtx {
   if (!s.cpu[p] && s.state[p] !== PS.dead) { // human heavy = charge on hold, fires on release (legacy wrapper; R68)
     const held = (b & BTN.heavy) !== 0, was = s.hHeld[p] !== 0, hb = p * NBTN + HEAVY_BIT;
     s.hHeld[p] = held ? 1 : 0;
-    if (held && !was && !(b & BTN.parry)) { s.hch[p] = s.gf; b &= ~BTN.heavy; s.bufF[hb] = 0; }
+    if (held && !was && !(b & BTN.parry) && s.rifle[p]! <= 0) { s.hch[p] = s.gf; b &= ~BTN.heavy; s.bufF[hb] = 0; }
     else if (held && s.hch[p]! > 0) { b &= ~BTN.heavy; s.bufF[hb] = 0; }
     else if (!held && s.hch[p]! > 0) {
       const k = s.gf - s.hch[p]!; s.hch[p] = 0;

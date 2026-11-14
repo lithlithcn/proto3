@@ -7,6 +7,9 @@ import { MV } from '../moves';
 import { doDash, glide } from './dash';
 import { rel, startAtk } from './atkstart';
 import { startParry } from './parry';
+import { snap, startRifle } from '../items/rifle';
+import { SPARK } from '../items/spark';
+import { CLONE, cloneAim, clonePos } from '../items/clone';
 
 /** Idle locomotion + actions (legacy updP after the state switch). */
 export function updIdle(c: PCtx): void {
@@ -14,6 +17,7 @@ export function updIdle(c: PCtx): void {
   if (s.run[p] && (il < 0.3 || focus || !held(c, BTN.dash))) s.run[p] = 0;
   let sp = focus ? T.FOCUS_SPEED : s.run[p] ? T.RUN_SPEED : T.SPEED;
   if (held(c, BTN.shot)) sp *= 0.8;
+  if (s.spk[p]! > 0 && s.spk[p]! < SPARK.fire) sp *= 0.4;
   if (s.giant[p]! > 0) sp *= 0.9;
   sp *= speedMul(w, s, p);
   if (s.slide[p]! > 0) { // glide: momentum kept, still steerable
@@ -35,8 +39,12 @@ export function updIdle(c: PCtx): void {
     return;
   }
   if (pr(c, BTN.melee)) { startAtk(s, p, focus ? MV.strong : rel(c) === 'F' ? MV.lunge : MV.jab); return; }
-  if (pr(c, BTN.heavy)) { const r = rel(c); startAtk(s, p, r === 'F' ? MV.heavyF : r === 'B' ? MV.heavyB : MV.heavyN); return; }
-  if (held(c, BTN.shot) && s.shotCd[p]! <= 0) fireLight(c, focus);
+  if (pr(c, BTN.heavy)) {
+    if (s.rifle[p]! > 0) { startRifle(s, p); return; }
+    if (s.cam[p]! > 0) { snap(s, p); return; }
+    const r = rel(c); startAtk(s, p, r === 'F' ? MV.heavyF : r === 'B' ? MV.heavyB : MV.heavyN); return;
+  }
+  if (held(c, BTN.shot) && s.shotCd[p]! <= 0 && !(s.spk[p]! > 0 && s.spk[p]! < SPARK.fire)) fireLight(c, focus);
 }
 
 /** Light shot (legacy fireLight): cooldown then the character's pattern at the current power level. */
@@ -44,4 +52,10 @@ function fireLight(c: PCtx, focus: boolean): void {
   const { w, s, p } = c, ch = charOf(w, s, p);
   s.shotCd[p] = Math.round(ch.cd * (focus ? 0.75 : 1));
   ch.shot({ w, s, p, a: s.aim[p]!, focus, pm: powerMul(s, p, 0), lv: s.power[p]! | 0 });
+  if (s.clone[p]! > 0) { // the Doppelganger fires the same pattern from its own spot (legacy cloneOf): the shooter is moved there for the call
+    const [x, y] = clonePos(s, p), ox = s.x[p]!, oy = s.y[p]!, oa = s.aim[p]!, a = cloneAim(s, p);
+    s.x[p] = x; s.y[p] = y; s.aim[p] = a;
+    ch.shot({ w, s, p, a, focus, pm: powerMul(s, p, 0) * CLONE.shotMul, lv: s.power[p]! | 0 });
+    s.x[p] = ox; s.y[p] = oy; s.aim[p] = oa;
+  }
 }

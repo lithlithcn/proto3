@@ -9,8 +9,8 @@ const require_ = createRequire(import.meta.url);
 const { createLegacy } = require_('../../tools/parity/legacy.cjs') as { createLegacy(o: object): Legacy };
 
 interface LegacyInput { x?: number; y?: number; b?: Record<string, boolean> }
-interface Legacy { step(i: LegacyInput[]): void; obs(): { f: number; P: LP[]; C: { x: number; y: number; on: number; age: number; type: string; cp: number[] }[]; E: { k: number; t: number; x: number; y: number; vx: number; vy: number; g: number; a: number }[]; K: { o: number; x: number; y: number; a: number; t: number; dep: number }[]; B: LB[] }; eval(c: string): unknown }
-interface LP { elx: number; imm: number; mirror: number; giant: number; x: number; y: number; vx: number; vy: number; hp: number; state: string; t: number; boost: number; spirit: number; power: number; graze: number; inv: number; run: boolean; slide: number; shotCd: number; aim: number; stocks: number; kos: number; sd: number; pips: number; spit: number }
+interface Legacy { step(i: LegacyInput[]): void; obs(): { f: number; ts: number; P: LP[]; C: { x: number; y: number; on: number; age: number; type: string; cp: number[] }[]; E: { k: number; t: number; x: number; y: number; vx: number; vy: number; g: number; a: number; w?: number; r?: number }[]; K: { o: number; x: number; y: number; a: number; t: number; dep: number }[]; B: LB[] }; eval(c: string): unknown }
+interface LP { rifle: number; cam: number; clone: number; cHP: number; spk: number; elx: number; imm: number; mirror: number; giant: number; x: number; y: number; vx: number; vy: number; hp: number; state: string; t: number; boost: number; spirit: number; power: number; graze: number; inv: number; run: boolean; slide: number; shotCd: number; aim: number; stocks: number; kos: number; sd: number; pips: number; spit: number }
 interface LB { x: number; y: number; vx: number; vy: number; r: number; owner: number; dmg?: number; life: number; fz: number; heavy?: number; mult?: number; dist?: number; refl: number }
 
 const BIT: Record<string, number> = { shot: BTN.shot, heavy: BTN.heavy, melee: BTN.melee, dash: BTN.dash, parry: BTN.parry, spell: BTN.spell, focus: BTN.focus, prev: BTN.prev, next: BTN.next };
@@ -22,7 +22,11 @@ const q = (v: number | undefined): number => Math.max(-127, Math.min(127, Math.r
 const STATE_NAME = Object.fromEntries(Object.entries(PS).map(([k, v]) => [v, k]));
 
 /** Item name → pool index of the ported items (pool order = legacy order), rainbow = Last Word card. */
-const KIND: Record<string, number> = { yellow: 0, green: 1, purple: 2, orange: 3, mirror: 4, gap: 5, freeze: 6, oni: 7, elixir: 8, bumpers: 9, rainbow: -2 };
+/** Item name → pool index: the ported items sorted by `order` (= legacy list order); the Last Word card is -2. */
+function kindMap(world: World): Record<string, number> {
+  const l = world.registry.list<{ order: number }>('item').map(([id, d]) => [id.replace('touhou:', ''), d.order] as const).sort((a, b) => a[1] - b[1]);
+  return { rainbow: -2, ...Object.fromEntries(l.map(([n], i) => [n, i])) };
+}
 export interface PairOpt { items?: string[]; maxCards?: number }
 export function makePair(chars: string[], seed = 1, opt: PairOpt = {}) {
   const legacy = createLegacy({ chars, seed, items: !!opt.items });
@@ -31,9 +35,9 @@ export function makePair(chars: string[], seed = 1, opt: PairOpt = {}) {
     packs: [combat, touhou], seed, players: chars.length, sanitize: true, strict: true,
     world: { players: chars.map(c => ({ char: `touhou:${c}` })), ...(opt.items ? { items: true, itemSet: opt.items.map(i => `touhou:${i}`), maxCards: opt.maxCards ?? 1 } : { items: false }) },
   });
-  const s = world.slice<CombatState>('combat');
+  const s = world.slice<CombatState>('combat'), KIND = kindMap(world);
   return {
-    legacy, world, s,
+    legacy, world, s, kind: (name: string): number => KIND[name]!,
     /** Advance both with the same input scripts; returns nothing, use `compare()`. */
     step(scripts: Script[], f: number): void {
       const frames = scripts.map(sc => sc(f));
@@ -57,10 +61,11 @@ export function makePair(chars: string[], seed = 1, opt: PairOpt = {}) {
       o.P.forEach((lp, i) => { expect(s.kos[i], `${tag} f${o.f} P${i}.kos`).toBe(lp.kos); expect(s.sd[i], `${tag} f${o.f} P${i}.sd`).toBe(lp.sd); expect(s.pips[i], `${tag} f${o.f} P${i}.pips`).toBe(lp.pips); expect(s.spit[i], `${tag} f${o.f} P${i}.spit`).toBe(lp.spit); });
       expect(s.ncard, `${tag} f${o.f} card count`).toBe(o.C.length);
       o.C.forEach((lc, i) => { near(s.cx[i]!, lc.x, `C${i}.x`); near(s.cy[i]!, lc.y, `C${i}.y`); expect(s.con[i], `${tag} f${o.f} C${i}.on`).toBe(lc.on); near(s.cage[i]!, lc.age, `C${i}.age`); expect(s.ckind[i], `${tag} f${o.f} C${i}.kind`).toBe(KIND[lc.type]); lc.cp.forEach((v, q) => near(s.ccp[i * 32 + q]!, v, `C${i}.cp${q}`)); });
-      o.P.forEach((lp, i) => { expect(s.fx[i * 128], `${tag} f${o.f} P${i}.elx`).toBe(lp.elx); expect(s.fx[i * 128 + 1], `${tag} f${o.f} P${i}.imm`).toBe(lp.imm); expect(s.mirror[i], `${tag} f${o.f} P${i}.mirror`).toBe(lp.mirror); expect(s.giant[i], `${tag} f${o.f} P${i}.giant`).toBe(lp.giant); });
+      o.P.forEach((lp, i) => { expect(s.fx[i * 128], `${tag} f${o.f} P${i}.elx`).toBe(lp.elx); expect(s.fx[i * 128 + 1], `${tag} f${o.f} P${i}.imm`).toBe(lp.imm); expect(s.mirror[i], `${tag} f${o.f} P${i}.mirror`).toBe(lp.mirror); expect(s.giant[i], `${tag} f${o.f} P${i}.giant`).toBe(lp.giant); for (const k of ['rifle', 'cam', 'clone', 'spk'] as const) expect(s[k][i], `${tag} f${o.f} P${i}.${k}`).toBe(lp[k]); near(s.cloneHP[i]!, lp.cHP, `P${i}.cloneHP`); });
+      expect(s.tstop, `${tag} f${o.f} time stop`).toBe(o.ts);
       expect(s.nent, `${tag} f${o.f} entity count`).toBe(o.E.length);
       const idx = [...Array(s.nent).keys()].sort((a, b) => s.ek[a]! - s.ek[b]! || a - b); // legacy keeps one list per kind
-      o.E.forEach((le, i) => { const j = idx[i]!; expect(s.ek[j], `${tag} f${o.f} E${i}.kind`).toBe(le.k); near(s.et[j]!, le.t, `E${i}.t`); near(s.ex[j]!, le.x, `E${i}.x`); near(s.ey[j]!, le.y, `E${i}.y`); near(s.evx[j]!, le.vx, `E${i}.vx`); near(s.evy[j]!, le.vy, `E${i}.vy`); expect(s.eg[j], `${tag} f${o.f} E${i}.g`).toBe(le.g); if (le.k === 2) near(s.ea[j]!, le.a, `E${i}.a`); });
+      o.E.forEach((le, i) => { const j = idx[i]!; expect(s.ek[j], `${tag} f${o.f} E${i}.kind`).toBe(le.k); near(s.et[j]!, le.t, `E${i}.t`); near(s.ex[j]!, le.x, `E${i}.x`); near(s.ey[j]!, le.y, `E${i}.y`); near(s.evx[j]!, le.vx, `E${i}.vx`); near(s.evy[j]!, le.vy, `E${i}.vy`); expect(s.eg[j], `${tag} f${o.f} E${i}.g`).toBe(le.g); if (le.k === 2) near(s.ea[j]!, le.a, `E${i}.a`); if (le.k === 104) { near(s.ew[j]!, le.w!, `E${i}.hp`); near(s.er[j]!, le.r!, `E${i}.loot`); } });
       expect(s.nkb, `${tag} f${o.f} KO beam count`).toBe(o.K.length);
       o.K.forEach((lk, i) => { expect(s.kbO[i], `${tag} f${o.f} K${i}.o`).toBe(lk.o); near(s.kbX[i]!, lk.x, `K${i}.x`); near(s.kbY[i]!, lk.y, `K${i}.y`); near(s.kbA[i]!, lk.a, `K${i}.a`); near(s.kbT[i]!, lk.t, `K${i}.t`); expect(s.kbDep[i], `${tag} f${o.f} K${i}.dep`).toBe(lk.dep); });
       expect(s.nb, `${tag} f${o.f} bullet count`).toBe(o.B.length);

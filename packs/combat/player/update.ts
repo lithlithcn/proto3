@@ -6,6 +6,7 @@ import { updDash, updDashLag } from './dash';
 import { updHitstun } from './hitstun';
 import { updIdle } from './idle';
 import { updAtk } from './melee';
+import { updRifle } from '../items/rifle';
 import { updParry, updParrylag, updParrystun } from './parry';
 import { startAtk } from './atkstart';
 import { breakerBullet } from '../bullets/spawn';
@@ -61,6 +62,7 @@ function step(w: World, s: CombatState, p: number): void {
   if (spellInput(c, pr(c, BTN.spell))) return;
   switch (s.state[p]) {
     case PS.spell: updSpell(c); return;
+    case PS.rifle: updRifle(c); return;
     case PS.dash: updDash(c); return;
     case PS.dashlag: updDashLag(c); return;
     case PS.hitstun: updHitstun(c); return;

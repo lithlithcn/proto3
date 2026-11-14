@@ -79,9 +79,8 @@ describe('parity: item cards and the first items (vs legacy)', () => {
     expect(immSeen).toBe(1); expect(saved, 'a KO was prevented').toBe(1);
   });
   it('Black Hole, Bumpers, Perfect Freeze (given directly, with a foe shooting): pull + swallow, bounce + launch, freeze + shatter x2', () => {
-    const kinds: [string, number][] = [['gap', 5], ['bumpers', 9], ['freeze', 6]];
-    for (const [name, kind] of kinds) {
-      const k = makePair(['reimu', 'reimu'], 21, { items: ['green'] });
+    for (const name of ['gap', 'bumpers', 'freeze']) {
+      const k = makePair(['reimu', 'reimu'], 21, { items: ['green'] }), kind = k.kind(name);
       const foe: Script = f => ({ x: f < 40 ? -1 : f < 200 ? Math.sin(f / 25) : 0, btn: ['shot', ...(f % 70 === 0 ? ['heavy'] : [])] });
       const me: Script = f => ({ x: f < 150 ? 0.4 : 0, y: Math.sin(f / 40) * 0.3 });
       let cnt = 0, fz = 0;

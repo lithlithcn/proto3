@@ -16,7 +16,7 @@ export const NSRC = 128;
 export const PS = { idle: 0, dash: 1, dashlag: 2, dead: 3, hitstun: 4, atk: 5, spell: 6, parry: 7, parrylag: 8, parrystun: 9, eaten: 10, cocoon: 11, pray: 12, rifle: 13, bursting: 14, succeeded: 15, broken: 16 } as const;
 export type PlayerState = (typeof PS)[keyof typeof PS];
 /** Bullet flags. */
-export const BF = { heavy: 1, dead: 2, grazed: 4, breaker: 8, np: 16, frozen: 32 } as const;
+export const BF = { heavy: 1, dead: 2, grazed: 4, breaker: 8, np: 16, frozen: 32, pierce: 64, oneshot: 128, rifle: 256 } as const;
 
 /** Combat state slice. Players: struct-of-arrays indexed by player id. Bullets: struct-of-arrays, compacted every frame (order preserved). */
 export const combatSchema: Schema = {
@@ -45,6 +45,8 @@ export const combatSchema: Schema = {
   itemT: i32(), ultT: i32(), maxC: i32(1), itemsOn: i32(1), ncard: i32(), cx: f64s(MAX_CARD), cy: f64s(MAX_CARD), ckind: i32s(MAX_CARD), con: i32s(MAX_CARD), cage: i32s(MAX_CARD), ccont: i32s(MAX_CARD), ccp: f64s(MAX_CARD * MAXP), itemOn: i32s(MAX_ITEMS),
   fx: i32s(MAXP * MAX_FX), frz: i32(), frzO: i32(), frzqN: i32(), frzqF: f64(), frzqO: i32(), hCD: f64s(MAXP), uCD: f64s(MAXP),
   mirror: i32s(MAXP), giant: i32s(MAXP), lastIt: i32s(MAXP), blade: i32s(MAXP), bombs: i32s(MAXP), bombN: i32s(MAXP), bA: f64s(MAXP), bCD: f64s(MAXP * MAXP), warp: i32(),
+  // base items: rifle shots left, camera snaps left, clone (timer + hp), Master Spark (timer, aim, hit cooldown), The World (charge timer + holder, time stop timer + holder)
+  rifle: i32s(MAXP), cam: i32s(MAXP), clone: i32s(MAXP), spk: i32s(MAXP), cloneHP: f64s(MAXP), spkA: f64s(MAXP), sCD: f64s(MAXP), zawT: i32(), zawO: i32(), tstop: i32(), tso: i32(-1),
   // KO beams
   nkb: i32(), kbO: i32s(MAX_KB), kbPP: i32s(MAX_KB), kbDep: i32s(MAX_KB), kbX: f64s(MAX_KB), kbY: f64s(MAX_KB), kbA: f64s(MAX_KB), kbT: f64s(MAX_KB), kbTT: f64s(MAX_KB),
   // bullets
@@ -71,6 +73,7 @@ export interface CombatState {
   itemT: number; ultT: number; maxC: number; itemsOn: number; ncard: number; cx: Float64Array; cy: Float64Array; ckind: Int32Array; con: Int32Array; cage: Int32Array; ccont: Int32Array; ccp: Float64Array; itemOn: Int32Array;
   fx: Int32Array; frz: number; frzO: number; frzqN: number; frzqF: number; frzqO: number; hCD: Float64Array; uCD: Float64Array;
   mirror: Int32Array; giant: Int32Array; lastIt: Int32Array; blade: Int32Array; bombs: Int32Array; bombN: Int32Array; bA: Float64Array; bCD: Float64Array; warp: number;
+  rifle: Int32Array; cam: Int32Array; clone: Int32Array; spk: Int32Array; cloneHP: Float64Array; spkA: Float64Array; sCD: Float64Array; zawT: number; zawO: number; tstop: number; tso: number;
   nkb: number; kbO: Int32Array; kbPP: Int32Array; kbDep: Int32Array; kbX: Float64Array; kbY: Float64Array; kbA: Float64Array; kbT: Float64Array; kbTT: Float64Array;
   bx: Float64Array; by: Float64Array; bvx: Float64Array; bvy: Float64Array; br: Float64Array; bdmg: Float64Array; blife: Float64Array; bhome: Float64Array; bdist: Float64Array; bmult: Float64Array;
   bowner: Int32Array; bflags: Int32Array; bcol: Int32Array; brefl: Int32Array; bmv: Int32Array; bkb: Float64Array; bstun: Float64Array; barm: Float64Array; bspl: Float64Array;

@@ -7,6 +7,7 @@ import { bodyR, coreR, kB } from '../stats';
 import { mirrorRef } from './mirror';
 import { heavyClash, heavyContact } from './heavy';
 import { T } from '../tuning';
+import { EK_FAIRY, hitFairy } from '../items/fairy';
 import { PS, BF, type CombatState } from '../state';
 
 /** Distance from point (px,py) to segment a→b (legacy segD). */
@@ -21,6 +22,8 @@ function segD(px: number, py: number, ax: number, ay: number, bx: number, by: nu
  */
 export function updateBullets(w: World, s: CombatState): void {
   const k = kB(s), nb = s.nb;
+  let nf = 0;
+  for (let e = 0; e < s.nent; e++) if (s.ek[e] === EK_FAIRY) nf++;
   for (let i = 0; i < nb; i++) {
     if (s.bflags[i]! & (BF.dead | BF.frozen)) continue; // frozen bullets hang in the air (Perfect Freeze)
     const home = s.bhome[i]!;
@@ -55,6 +58,7 @@ export function updateBullets(w: World, s: CombatState): void {
       if (!(s.bflags[i]! & BF.grazed) && d < r + T.GRAZE_R) { s.bflags[i] = s.bflags[i]! | BF.grazed; graze(w, s, t, bx, by, 1); }
       if (s.state[t] !== PS.dash && s.inv[t]! <= 0 && d < r * 0.68 + coreR(s, t)) { s.bflags[i] = s.bflags[i]! | BF.dead; lightHit(w, s, t, owner, s.bdmg[i]!); }
     }
+    if (nf && !(s.bflags[i]! & BF.dead) && hitFairy(s, i)) s.bflags[i] = s.bflags[i]! | BF.dead;
   }
   heavyClash(s);
   // compact in order; zero the freed tail so identical live states hash identically

@@ -1,4 +1,5 @@
 import { type World, hypot } from '@kernel';
+import { resetItems } from '../items/reset';
 import { clearFx } from '../fx';
 import { T } from '../tuning';
 import { PS, type CombatState } from '../state';
@@ -14,6 +15,6 @@ export function respawn(w: World, s: CombatState, p: number): void {
     if (d > bd) { bd = d; bx = cx; by = cy; }
   }
   s.x[p] = bx; s.y[p] = by; s.vx[p] = 0; s.vy[p] = 0; s.hp[p] = T.HP; s.pips[p] = T.PIPS; s.state[p] = PS.idle; s.inv[p] = T.RESPAWN_INV;
-  s.boost[p] = T.DASH_CHARGES; s.slide[p] = 0; s.run[p] = 0; s.power[p] = 1; s.combo[p] = 0; s.charging[p] = 0; s.pStk[p] = 0; s.ult[p] = 0; s.mirror[p] = 0; s.giant[p] = 0; clearFx(s, p); s.blade[p] = 0; s.bombs[p] = 0;
+  s.boost[p] = T.DASH_CHARGES; s.slide[p] = 0; s.run[p] = 0; s.power[p] = 1; s.combo[p] = 0; s.charging[p] = 0; s.pStk[p] = 0; resetItems(s, p); clearFx(s, p);
   w.emit('combat:respawn', { p, x: bx, y: by });
 }

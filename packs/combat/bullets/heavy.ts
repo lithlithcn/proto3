@@ -15,6 +15,7 @@ function reflect(w: World, s: CombatState, i: number, t: number): void {
   s.bmult[i] = s.bmult[i]! * 1.3;
   s.bowner[i] = t; s.bvx[i] = cos(a) * sp; s.bvy[i] = sin(a) * sp; s.bdist[i] = s.barm[i]!; s.blife[i] = 200; s.bflags[i] = s.bflags[i]! & ~BF.grazed;
   s.bhome[i] = Math.max(s.bhome[i]!, 0.03); s.brefl[i] = s.brefl[i]! + 1;
+  if (s.bflags[i]! & BF.rifle) s.bflags[i] = s.bflags[i]! | BF.oneshot; // a returned rifle bolt kills its shooter
   s.state[t] = PS.idle; s.inv[t] = 10;
   parryFx(w, s, t, s.brefl[i]!);
   if (s.brefl[i]! >= 7) s.bflags[i] = s.bflags[i]! | BF.np;
@@ -31,6 +32,7 @@ export function heavyContact(w: World, s: CombatState, i: number, t: number, d: 
   if (armed && s.inv[t]! <= 0 && d < r * 0.82 + coreR(s, t)) {
     s.bflags[i] = f | BF.dead;
     const n = s.brefl[i]!;
+    if (f & BF.oneshot) s.hp[t] = 0;
     if (n >= 7) { s.hp[t] = 0; s.kbx[t] = s.bvx[i]!; s.kby[t] = s.bvy[i]!; ko(w, s, t, 'max-power'); }
     else hit(w, s, t, owner, s.bvx[i]!, s.bvy[i]!, { dmg: s.bdmg[i]!, kb: s.bkb[i]! * (1 + 0.35 * n), stun: s.bstun[i]! * (1 + 0.1 * n) }, n ? -1 : s.bmv[i]!, s.bmult[i]!, true);
   } else if (!(f & BF.grazed) && armed && d < r + T.GRAZE_R) { s.bflags[i] = f | BF.grazed; graze(w, s, t, s.bx[i]!, s.by[i]!, 2); }
@@ -47,6 +49,7 @@ export function heavyClash(s: CombatState): void {
       const k = H[b]!;
       if ((s.bflags[k]! & BF.dead) || s.bowner[k] === s.bowner[h]) continue;
       if (hypot(s.bx[h]! - s.bx[k]!, s.by[h]! - s.by[k]!) < s.br[h]! + s.br[k]!) {
+        if ((s.bflags[h]! | s.bflags[k]!) & BF.pierce) { const v = s.bflags[h]! & BF.pierce ? k : h; s.bflags[v] = s.bflags[v]! | BF.dead; if (s.bflags[h]! & BF.dead) break; continue; } // the rifle pierces
         if (s.brefl[h]! && !s.brefl[k]!) s.bflags[k] = s.bflags[k]! | BF.dead;
         else if (s.brefl[k]! && !s.brefl[h]!) s.bflags[h] = s.bflags[h]! | BF.dead;
         else { s.bflags[h] = s.bflags[h]! | BF.dead; s.bflags[k] = s.bflags[k]! | BF.dead; }
