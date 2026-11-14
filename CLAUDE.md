@@ -2,7 +2,7 @@
 
 Owner: Houcine (HKN), French-speaking; reply in French, code/docs in English. Minimise token usage; hyper-optimised files; no AI-generated assets (code only); no religious content or pentagrams; never weaken flashiness; mobile must be fully usable by touch; Effects OFF must be epilepsy-safe. Do not attach files already pushed to GitHub.
 
-**Porting freedom (owner's rule):** if something in the legacy code is problematic or can't be ported as-is, do NOT replicate it — recode a better solution (document it in DESIGN §25 as a deliberate deviation, keep the parity test meaningful).
+**Porting freedom (owner's rule):** if something in the legacy code is problematic or can't be ported as-is, do NOT replicate it — recode a better solution, and optimise/improve the legacy logic whenever possible (document it in DESIGN §25 as a deliberate deviation, keep the parity test meaningful).
 
 ## Read first
 1. `PROJECT_MAP.md` — "to change X, open Y".

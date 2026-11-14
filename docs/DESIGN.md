@@ -581,6 +581,9 @@ No other runtime network dependency is allowed without an entry here.
 | R81 | Legacy bullet loop reads `b.vx/b.vy` live after a mirror bounce (collision margin and swept distance use the NEW velocity); port does the same, owner is re-read per target | parity `mirror-giant` |
 | R82 | Ownerless entities (`owner -1`, e.g. healing orbs, kind >= 100 reserved for items) survive every player's death | heal orbs compared as legacy `ORBS` |
 | R83 | Not yet ported (listed in INVENTORY): item `dowse` card placement (Nazrin), `itemOn.rainbow` toggle, card load sound/UI, test/training item mode | |
+| R84 | Deviation: a hit empties the victim's capture gauge on EVERY card (legacy: only `CARDS[0]`, an accident of the global `item`). Parity tests use one card at a time | `cards` test (maxCards 1) |
+| R85 | Hit-source ids for the stun-repeat reduction are explicit (`ISRC` 16-63 items, 64+ characters, `NSRC` 128) instead of legacy move-object identity: every move that should repeat-reduce needs a unique id | new moves/items must claim an id |
+| R86 | Dropped dead code: legacy `elixir` (`p.star`: invincible burn) is shadowed by `GIVE.elixir` (status `fx.elx`, port with the statuses batch); the `inEdge` helper is now one shared function that honours Warp | |
 | R66 | Stun-repeat reduction is a wrapper around `hit` that records the hit even when the victim is invulnerable and the hit is rejected | `hit()` computes it before the invulnerability return |
 
 ## 26. Owner decisions log

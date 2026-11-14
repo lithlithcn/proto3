@@ -12,9 +12,9 @@ import { breakerBullet } from '../bullets/spawn';
 import { MV } from '../moves';
 import { ko } from './ko';
 import { respawn } from './respawn';
+import { inEdge } from '../stats';
 import { spellInput, startSpell, updSpell } from './spell';
 
-const inEdge = (s: CombatState, p: number): boolean => s.x[p]! < s.edge || s.y[p]! < s.edge || s.x[p]! > s.mapW - s.edge || s.y[p]! > s.mapH - s.edge;
 
 /**
  * One player's frame (legacy `updP` + the "action start empties the buffer" wrapper): starting any non-idle action, or

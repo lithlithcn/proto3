@@ -35,7 +35,7 @@ const bullets: SystemDef = { id: 'bullets', phase: 'sim', after: ['physics'], ru
 /** Character hooks (legacy `tick`): after the whole step, only on frames where time advances. */
 const charTick: SystemDef = { id: 'char-tick', phase: 'sim', after: ['input-buffer'], run(w) { const s = combatOf(w); if (s.skip) return; settleSpirit(s); for (let p = 0; p < s.n; p++) if (s.state[p] !== PS.dead) charOf(w, s, p).tick?.(w, s, p); for (let p = 0; p < s.n; p++) s.spP[p] = s.spirit[p]!; } };
 const items: SystemDef = { id: 'items', phase: 'sim', after: ['bullets'], run(w) { const s = combatOf(w); if (!s.skip) updateCards(w, s); } };
-const itemWorld: SystemDef = { id: 'item-world', phase: 'sim', after: ['ko-beam'], run(w) { const s = combatOf(w); if (!s.skip) updateItemWorld(s); } };
+const itemWorld: SystemDef = { id: 'item-world', phase: 'sim', after: ['ko-beam'], run(w) { const s = combatOf(w); if (!s.skip) updateItemWorld(w, s); } };
 const beams: SystemDef = { id: 'ko-beam', phase: 'sim', after: ['items'], run(w) { const s = combatOf(w); if (!s.skip) updateBeams(w, s); } };
 const ents: SystemDef = { id: 'entities', phase: 'sim', after: ['item-world'], run(w) { const s = combatOf(w); if (!s.skip) updateEnts(s); } };
 const buffer: SystemDef = { id: 'input-buffer', phase: 'sim', after: ['entities'], run(w) { const s = combatOf(w); if (!s.skip) bufferInputs(w, s); } };

@@ -22,6 +22,8 @@ export function damageMul(w: World, s: CombatState, victim: number, attacker: nu
 /** Body / core collision radii (legacy bodyR / coreR): the Oni giant is twice as wide and an easier target. */
 export const bodyR = (s: CombatState, p: number): number => (s.giant[p]! > 0 ? T.BODY_R * 2 : T.BODY_R);
 export const coreR = (s: CombatState, p: number): number => (s.giant[p]! > 0 ? T.CORE_R * 2.5 : T.CORE_R);
+/** Inside the red zone near the walls (none while the Warp item is active). One definition for damage, wall pips and heavy hits. */
+export const inEdge = (s: CombatState, p: number): boolean => s.warp <= 0 && (s.x[p]! < s.edge || s.y[p]! < s.edge || s.x[p]! > s.mapW - s.edge || s.y[p]! > s.mapH - s.edge);
 /** Tempo coefficients (legacy kP / kB / kS at the default tempo 10 → 1). kS scales hit-stun. */
 export const kP = (s: CombatState): number => 0.6 + 0.04 * s.tempo;
 export const kB = (s: CombatState): number => 0.5 + 0.05 * s.tempo;
