@@ -51,7 +51,22 @@ export function atan2(y: number, x: number): number {
 }
 export function asin(x: number): number { return atan2(x, Math.sqrt(1 - x * x)); }
 export function acos(x: number): number { return atan2(Math.sqrt(1 - x * x), x); }
-export function hypot(x: number, y: number): number { return Math.sqrt(x * x + y * y); }
+/**
+ * Hypotenuse, same algorithm as V8's Math.hypot (scale by the max, Kahan-summed squares, sqrt, rescale): only IEEE-exact ops, so it is
+ * deterministic on every engine AND bit-identical to the legacy game's Math.hypot in V8 (matters for knife-edge thresholds such as the
+ * heavy-bullet arming distance: 6 frames x speed 10 = exactly 60 in one and 59.999999999999986 in the other otherwise).
+ */
+export function hypot(x: number, y: number): number {
+  const ax = x < 0 ? -x : x, ay = y < 0 ? -y : y, max = ax > ay ? ax : ay;
+  if (max === 0 || max === Infinity) return max;
+  if (max !== max) return max;
+  let sum = 0, comp = 0;
+  for (let i = 0; i < 2; i++) {
+    const n = (i ? ay : ax) / max, summand = n * n - comp, prelim = sum + summand;
+    comp = (prelim - sum) - summand; sum = prelim;
+  }
+  return Math.sqrt(sum) * max;
+}
 
 function pow2(n: number): number { let r = 1, b = 2, k = n < 0 ? -n : n; while (k > 0) { if (k & 1) r *= b; b *= b; k >>= 1; } return n < 0 ? 1 / r : r; }
 export function exp(x: number): number {

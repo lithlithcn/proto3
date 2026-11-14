@@ -8,6 +8,7 @@ import { updIdle } from './idle';
 import { updAtk } from './melee';
 import { updParry, updParrylag, updParrystun } from './parry';
 import { startAtk } from './atkstart';
+import { breakerBullet } from '../bullets/spawn';
 import { MV } from '../moves';
 import { ko } from './ko';
 import { respawn } from './respawn';
@@ -30,6 +31,7 @@ function step(w: World, s: CombatState, p: number): void {
   const st = s.state[p];
   if (held(c, BTN.parry) && (st === PS.idle || st === PS.parry || st === PS.parrylag || st === PS.dashlag)) { // parry + melee = grab (only catches a parrying foe); parry + heavy = breaker (heavy batch)
     if (pr(c, BTN.melee)) { startAtk(s, p, MV.grab); w.emit('combat:grab', { p }); return; }
+    if (pr(c, BTN.heavy) && s.brCD[p]! < s.gf) { s.brCD[p] = s.gf + 90; s.state[p] = PS.idle; breakerBullet(s, p); return; } // breaker: shatters the shield of a parrying foe
   }
   if (s.state[p] === PS.dead) { if (s.stocks[p]! > 0) { s.t[p] = s.t[p]! - 1; if (s.t[p]! <= 0) respawn(w, s, p); } return; }
   if (pr(c, BTN.dash) || pr(c, BTN.parry)) s.techBuf[p] = 10; else if (s.techBuf[p]! > 0) s.techBuf[p] = s.techBuf[p]! - 1;

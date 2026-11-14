@@ -1,5 +1,6 @@
 import type { SystemDef } from '@kernel';
-import { combatOf } from './api';
+import { charOf, combatOf } from './api';
+import { PS } from './state';
 import { bufferInputs } from './input';
 import { updateBullets } from './bullets/update';
 import { holdFrame } from './player/hitstun';
@@ -26,5 +27,7 @@ const gate: SystemDef = {
 const players: SystemDef = { id: 'players', phase: 'sim', run(w) { const s = combatOf(w); if (s.skip) return; for (let p = 0; p < s.n; p++) updatePlayer(w, s, p); } };
 const phys: SystemDef = { id: 'physics', phase: 'sim', after: ['players'], run(w) { const s = combatOf(w); if (s.skip) return; for (let p = 0; p < s.n; p++) physics(w, s, p); } };
 const bullets: SystemDef = { id: 'bullets', phase: 'sim', after: ['physics'], run(w) { const s = combatOf(w); if (s.skip) return; updateBullets(w, s); } };
+/** Character hooks (legacy `tick`): after the whole step, only on frames where time advances. */
+const charTick: SystemDef = { id: 'char-tick', phase: 'sim', after: ['input-buffer'], run(w) { const s = combatOf(w); if (s.skip) return; for (let p = 0; p < s.n; p++) if (s.state[p] !== PS.dead) charOf(w, s, p).tick?.(w, s, p); } };
 const buffer: SystemDef = { id: 'input-buffer', phase: 'sim', after: ['bullets'], run(w) { const s = combatOf(w); if (!s.skip) bufferInputs(w, s); } };
-export const systems: SystemDef[] = [spiritBegin, gate, players, phys, bullets, buffer, spiritEnd];
+export const systems: SystemDef[] = [spiritBegin, gate, players, phys, bullets, buffer, charTick, spiritEnd];

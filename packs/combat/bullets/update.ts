@@ -3,6 +3,7 @@ import { TAU } from '../tuning';
 import { graze } from '../player/graze';
 import { lightHit } from '../player/damage';
 import { kB } from '../stats';
+import { heavyClash, heavyContact } from './heavy';
 import { T } from '../tuning';
 import { PS, BF, type CombatState } from '../state';
 
@@ -14,7 +15,7 @@ function segD(px: number, py: number, ax: number, ay: number, bx: number, by: nu
 
 /**
  * Bullet step (legacy updBullets). Order: move → expire → per-player collision (light: parry-cancel, graze, damage) → compact.
- * TODO(next batches): heavy bullets (arm distance, reflect, breaker), clash, splitting, freeze, item hooks (mirror/fake/pure), teams in damage.
+ * Heavy bullets: see heavy.ts. TODO(next batches): splitting, freeze, item hooks (mirror/fake/pure).
  */
 export function updateBullets(w: World, s: CombatState): void {
   const k = kB(s), nb = s.nb;
@@ -43,12 +44,14 @@ export function updateBullets(w: World, s: CombatState): void {
       if (ax > mg || ax < -mg || ay > mg || ay < -mg) continue;
       const d = fast ? segD(s.x[t]!, s.y[t]!, bx - vx, by - vy, bx, by) : hypot(ax, ay);
       if (d > 80) continue;
+      if (s.bflags[i]! & BF.heavy) { heavyContact(w, s, i, t, d); continue; }
       const r = s.br[i]!;
       if (s.state[t] === PS.parry && d < T.PARRY_R) { s.bflags[i] = s.bflags[i]! | BF.dead; continue; }
       if (!(s.bflags[i]! & BF.grazed) && d < r + T.GRAZE_R) { s.bflags[i] = s.bflags[i]! | BF.grazed; graze(w, s, t, bx, by, 1); }
       if (s.state[t] !== PS.dash && s.inv[t]! <= 0 && d < r * 0.68 + T.CORE_R) { s.bflags[i] = s.bflags[i]! | BF.dead; lightHit(w, s, t, owner, s.bdmg[i]!); }
     }
   }
+  heavyClash(s);
   // compact in order; zero the freed tail so identical live states hash identically
   let wi = 0;
   for (let i = 0; i < nb; i++) {
@@ -56,13 +59,13 @@ export function updateBullets(w: World, s: CombatState): void {
     if (wi !== i) {
       s.bx[wi] = s.bx[i]!; s.by[wi] = s.by[i]!; s.bvx[wi] = s.bvx[i]!; s.bvy[wi] = s.bvy[i]!; s.br[wi] = s.br[i]!; s.bdmg[wi] = s.bdmg[i]!;
       s.blife[wi] = s.blife[i]!; s.bhome[wi] = s.bhome[i]!; s.bdist[wi] = s.bdist[i]!; s.bmult[wi] = s.bmult[i]!;
-      s.bowner[wi] = s.bowner[i]!; s.bflags[wi] = s.bflags[i]!; s.bcol[wi] = s.bcol[i]!;
+      s.bowner[wi] = s.bowner[i]!; s.bflags[wi] = s.bflags[i]!; s.bcol[wi] = s.bcol[i]!; s.brefl[wi] = s.brefl[i]!; s.bmv[wi] = s.bmv[i]!; s.bkb[wi] = s.bkb[i]!; s.bstun[wi] = s.bstun[i]!; s.barm[wi] = s.barm[i]!; s.bspl[wi] = s.bspl[i]!;
     }
     wi++;
   }
   for (let i = wi; i < nb; i++) {
     s.bx[i] = 0; s.by[i] = 0; s.bvx[i] = 0; s.bvy[i] = 0; s.br[i] = 0; s.bdmg[i] = 0; s.blife[i] = 0; s.bhome[i] = 0; s.bdist[i] = 0; s.bmult[i] = 0;
-    s.bowner[i] = 0; s.bflags[i] = 0; s.bcol[i] = 0;
+    s.bowner[i] = 0; s.bflags[i] = 0; s.bcol[i] = 0; s.brefl[i] = 0; s.bmv[i] = 0; s.bkb[i] = 0; s.bstun[i] = 0; s.barm[i] = 0; s.bspl[i] = 0;
   }
   s.nb = wi;
 }

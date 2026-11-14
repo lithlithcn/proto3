@@ -14,6 +14,7 @@ export function moveOf(w: World, s: CombatState, p: number): MoveDef | null {
 /** Begin a melee move (legacy startAtk). A move started while moving fast keeps 93 % of the momentum per frame. */
 export function startAtk(s: CombatState, p: number, mv: number): void {
   s.mHit[p] = 0; s.state[p] = PS.atk; s.mvId[p] = mv; s.nextHit[p] = 0; s.t[p] = 0; s.hitDone[p] = 0; s.atkA[p] = s.aim[p]!;
+  if (mv < MV.heavyN) s.hLv[p] = 1; // legacy: non-heavy starts reset the heavy level
   s.charge[p] = 0; s.charging[p] = mv === MV.strong ? 1 : 0; s.run[p] = 0; s.carry[p] = hypot(s.vx[p]!, s.vy[p]!) > 5 ? 0.93 : 0;
 }
 

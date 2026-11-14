@@ -11,7 +11,7 @@ const { createLegacy } = require_('../../tools/parity/legacy.cjs') as { createLe
 interface LegacyInput { x?: number; y?: number; b?: Record<string, boolean> }
 interface Legacy { step(i: LegacyInput[]): void; obs(): { f: number; P: LP[]; B: LB[] }; eval(c: string): unknown }
 interface LP { x: number; y: number; vx: number; vy: number; hp: number; state: string; t: number; boost: number; spirit: number; power: number; graze: number; inv: number; run: boolean; slide: number; shotCd: number; aim: number; stocks: number }
-interface LB { x: number; y: number; vx: number; vy: number; r: number; owner: number; dmg: number; life: number }
+interface LB { x: number; y: number; vx: number; vy: number; r: number; owner: number; dmg?: number; life: number; heavy?: number; mult?: number; dist?: number; refl: number }
 
 const BIT: Record<string, number> = { shot: BTN.shot, heavy: BTN.heavy, melee: BTN.melee, dash: BTN.dash, parry: BTN.parry, spell: BTN.spell, focus: BTN.focus };
 export interface FrameIn { x?: number; y?: number; btn?: string[] }
@@ -51,7 +51,7 @@ export function makePair(chars: string[], seed = 1) {
         expect(s.run[i] === 1, `${tag} f${o.f} P${i}.run`).toBe(lp.run);
       });
       expect(s.nb, `${tag} f${o.f} bullet count`).toBe(o.B.length);
-      o.B.forEach((lb, i) => { near(s.bx[i]!, lb.x, `B${i}.x`); near(s.by[i]!, lb.y, `B${i}.y`); near(s.bvx[i]!, lb.vx, `B${i}.vx`); near(s.bvy[i]!, lb.vy, `B${i}.vy`); near(s.bdmg[i]!, lb.dmg, `B${i}.dmg`); near(s.blife[i]!, lb.life, `B${i}.life`); expect(s.bowner[i]).toBe(lb.owner); });
+      o.B.forEach((lb, i) => { near(s.bx[i]!, lb.x, `B${i}.x`); near(s.by[i]!, lb.y, `B${i}.y`); near(s.bvx[i]!, lb.vx, `B${i}.vx`); near(s.bvy[i]!, lb.vy, `B${i}.vy`); if (lb.heavy) { near(s.bmult[i]!, lb.mult!, `B${i}.mult`); near(s.bdist[i]!, lb.dist!, `B${i}.dist`); expect(s.brefl[i], `${tag} f${o.f} B${i}.refl`).toBe(lb.refl); near(s.br[i]!, lb.r, `B${i}.r`); } else near(s.bdmg[i]!, lb.dmg!, `B${i}.dmg`); near(s.blife[i]!, lb.life, `B${i}.life`); expect(s.bowner[i]).toBe(lb.owner); });
     },
     /** Run scripts for `frames` frames, comparing after every frame. */
     run(tag: string, scripts: Script[], frames: number): void { for (let f = 1; f <= frames; f++) { this.step(scripts, f); this.compare(tag); } },

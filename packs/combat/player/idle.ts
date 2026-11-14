@@ -26,7 +26,7 @@ export function updIdle(c: PCtx): void {
   }
   if (pr(c, BTN.focus) && hypot(s.vx[p]!, s.vy[p]!) > T.BRAKE_MIN) { s.vx[p] = s.vx[p]! * 0.15; s.vy[p] = s.vy[p]! * 0.15; s.slide[p] = 0; s.run[p] = 0; } // sharp brake
   if (s.shotCd[p]! > 0) s.shotCd[p] = s.shotCd[p]! - 1;
-  // TODO(heavy batch): heavy shot (returns before the light shot in the legacy order)
+  
   if (pr(c, BTN.parry)) { startParry(s, p); return; }
   if (pr(c, BTN.dash) && s.boost[p]! >= T.DASH_COST) {
     if (focus) { s.boost[p] = s.boost[p]! - T.DASH_COST; s.dashCd[p] = T.DASH_REGEN_DELAY; glide(c); }
@@ -34,6 +34,7 @@ export function updIdle(c: PCtx): void {
     return;
   }
   if (pr(c, BTN.melee)) { startAtk(s, p, focus ? MV.strong : rel(c) === 'F' ? MV.lunge : MV.jab); return; }
+  if (pr(c, BTN.heavy)) { const r = rel(c); startAtk(s, p, r === 'F' ? MV.heavyF : r === 'B' ? MV.heavyB : MV.heavyN); return; }
   if (held(c, BTN.shot) && s.shotCd[p]! <= 0) fireLight(c, focus);
 }
 

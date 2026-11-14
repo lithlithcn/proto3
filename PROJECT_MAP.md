@@ -30,3 +30,5 @@
 | design decisions | `docs/DESIGN.md`, `docs/adr/` |
 
 Everything gameplay-related will live under `packs/<id>/` (see DESIGN §2.2, §15).
+
+- Heavy shots: `packs/combat/player/heavy.ts` (fire, recoil), `packs/combat/bullets/heavy.ts` (contact, reflect, clash), charge logic in `packs/combat/input.ts`; per-char: `packs/touhou/characters/<c>/heavy.ts` + `tick.ts`.

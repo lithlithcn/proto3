@@ -10,7 +10,7 @@ Single 3.27 MB HTML, 1.24 MB script. 393 top-level functions, **69 functions wra
 - [ ] Core combat: movement ✅ focus ✅ dash/run/glide ✅ walls/wall-kick ✅ red zone ✅ graze/power/spirit ✅ light shot+bullets+homing ✅ light damage ✅ KO core ✅ respawn ✅ — still to do: parry, burst/skills, spell, hit()/hitstun/combos, KO beam
 - [ ] 17 player states and transitions
 - [ ] Shared moves: tslam, grab, heavy N/F/B, jab, lunge, strong, dashatk
-- [ ] Characters (each move = 1 parity scenario). Reimu: light shot ✅ dash teleport ✅ melee ✅ (heavy, spell, skills, passive pending) · Marisa · Flandre · Hecatia · Nue · Okina · Nazrin · Aya
+- [ ] Characters (each move = 1 parity scenario). Reimu: light shot ✅ dash teleport ✅ melee ✅ heavy F/B ✅ (heavy N orbs, spell, skills, passive pending) · Marisa · Flandre · Hecatia · Nue · Okina · Nazrin · Aya
 - [ ] 131 items, grouped in families (see generated list), ~70 statuses `fx.*`, ~68 world effects `CX.*`
 - [ ] 25 entity-logic kinds (EST) and 29 entity-draw kinds (EDR)
 - [ ] Maps: Large, Screen (fixed camera)

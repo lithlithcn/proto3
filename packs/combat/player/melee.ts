@@ -3,7 +3,9 @@ import { type PCtx, held, pr } from '../input';
 import { MV, MV_NAMES, SRC, type MoveDef } from '../moves';
 import { T, TAU } from '../tuning';
 import { PS, type CombatState } from '../state';
-import { doDash } from './dash';
+import { doDash, glide } from './dash';
+import { fireHeavy } from './heavy';
+import { rel, startAtk } from './atkstart';
 import { moveOf } from './atkstart';
 import { hit } from './hit';
 import { parryFx, shieldBreak } from './parry';
@@ -20,17 +22,26 @@ export function updAtk(c: PCtx): void {
     s.charging[p] = 0;
   }
   s.t[p] = s.t[p]! + 1;
-  const act = m.act, t = s.t[p]!, fr = m.keep || s.carry[p]! || 0.85;
-  s.vx[p] = s.vx[p]! * fr; s.vy[p] = s.vy[p]! * fr;
-  if (t === m.start && m.move) { s.vx[p] = cos(s.atkA[p]!) * m.move; s.vy[p] = sin(s.atkA[p]!) * m.move; }
-  if (t > m.start && t <= m.start + act && !s.hitDone[p] && t >= s.nextHit[p]!) for (let q = 0; q < s.n; q++) if (q !== p && !s.hitDone[p]) strike(w, s, p, q, m);
-  // cancels (heavy confirm joins with the heavy-shot batch)
-  if (s.mHit[p] && pr(c, BTN.dash) && s.boost[p]! >= T.DASH_COST) { s.mHit[p] = 0; w.emit('combat:cancel', { p, kind: 'hit' }); doDash(c); return; } // a connecting hit can be cancelled into a dash
+  const heavy = m.spd !== undefined, act = m.act, t = s.t[p]!;
+  if (heavy) { s.vx[p] = s.vx[p]! * 0.9; s.vy[p] = s.vy[p]! * 0.9; if (t === m.start) fireHeavy(c, m); }
+  else {
+    const fr = m.keep || s.carry[p]! || 0.85;
+    s.vx[p] = s.vx[p]! * fr; s.vy[p] = s.vy[p]! * fr;
+    if (t === m.start && m.move) { s.vx[p] = cos(s.atkA[p]!) * m.move; s.vy[p] = sin(s.atkA[p]!) * m.move; }
+    if (t > m.start && t <= m.start + act && !s.hitDone[p] && t >= s.nextHit[p]!) for (let q = 0; q < s.n; q++) if (q !== p && !s.hitDone[p]) strike(w, s, p, q, m);
+  }
+  if (heavy && t > m.start && pr(c, BTN.dash) && s.focus[p] && s.boost[p]! >= T.DASH_COST) { s.boost[p] = s.boost[p]! - T.DASH_COST; s.dashCd[p] = T.DASH_REGEN_DELAY; glide(c); return; } // glide out of a heavy shot
+  if (s.mHit[p] && pr(c, BTN.heavy) && !heavy && s.mvId[p] !== MV.grab) { // hit-confirm: a connecting melee cancels into a heavy shot
+    s.mHit[p] = 0; s.state[p] = PS.idle; clearBuf(s, p); w.emit('combat:cancel', { p, kind: 'confirm' });
+    startAtk(s, p, rel(c) === 'F' ? MV.heavyF : rel(c) === 'B' ? MV.heavyB : MV.heavyN);
+    return;
+  }
+  if (s.mHit[p] && pr(c, BTN.dash) && s.boost[p]! >= T.DASH_COST && !heavy) { s.mHit[p] = 0; w.emit('combat:cancel', { p, kind: 'hit' }); doDash(c); return; } // a connecting hit can be cancelled into a dash
   const t2 = s.t[p]!; // live value: a parried attacker has t = PARRY_STUN here, which ends short moves at once (legacy quirk, R67)
   if (t2 > m.start + act && pr(c, BTN.dash) && s.spirit[p]! >= T.CANCEL_COST && s.boost[p]! >= T.DASH_COST) {
     s.spirit[p] = s.spirit[p]! - T.CANCEL_COST; w.emit('combat:cancel', { p, kind: 'spirit' }); doDash(c); return;
   }
-  if (t2 >= m.start + act + Math.round(m.rec * 0.8)) s.state[p] = PS.idle;
+  if (t2 >= m.start + act + Math.round(m.rec * (heavy ? 1 : 0.8))) s.state[p] = PS.idle;
 }
 
 /** Melee contact test and resolution (legacy `melee`): grab (only catches a parrying/whiffing foe), clash, parry, hit. */

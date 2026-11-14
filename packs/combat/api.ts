@@ -3,9 +3,10 @@ import type { CharacterDef } from './character';
 import type { CombatState } from './state';
 
 export { T, TAU, MAP_LARGE } from './tuning';
+export type { CombatState } from './state';
 export * from './state';
-export type { CharacterDef, ShotCtx } from './character';
-export { lightBullet } from './bullets/spawn';
+export type { CharacterDef, ShotCtx, HeavyCtx } from './character';
+export { lightBullet, heavyBullet, customHeavy } from './bullets/spawn';
 export type { PCtx } from './input';
 export type { MoveDef, MeleeName, HitData } from './moves';
 

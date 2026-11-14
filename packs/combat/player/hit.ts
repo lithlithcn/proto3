@@ -16,7 +16,7 @@ export function hit(w: World, s: CombatState, v: number, a: number, dx: number, 
   // stun-repeat reduction (legacy wrapper around hit, runs even when the hit is then rejected): same source on the same victim
   // within the window shortens stun by 8 % per repeat (floor 40 %)
   let stun = m.stun;
-  if (a !== v && stun) {
+  if (a !== v && stun && src >= 0) {
     const k = v * NSRC + src, n = s.stN[k]! > 0 && s.gf - s.stF[k]! < T.STUN_REPEAT_WIN ? s.stN[k]! : 0;
     s.stN[k] = n + 1; s.stF[k] = s.gf;
     if (n > 0) stun = stun * Math.max(0.4, 1 - 0.08 * n);
