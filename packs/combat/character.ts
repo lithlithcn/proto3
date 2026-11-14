@@ -19,6 +19,8 @@ export interface ShotCtx { w: World; s: CombatState; p: number; a: number; focus
 /** Content type `character` (DESIGN §15). More members (heavy, melee, spell, skills, passives, cpu, visuals) are added as batches are ported. */
 export interface CharacterDef {
   name: string;
+  /** Position in the legacy roster (selects the order of the spell pool: shared cards, then each character's own). */
+  order: number;
   color: string;
   /** Movement multiplier (legacy `spd`). */
   spd: number;
@@ -33,6 +35,8 @@ export interface CharacterDef {
   heavy?: Partial<Record<'N' | 'F' | 'B', (c: HeavyCtx) => void>>;
   /** Per-frame hook, run after every system on frames where time advances (legacy character `tick`). */
   tick?(w: World, s: CombatState, p: number): void;
+  /** Entity handlers of the character (legacy `EST` kinds), run after every character `tick` (legacy chStep). */
+  ents?(w: World, s: CombatState, p: number): void;
   /** Rewrites the virtual input (stick/buttons) before anything reads it, e.g. Reimu's charge-to-throw orbs. Runs for living players only. */
   inp?(w: World, s: CombatState, p: number, v: VIn): void;
   /** Skill 1 (button `next`, legacy `special`) and skill 2 (`prev`, legacy `special2`); edge-triggered, not while casting a spell. */

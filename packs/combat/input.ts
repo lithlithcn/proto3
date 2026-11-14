@@ -23,7 +23,8 @@ export function begin(w: World, s: CombatState, p: number): PCtx {
     ch.inp?.(w, s, p, vin);
     const nx = (vin.b & BTN.next) !== 0, pv = (vin.b & BTN.prev) !== 0, en = nx && !s.skPN[p], ep = pv && !s.skPP[p];
     s.skPN[p] = nx ? 1 : 0; s.skPP[p] = pv ? 1 : 0;
-    if ((en || ep) && s.state[p] !== PS.spell) { if (ep && ch.skill2) ch.skill2(w, s, p); else ch.skill1?.(w, s, p); }
+    // legacy: during the first 2 s an idle press switches character in the lobby instead (R78: not ported, ignored)
+    if ((en || ep) && s.state[p] !== PS.spell && !(s.gf < 120 && s.state[p] === PS.idle)) { if (ep && ch.skill2) ch.skill2(w, s, p); else ch.skill1?.(w, s, p); }
     vin.b &= ~(BTN.next | BTN.prev);
   }
   let b = vin.b, prev = s.prevB[p]!;

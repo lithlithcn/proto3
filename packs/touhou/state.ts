@@ -7,5 +7,7 @@ export const touhouSchema: Schema = {
   reimuDashAt: f64s(MAXP),
   /** Reimu: orb charge counter, heavy held last frame, orbs gathered (focus) flag, gather start frame, gather lockout, re-gather cooldown frame, launch aim. */
   rC: i32s(MAXP), rHp: i32s(MAXP), rG: i32s(MAXP), rGW: i32s(MAXP), rGT: f64s(MAXP), rGC: f64s(MAXP), rA: f64s(MAXP),
+  /** Marisa: laser lockout until frame, blazing-star boost end frame, Hakkero heat, heavy held last frame. */
+  mLz: f64s(MAXP), mBS: f64s(MAXP), mH: f64s(MAXP), mHp: i32s(MAXP), mHc: f64s(MAXP),
 };
-export interface TouhouState { reimuDashAt: Float64Array; rC: Int32Array; rHp: Int32Array; rG: Int32Array; rGW: Int32Array; rGT: Float64Array; rGC: Float64Array; rA: Float64Array }
+export interface TouhouState { reimuDashAt: Float64Array; rC: Int32Array; rHp: Int32Array; rG: Int32Array; rGW: Int32Array; rGT: Float64Array; rGC: Float64Array; rA: Float64Array; mLz: Float64Array; mBS: Float64Array; mH: Float64Array; mHp: Int32Array; mHc: Float64Array }

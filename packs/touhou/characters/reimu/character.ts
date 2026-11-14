@@ -8,4 +8,4 @@ import { reimuSpell } from './spell';
 import { reimuInp } from './inp';
 import { reimuBorder } from './border';
 
-export const reimu: CharacterDef = { name: 'Reimu', color: '#ff3a4a', spd: 1, din: 1, dout: 1, cd: 7, shot: reimuShot, dash: reimuDash, melee: reimuMelee, heavy: reimuHeavy, tick: reimuTick, spell: reimuSpell, inp: reimuInp, skill2: reimuBorder };
+export const reimu: CharacterDef = { name: 'Reimu', order: 0, color: '#ff3a4a', spd: 1, din: 1, dout: 1, cd: 7, shot: reimuShot, dash: reimuDash, melee: reimuMelee, heavy: reimuHeavy, tick: reimuTick, spell: reimuSpell, inp: reimuInp, skill2: reimuBorder };

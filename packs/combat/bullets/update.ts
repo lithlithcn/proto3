@@ -11,7 +11,7 @@ import { EK_FAIRY, hitFairy } from '../items/fairy';
 import { PS, BF, type CombatState } from '../state';
 
 /** Distance from point (px,py) to segment a→b (legacy segD). */
-function segD(px: number, py: number, ax: number, ay: number, bx: number, by: number): number {
+export function segD(px: number, py: number, ax: number, ay: number, bx: number, by: number): number {
   const dx = bx - ax, dy = by - ay, l = dx * dx + dy * dy || 1, u = clamp(((px - ax) * dx + (py - ay) * dy) / l, 0, 1);
   return hypot(px - ax - u * dx, py - ay - u * dy);
 }

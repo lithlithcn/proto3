@@ -14,6 +14,8 @@ export type { PCtx } from './input';
 export type { MoveDef, MeleeName, HitData } from './moves';
 export { MOVES, SRC } from './moves';
 export { addEnt, entsOf } from './ents';
+export { fireRay, EK_RAY, RAYF, type RayOpts } from './rays';
+export { lightHit } from './player/damage';
 export type { ItemDef, ItemCtx } from './items/def';
 export { giveItem } from './items/cards';
 export { fxOn, setFx, clearFx, FXS, MAX_FX, type StatusDef } from './fx';
@@ -35,7 +37,7 @@ const pools = new WeakMap<World, SpellDef[]>();
 /** Spell pool every cast draws from: shared spells (content type `spell`, id-sorted) then each character's own, in character order. */
 export function spellPool(w: World): SpellDef[] {
   let l = pools.get(w);
-  if (!l) { l = [...w.registry.list<SpellDef>('spell').map(e => e[1]), ...characters(w).flatMap(c => (c[1].spell ? [c[1].spell] : []))]; pools.set(w, l); }
+  if (!l) { l = [...w.registry.list<SpellDef>('spell').map(e => e[1]), ...sortBy(characters(w).slice(), c => c[1].order, c => c[1].order).flatMap(c => (c[1].spell ? [c[1].spell] : []))]; pools.set(w, l); }
   return l;
 }
 /** Items in legacy list order (`order`), the index every card/`lastIt` refers to. */

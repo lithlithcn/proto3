@@ -65,7 +65,7 @@ export function makePair(chars: string[], seed = 1, opt: PairOpt = {}) {
       expect(s.tstop, `${tag} f${o.f} time stop`).toBe(o.ts);
       expect(s.nent, `${tag} f${o.f} entity count`).toBe(o.E.length);
       const idx = [...Array(s.nent).keys()].sort((a, b) => s.ek[a]! - s.ek[b]! || a - b); // legacy keeps one list per kind
-      o.E.forEach((le, i) => { const j = idx[i]!; expect(s.ek[j], `${tag} f${o.f} E${i}.kind`).toBe(le.k); near(s.et[j]!, le.t, `E${i}.t`); near(s.ex[j]!, le.x, `E${i}.x`); near(s.ey[j]!, le.y, `E${i}.y`); near(s.evx[j]!, le.vx, `E${i}.vx`); near(s.evy[j]!, le.vy, `E${i}.vy`); expect(s.eg[j], `${tag} f${o.f} E${i}.g`).toBe(le.g); if (le.k === 2) near(s.ea[j]!, le.a, `E${i}.a`); if (le.k === 104) { near(s.ew[j]!, le.w!, `E${i}.hp`); near(s.er[j]!, le.r!, `E${i}.loot`); } });
+      o.E.forEach((le, i) => { const j = idx[i]!; expect(s.ek[j], `${tag} f${o.f} E${i}.kind`).toBe(le.k); near(s.et[j]!, le.t, `E${i}.t`); near(s.ex[j]!, le.x, `E${i}.x`); near(s.ey[j]!, le.y, `E${i}.y`); near(s.evx[j]!, le.vx, `E${i}.vx`); near(s.evy[j]!, le.vy, `E${i}.vy`); expect(s.eg[j], `${tag} f${o.f} E${i}.g`).toBe(le.g); if (le.k === 2 || le.k === 10) near(s.ea[j]!, le.a, `E${i}.a`); if (le.k === 104) { near(s.ew[j]!, le.w!, `E${i}.hp`); near(s.er[j]!, le.r!, `E${i}.loot`); } });
       expect(s.nkb, `${tag} f${o.f} KO beam count`).toBe(o.K.length);
       o.K.forEach((lk, i) => { expect(s.kbO[i], `${tag} f${o.f} K${i}.o`).toBe(lk.o); near(s.kbX[i]!, lk.x, `K${i}.x`); near(s.kbY[i]!, lk.y, `K${i}.y`); near(s.kbA[i]!, lk.a, `K${i}.a`); near(s.kbT[i]!, lk.t, `K${i}.t`); expect(s.kbDep[i], `${tag} f${o.f} K${i}.dep`).toBe(lk.dep); });
       expect(s.nb, `${tag} f${o.f} bullet count`).toBe(o.B.length);
