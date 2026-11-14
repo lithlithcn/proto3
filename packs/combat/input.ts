@@ -1,4 +1,6 @@
 import { BTN, type World } from '@kernel';
+import { charOf } from './api';
+import type { VIn } from './character';
 import type { CombatState } from './state';
 import { guardGauge } from './player/parry';
 import { NBTN, PS } from './state';
@@ -8,13 +10,23 @@ export interface PCtx { w: World; s: CombatState; p: number; ix: number; iy: num
 export const ctx: PCtx = { w: null as never, s: null as never, p: 0, ix: 0, iy: 0, b: 0, edge: 0, gf: 0 };
 
 /** Buttons that act only on the press frame / are read as held (legacy NOBUF). */
+const vin: VIn = { ix: 0, iy: 0, b: 0 };
 const NOBUF = BTN.next | BTN.prev | BTN.shot | BTN.focus;
 const bit = (mask: number): number => 31 - Math.clz32(mask);
 const HEAVY_BIT = 31 - Math.clz32(BTN.heavy);
 
 /** Legacy input handling: 8-frame press buffer (3 for parry), computed once per player per frame. */
 export function begin(w: World, s: CombatState, p: number): PCtx {
-  let b = w.buttons(p), prev = s.prevB[p]!;
+  vin.ix = w.x(p) / 127; vin.iy = w.y(p) / 127; vin.b = w.buttons(p);
+  if (s.state[p] !== PS.dead) { // legacy outermost updP wrapper: character input hook, then skill buttons (edge) which are removed from the input
+    const ch = charOf(w, s, p);
+    ch.inp?.(w, s, p, vin);
+    const nx = (vin.b & BTN.next) !== 0, pv = (vin.b & BTN.prev) !== 0, en = nx && !s.skPN[p], ep = pv && !s.skPP[p];
+    s.skPN[p] = nx ? 1 : 0; s.skPP[p] = pv ? 1 : 0;
+    if ((en || ep) && s.state[p] !== PS.spell) { if (ep && ch.skill2) ch.skill2(w, s, p); else ch.skill1?.(w, s, p); }
+    vin.b &= ~(BTN.next | BTN.prev);
+  }
+  let b = vin.b, prev = s.prevB[p]!;
   if (!s.cpu[p] && s.state[p] !== PS.dead) { // human heavy = charge on hold, fires on release (legacy wrapper; R68)
     const held = (b & BTN.heavy) !== 0, was = s.hHeld[p] !== 0, hb = p * NBTN + HEAVY_BIT;
     s.hHeld[p] = held ? 1 : 0;
@@ -28,7 +40,7 @@ export function begin(w: World, s: CombatState, p: number): PCtx {
     }
   }
   const edge = b & ~prev;
-  ctx.w = w; ctx.s = s; ctx.p = p; ctx.ix = w.x(p) / 127; ctx.iy = w.y(p) / 127; ctx.b = b; ctx.edge = edge; ctx.gf = s.gf;
+  ctx.w = w; ctx.s = s; ctx.p = p; ctx.ix = vin.ix; ctx.iy = vin.iy; ctx.b = b; ctx.edge = edge; ctx.gf = s.gf;
   for (let i = 0; i < NBTN; i++) { const m = 1 << i; if (edge & m && !(NOBUF & m)) s.bufF[p * NBTN + i] = s.gf; }
   s.prevB[p] = b;
   return ctx;

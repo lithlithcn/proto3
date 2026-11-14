@@ -6,6 +6,9 @@ import type { MeleeName, MoveDef } from './moves';
 export interface HeavyCtx { w: World; s: CombatState; p: number; m: MoveDef; src: number; a: number; k: number }
 import type { CombatState } from './state';
 
+/** Virtual input of one player this frame (legacy `I`): a character's `inp` hook may rewrite it before the combat logic reads it. */
+export interface VIn { ix: number; iy: number; b: number }
+
 /** Spell card (DESIGN §15 `spell`): `fn` runs every frame of the card; `k` = frames since the cut-in ended, patterns restart every `loop` frames. */
 export interface SpellCtx { w: World; s: CombatState; p: number; o: number; k: number }
 export interface SpellDef { name: string; loop: number; fn(c: SpellCtx): void }
@@ -30,6 +33,11 @@ export interface CharacterDef {
   heavy?: Partial<Record<'N' | 'F' | 'B', (c: HeavyCtx) => void>>;
   /** Per-frame hook, run after every system on frames where time advances (legacy character `tick`). */
   tick?(w: World, s: CombatState, p: number): void;
+  /** Rewrites the virtual input (stick/buttons) before anything reads it, e.g. Reimu's charge-to-throw orbs. Runs for living players only. */
+  inp?(w: World, s: CombatState, p: number, v: VIn): void;
+  /** Skill 1 (button `next`, legacy `special`) and skill 2 (`prev`, legacy `special2`); edge-triggered, not while casting a spell. */
+  skill1?(w: World, s: CombatState, p: number): void;
+  skill2?(w: World, s: CombatState, p: number): void;
   /** The character's own spell card; joins the shared pool every cast draws from. */
   spell?: SpellDef;
   shot(c: ShotCtx): void;

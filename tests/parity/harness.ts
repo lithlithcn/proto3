@@ -9,11 +9,11 @@ const require_ = createRequire(import.meta.url);
 const { createLegacy } = require_('../../tools/parity/legacy.cjs') as { createLegacy(o: object): Legacy };
 
 interface LegacyInput { x?: number; y?: number; b?: Record<string, boolean> }
-interface Legacy { step(i: LegacyInput[]): void; obs(): { f: number; P: LP[]; K: { o: number; x: number; y: number; a: number; t: number; dep: number }[]; B: LB[] }; eval(c: string): unknown }
+interface Legacy { step(i: LegacyInput[]): void; obs(): { f: number; P: LP[]; E: { k: number; t: number; x: number; y: number; vx: number; vy: number; g: number; a: number }[]; K: { o: number; x: number; y: number; a: number; t: number; dep: number }[]; B: LB[] }; eval(c: string): unknown }
 interface LP { x: number; y: number; vx: number; vy: number; hp: number; state: string; t: number; boost: number; spirit: number; power: number; graze: number; inv: number; run: boolean; slide: number; shotCd: number; aim: number; stocks: number; kos: number; sd: number; pips: number; spit: number }
 interface LB { x: number; y: number; vx: number; vy: number; r: number; owner: number; dmg?: number; life: number; heavy?: number; mult?: number; dist?: number; refl: number }
 
-const BIT: Record<string, number> = { shot: BTN.shot, heavy: BTN.heavy, melee: BTN.melee, dash: BTN.dash, parry: BTN.parry, spell: BTN.spell, focus: BTN.focus };
+const BIT: Record<string, number> = { shot: BTN.shot, heavy: BTN.heavy, melee: BTN.melee, dash: BTN.dash, parry: BTN.parry, spell: BTN.spell, focus: BTN.focus, prev: BTN.prev, next: BTN.next };
 export interface FrameIn { x?: number; y?: number; btn?: string[] }
 /** Per-player input generator: frame number (1-based) → input. */
 export type Script = (f: number) => FrameIn;
@@ -51,6 +51,8 @@ export function makePair(chars: string[], seed = 1) {
         expect(s.run[i] === 1, `${tag} f${o.f} P${i}.run`).toBe(lp.run);
       });
       o.P.forEach((lp, i) => { expect(s.kos[i], `${tag} f${o.f} P${i}.kos`).toBe(lp.kos); expect(s.sd[i], `${tag} f${o.f} P${i}.sd`).toBe(lp.sd); expect(s.pips[i], `${tag} f${o.f} P${i}.pips`).toBe(lp.pips); expect(s.spit[i], `${tag} f${o.f} P${i}.spit`).toBe(lp.spit); });
+      expect(s.nent, `${tag} f${o.f} entity count`).toBe(o.E.length);
+      o.E.forEach((le, i) => { expect(s.ek[i], `${tag} f${o.f} E${i}.kind`).toBe(le.k); near(s.et[i]!, le.t, `E${i}.t`); near(s.ex[i]!, le.x, `E${i}.x`); near(s.ey[i]!, le.y, `E${i}.y`); near(s.evx[i]!, le.vx, `E${i}.vx`); near(s.evy[i]!, le.vy, `E${i}.vy`); expect(s.eg[i], `${tag} f${o.f} E${i}.g`).toBe(le.g); if (le.k === 2) near(s.ea[i]!, le.a, `E${i}.a`); });
       expect(s.nkb, `${tag} f${o.f} KO beam count`).toBe(o.K.length);
       o.K.forEach((lk, i) => { expect(s.kbO[i], `${tag} f${o.f} K${i}.o`).toBe(lk.o); near(s.kbX[i]!, lk.x, `K${i}.x`); near(s.kbY[i]!, lk.y, `K${i}.y`); near(s.kbA[i]!, lk.a, `K${i}.a`); near(s.kbT[i]!, lk.t, `K${i}.t`); expect(s.kbDep[i], `${tag} f${o.f} K${i}.dep`).toBe(lk.dep); });
       expect(s.nb, `${tag} f${o.f} bullet count`).toBe(o.B.length);

@@ -34,4 +34,5 @@ Everything gameplay-related will live under `packs/<id>/` (see DESIGN §2.2, §1
 - Heavy shots: `packs/combat/player/heavy.ts` (fire, recoil), `packs/combat/bullets/heavy.ts` (contact, reflect, clash), charge logic in `packs/combat/input.ts`; per-char: `packs/touhou/characters/<c>/heavy.ts` + `tick.ts`.
 - KO beam: `packs/combat/kobeam.ts` (aim/fire/reflect), winner ranking `packs/combat/rank.ts`, wall push in `player/physics.ts` (`spit`).
 - Spell cards: `packs/combat/player/spell.ts` (cast/update/end/input), card data per character in `packs/touhou/characters/<c>/spell.ts`, shared cards = content type `spell`.
+- Entities (orbs, bars…): `packs/combat/ents.ts`; Reimu's in `packs/touhou/characters/reimu/{orbs,inp,border,tick}.ts`; character hooks `inp/skill1/skill2` in `packs/combat/character.ts`.
 - Bullet patterns/behaviours: `packs/combat/bullets/pattern.ts`; per-bullet columns list `bullets/arrays.ts`; shared cards `packs/touhou/spells/NN-name.ts`.

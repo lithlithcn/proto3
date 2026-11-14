@@ -19,10 +19,11 @@ export function startAtk(s: CombatState, p: number, mv: number): void {
 }
 
 /** Stick direction relative to the aim: F = toward the foe, B = away, N = neutral (legacy rel). */
-export function rel(c: PCtx): 'F' | 'B' | 'N' {
-  const l = hypot(c.ix, c.iy);
+export function relStick(s: CombatState, p: number, ix: number, iy: number): 'F' | 'B' | 'N' {
+  const l = hypot(ix, iy);
   if (l < 0.3) return 'N';
-  const d = (c.ix * cos(c.s.aim[c.p]!) + c.iy * sin(c.s.aim[c.p]!)) / l;
+  const d = (ix * cos(s.aim[p]!) + iy * sin(s.aim[p]!)) / l;
   return d > 0.45 ? 'F' : d < -0.45 ? 'B' : 'N';
 }
+export const rel = (c: PCtx): 'F' | 'B' | 'N' => relStick(c.s, c.p, c.ix, c.iy);
 

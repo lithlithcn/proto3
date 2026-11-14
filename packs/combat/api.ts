@@ -5,12 +5,17 @@ import type { CombatState } from './state';
 export { T, TAU, MAP_LARGE } from './tuning';
 export type { CombatState } from './state';
 export * from './state';
-export type { CharacterDef, ShotCtx, HeavyCtx, SpellDef, SpellCtx } from './character';
+export type { CharacterDef, ShotCtx, HeavyCtx, SpellDef, SpellCtx, VIn } from './character';
 export { sB, hB, tgA, spRand, BK, SH, type PatOpts } from './bullets/pattern';
 export { lightBullet, heavyBullet, customHeavy, patternHeavy } from './bullets/spawn';
 export type { PCtx } from './input';
 export type { MoveDef, MeleeName, HitData } from './moves';
 export { MOVES, SRC } from './moves';
+export { addEnt, entsOf } from './ents';
+export { hit } from './player/hit';
+export { parryFx } from './player/parry';
+export { foe } from './target';
+export { relStick, moveOf } from './player/atkstart';
 
 export const combatOf = (w: World): CombatState => w.slice<CombatState>('combat');
 
