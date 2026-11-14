@@ -1,3 +1,4 @@
+import { bulletArrays, clearBullet, copyBullet } from './arrays';
 import { type World, atan2, clamp, cos, hypot, sin, PI } from '@kernel';
 import { TAU } from '../tuning';
 import { graze } from '../player/graze';
@@ -54,18 +55,12 @@ export function updateBullets(w: World, s: CombatState): void {
   heavyClash(s);
   // compact in order; zero the freed tail so identical live states hash identically
   let wi = 0;
+  const A = bulletArrays(s);
   for (let i = 0; i < nb; i++) {
     if (s.bflags[i]! & BF.dead) continue;
-    if (wi !== i) {
-      s.bx[wi] = s.bx[i]!; s.by[wi] = s.by[i]!; s.bvx[wi] = s.bvx[i]!; s.bvy[wi] = s.bvy[i]!; s.br[wi] = s.br[i]!; s.bdmg[wi] = s.bdmg[i]!;
-      s.blife[wi] = s.blife[i]!; s.bhome[wi] = s.bhome[i]!; s.bdist[wi] = s.bdist[i]!; s.bmult[wi] = s.bmult[i]!;
-      s.bowner[wi] = s.bowner[i]!; s.bflags[wi] = s.bflags[i]!; s.bcol[wi] = s.bcol[i]!; s.brefl[wi] = s.brefl[i]!; s.bmv[wi] = s.bmv[i]!; s.bkb[wi] = s.bkb[i]!; s.bstun[wi] = s.bstun[i]!; s.barm[wi] = s.barm[i]!; s.bspl[wi] = s.bspl[i]!;
-    }
+    if (wi !== i) copyBullet(A, i, wi);
     wi++;
   }
-  for (let i = wi; i < nb; i++) {
-    s.bx[i] = 0; s.by[i] = 0; s.bvx[i] = 0; s.bvy[i] = 0; s.br[i] = 0; s.bdmg[i] = 0; s.blife[i] = 0; s.bhome[i] = 0; s.bdist[i] = 0; s.bmult[i] = 0;
-    s.bowner[i] = 0; s.bflags[i] = 0; s.bcol[i] = 0; s.brefl[i] = 0; s.bmv[i] = 0; s.bkb[i] = 0; s.bstun[i] = 0; s.barm[i] = 0; s.bspl[i] = 0;
-  }
+  for (let i = wi; i < nb; i++) clearBullet(A, i);
   s.nb = wi;
 }

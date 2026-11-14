@@ -15,14 +15,13 @@ export default definePack({
     'combat:graze', 'combat:power-up', 'combat:hit-light', 'combat:ko:before', 'combat:ko', 'combat:respawn', 'combat:spell-ready',
     'combat:dash', 'combat:glide', 'combat:wall-kick', 'combat:hit', 'combat:wall-pip', 'combat:tech', 'combat:wall-bounce', 'combat:cancel', 'combat:parry', 'combat:shield-break', 'combat:clash', 'combat:grab', 'combat:reflect', 'combat:heavy', 'combat:kobeam-fire', 'combat:kobeam-reflect', 'combat:kobeam-cancel', 'combat:wall-push', 'combat:spell', 'combat:spell-break', 'combat:spell-capture', 'combat:spell-refused', 'combat:spell-chip',
   ],
-  rng: ['spell'],
   state: combatSchema,
   systems,
   init(w) {
     const s = w.slice<CombatState>('combat'), cfg = w.cfg.world ?? {}, ps = (cfg['players'] as PlayerCfg[] | undefined) ?? [];
     const map = { ...MAP_LARGE, ...((cfg['map'] as object | undefined) ?? {}) };
     const n = Math.min(MAXP, ps.length || w.players), chars = characters(w);
-    s.n = n; s.mapW = map.w; s.mapH = map.h; s.edge = map.edge; s.tempo = (cfg['tempo'] as number | undefined) ?? 10; s.teams = cfg['teams'] ? 1 : 0;
+    s.spSeed = (w.cfg.seed ?? 1) | 0; s.n = n; s.mapW = map.w; s.mapH = map.h; s.edge = map.edge; s.tempo = (cfg['tempo'] as number | undefined) ?? 10; s.teams = cfg['teams'] ? 1 : 0;
     const stocks = (cfg['stocks'] as number | undefined) ?? T.STOCKS;
     const pool = spellPool(w);
     for (let i = 0; i < n; i++) {

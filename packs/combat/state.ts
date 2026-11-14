@@ -28,7 +28,7 @@ export const combatSchema: Schema = {
   cpu: i32s(MAXP), pips: i32s(MAXP), tgt: i32s(MAXP), prevB: i32s(MAXP), lastHit: i32s(MAXP), pStk: i32s(MAXP), outAt: i32s(MAXP), bufF: i32s(MAXP * NBTN),
   combo: i32s(MAXP), hHeld: i32s(MAXP), hLv: i32s(MAXP), parN: i32s(MAXP), pChain: i32s(MAXP), lstS: i32s(MAXP), bpv: i32s(MAXP), comboN: i32s(MAXP), mvId: i32s(MAXP), mHit: i32s(MAXP), hitDone: i32s(MAXP), charging: i32s(MAXP), diPend: i32s(MAXP), koPend: i32s(MAXP), bounceN: i32s(MAXP), lastBy: i32s(MAXP), stN: i32s(MAXP * NSRC),
   // spell cards
-  spI: i32s(MAXP), ultS: i32s(MAXP), ult: i32s(MAXP), spN: i32s(MAXP), spHv: i32s(MAXP), spellHit: i32s(MAXP), spRef: f64s(MAXP), spPick: i32(-1),
+  spI: i32s(MAXP), ultS: i32s(MAXP), ult: i32s(MAXP), spN: i32s(MAXP), spHv: i32s(MAXP), spellHit: i32s(MAXP), spRef: f64s(MAXP), spPick: i32(-1), spSeed: i32(1),
   // players: KO tally, spit (thrown to the wall)
   kos: i32s(MAXP), sd: i32s(MAXP), spit: i32s(MAXP), beamPip: i32s(MAXP),
   // KO beams
@@ -36,6 +36,8 @@ export const combatSchema: Schema = {
   // bullets
   bx: f64s(MAX_B), by: f64s(MAX_B), bvx: f64s(MAX_B), bvy: f64s(MAX_B), br: f64s(MAX_B), bdmg: f64s(MAX_B), blife: f64s(MAX_B), bhome: f64s(MAX_B), bdist: f64s(MAX_B), bmult: f64s(MAX_B),
   bowner: i32s(MAX_B), bflags: i32s(MAX_B), bcol: i32s(MAX_B), brefl: i32s(MAX_B), bmv: i32s(MAX_B), bkb: f64s(MAX_B), bstun: f64s(MAX_B), barm: f64s(MAX_B), bspl: f64s(MAX_B),
+  // programmable bullets (spell patterns): age, behaviour kind + params, steering, shape id, group tag
+  bag: i32s(MAX_B), bkind: i32s(MAX_B), bsh: i32s(MAX_B), bgrp: i32s(MAX_B), bang: f64s(MAX_B), brot: f64s(MAX_B), bdrg: f64s(MAX_B), bacc: f64s(MAX_B), bvmax: f64s(MAX_B), bp0: f64s(MAX_B), bp1: f64s(MAX_B), bp2: f64s(MAX_B),
 };
 
 export interface CombatState {
@@ -48,9 +50,10 @@ export interface CombatState {
   state: Int32Array; stocks: Int32Array; run: Int32Array; focus: Int32Array; kicked: Int32Array; spReady: Int32Array; charIdx: Int32Array; team: Int32Array;
   cpu: Int32Array; pips: Int32Array; tgt: Int32Array; prevB: Int32Array; lastHit: Int32Array; pStk: Int32Array; outAt: Int32Array; bufF: Int32Array;
   combo: Int32Array; hHeld: Int32Array; hLv: Int32Array; parN: Int32Array; pChain: Int32Array; lstS: Int32Array; bpv: Int32Array; comboN: Int32Array; mvId: Int32Array; mHit: Int32Array; hitDone: Int32Array; charging: Int32Array; diPend: Int32Array; koPend: Int32Array; bounceN: Int32Array; lastBy: Int32Array; stN: Int32Array;
-  spI: Int32Array; ultS: Int32Array; ult: Int32Array; spN: Int32Array; spHv: Int32Array; spellHit: Int32Array; spRef: Float64Array; spPick: number;
+  spI: Int32Array; ultS: Int32Array; ult: Int32Array; spN: Int32Array; spHv: Int32Array; spellHit: Int32Array; spRef: Float64Array; spPick: number; spSeed: number;
   kos: Int32Array; sd: Int32Array; spit: Int32Array; beamPip: Int32Array;
   nkb: number; kbO: Int32Array; kbPP: Int32Array; kbDep: Int32Array; kbX: Float64Array; kbY: Float64Array; kbA: Float64Array; kbT: Float64Array; kbTT: Float64Array;
   bx: Float64Array; by: Float64Array; bvx: Float64Array; bvy: Float64Array; br: Float64Array; bdmg: Float64Array; blife: Float64Array; bhome: Float64Array; bdist: Float64Array; bmult: Float64Array;
   bowner: Int32Array; bflags: Int32Array; bcol: Int32Array; brefl: Int32Array; bmv: Int32Array; bkb: Float64Array; bstun: Float64Array; barm: Float64Array; bspl: Float64Array;
+  bag: Int32Array; bkind: Int32Array; bsh: Int32Array; bgrp: Int32Array; bang: Float64Array; brot: Float64Array; bdrg: Float64Array; bacc: Float64Array; bvmax: Float64Array; bp0: Float64Array; bp1: Float64Array; bp2: Float64Array;
 }

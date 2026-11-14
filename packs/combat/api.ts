@@ -6,6 +6,7 @@ export { T, TAU, MAP_LARGE } from './tuning';
 export type { CombatState } from './state';
 export * from './state';
 export type { CharacterDef, ShotCtx, HeavyCtx, SpellDef, SpellCtx } from './character';
+export { sB, hB, tgA, spRand, BK, SH, type PatOpts } from './bullets/pattern';
 export { lightBullet, heavyBullet, customHeavy, patternHeavy } from './bullets/spawn';
 export type { PCtx } from './input';
 export type { MoveDef, MeleeName, HitData } from './moves';

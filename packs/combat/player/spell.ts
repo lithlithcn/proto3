@@ -1,5 +1,6 @@
 import { hypot, type World } from '@kernel';
 import { spellPool } from '../api';
+import { spRand } from '../bullets/pattern';
 import type { PCtx } from '../input';
 import { foe } from '../target';
 import { BF, PS, type CombatState } from '../state';
@@ -17,7 +18,7 @@ export function startSpell(w: World, s: CombatState, p: number, ult: boolean): v
   s.ultS[p] = ult ? 1 : 0; s.spN[p] = s.spN[p]! + 1;
   const n = spellPool(w).length;
   if (!ult && n > 0) {
-    const r = w.rng('combat:spell').next();
+    const r = spRand(s);
     s.spI[p] = s.spPick >= 0 ? s.spPick % n : s.spI[p]! < 0 ? Math.floor(r * n) : (s.spI[p]! + 1 + Math.floor(r * (n - 1))) % n;
     s.spPick = -1;
   }

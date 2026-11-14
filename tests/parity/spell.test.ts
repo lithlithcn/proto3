@@ -3,11 +3,12 @@ import { type Script, makePair } from './harness';
 
 type Pair = ReturnType<typeof makePair>;
 const idle: Script = () => ({});
-/** Both sides: spell pool reduced to Reimu's own card (the shared pool is ported with the pattern system) and P0 full of spirit. */
-function pair(): Pair {
+/** Both sides: pool = the 11 shared cards + Reimu's own (legacy also holds the other 7 characters' cards after these: truncated), same spell RNG seed, P0 full of spirit.
+ *  `pick` forces the card of the next cast on both sides (legacy: wrapper on startSpell; proto3: `spPick`). */
+function pair(pick = -1): Pair {
   const k = makePair(['reimu', 'reimu']);
-  k.legacy.eval("SPELLS.length=0;SPELLS.push(CHR.find(c=>c.k==='reimu').spell);P.forEach(p=>p.spI=0);P[0].spirit=100");
-  k.s.spirit[0] = 100; k.s.spI.fill(0, 0, 2);
+  k.legacy.eval(`SPELLS.length=12;P.forEach(p=>p.spI=11);P[0].spirit=100;seed=777;globalThis.PICK=${pick};{const S=startSpell;startSpell=(p,o,u)=>{S(p,o,u);if(PICK>=0&&p.state==='spell'&&!u)p.spI=PICK}}`);
+  k.s.spirit[0] = 100; k.s.spI.fill(11, 0, 2); k.s.spSeed = 777; k.s.spPick = pick;
   return k;
 }
 function run(tag: string, sc: Script[], frames: number, probe: (L: (e: string) => number) => void, k = pair()): Pair {
@@ -45,5 +46,12 @@ describe('parity: spell card (Reimu vs legacy)', () => {
     const on = track(L => L('P[0].state==="spell"?1:0'));
     run('cancel', [f => (f === first.f + 10 ? { btn: ['spell'] } : {}), foe], first.f + 60, on.probe);
     expect(on.max(), 'cancelled into a spell').toBe(1);
+  });
+  it.each([...Array(11).keys()])('shared card #%i: every bullet matches the legacy engine frame by frame (positions, curves, drag, timed events, RNG)', i => {
+    const k = pair(i); k.legacy.eval('P[1].inv=1e6'); k.s.inv[1] = 1e6;
+    const n = track(L => L('B.length'));
+    run(`card${i}`, [f => (f === 10 ? { btn: ['spell'] } : {}), idle], 330, n.probe, k);
+    expect(n.max(), 'the card must fire').toBeGreaterThan(10);
+    expect(k.s.spSeed, 'spell RNG consumption').toBe(k.legacy.eval('seed'));
   });
 });

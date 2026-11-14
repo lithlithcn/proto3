@@ -3,6 +3,7 @@ import { charOf, combatOf } from './api';
 import { PS } from './state';
 import { bufferInputs } from './input';
 import { updateBeams } from './kobeam';
+import { behave } from './bullets/pattern';
 import { updateBullets } from './bullets/update';
 import { holdFrame } from './player/hitstun';
 import { physics } from './player/physics';
@@ -32,4 +33,5 @@ const bullets: SystemDef = { id: 'bullets', phase: 'sim', after: ['physics'], ru
 const charTick: SystemDef = { id: 'char-tick', phase: 'sim', after: ['input-buffer'], run(w) { const s = combatOf(w); if (s.skip) return; for (let p = 0; p < s.n; p++) if (s.state[p] !== PS.dead) charOf(w, s, p).tick?.(w, s, p); } };
 const beams: SystemDef = { id: 'ko-beam', phase: 'sim', after: ['bullets'], run(w) { const s = combatOf(w); if (!s.skip) updateBeams(w, s); } };
 const buffer: SystemDef = { id: 'input-buffer', phase: 'sim', after: ['ko-beam'], run(w) { const s = combatOf(w); if (!s.skip) bufferInputs(w, s); } };
-export const systems: SystemDef[] = [spiritBegin, gate, players, phys, bullets, beams, buffer, charTick, spiritEnd];
+const behaviours: SystemDef = { id: 'bullet-behaviours', phase: 'sim', after: ['char-tick'], run(w) { const s = combatOf(w); if (!s.skip) behave(s); } };
+export const systems: SystemDef[] = [spiritBegin, gate, players, phys, bullets, beams, buffer, charTick, behaviours, spiritEnd];
