@@ -1,0 +1,26 @@
+{
+  "name": "shmup-fighter-proto3",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "packageManager": "pnpm@10.28.0",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit",
+    "lint": "node tools/lint/check.mjs",
+    "test": "vitest run",
+    "check": "pnpm typecheck && pnpm lint && pnpm test",
+    "check:all": "pnpm check && pnpm build",
+    "sim": "tsx tools/sim/cli.ts",
+    "audit:legacy": "python3 tools/audit/extract.py && node tools/audit/dump.js build/legacy-main.js && node tools/audit/gen-inventory.js"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vite": "^6.0.0",
+    "vitest": "^3.0.0"
+  }
+}

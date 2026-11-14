@@ -560,3 +560,9 @@ No other runtime network dependency is allowed without an entry here.
 | R59 | Legacy online keeps the game running in hidden tabs via a Worker-driven netTick loop | Worker clock kept (already §3), covered by Playwright hidden-tab test |
 | R60 | Legacy rollback params (input delay 2, window NMAXP=10, checksum every 60 frames, `CX.mer` double-step) are balance-adjacent | copy as defaults, parity-tested; any change goes through ADR |
 | R61 | The sf-turn worker restricts origins to an allow-list (lithlithcn.github.io, html-classic.itch.zone) | Proto3 on lithlithcn.github.io/proto3 shares the origin, so no change needed; new hosts must be added deliberately |
+
+## 26. Owner decisions log
+- 2026-11-14: legacy `.sfmap.json` maps do NOT need importing into Proto3.
+- 2026-11-14: maps received over the network that contain code (scripts) show a consent warning before running (R58).
+- 2026-11-14: the tutorial becomes a folder pack (`packs/tutorial/`, one file per lesson) instead of a hard-coded step list.
+- 2026-11-14: build order = skeleton (kernel, tests, CI, docs) first, then Reimu alone, then the others.
