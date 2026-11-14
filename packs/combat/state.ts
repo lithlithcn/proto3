@@ -51,7 +51,7 @@ export const combatSchema: Schema = {
   nkb: i32(), kbO: i32s(MAX_KB), kbPP: i32s(MAX_KB), kbDep: i32s(MAX_KB), kbX: f64s(MAX_KB), kbY: f64s(MAX_KB), kbA: f64s(MAX_KB), kbT: f64s(MAX_KB), kbTT: f64s(MAX_KB),
   // bullets
   bx: f64s(MAX_B), by: f64s(MAX_B), bvx: f64s(MAX_B), bvy: f64s(MAX_B), br: f64s(MAX_B), bdmg: f64s(MAX_B), blife: f64s(MAX_B), bhome: f64s(MAX_B), bdist: f64s(MAX_B), bmult: f64s(MAX_B),
-  bowner: i32s(MAX_B), bflags: i32s(MAX_B), bcol: i32s(MAX_B), brefl: i32s(MAX_B), bmv: i32s(MAX_B), bkb: f64s(MAX_B), bstun: f64s(MAX_B), barm: f64s(MAX_B), bspl: f64s(MAX_B), bmst: f64s(MAX_B), bct: f64s(MAX_B), bwav: f64s(MAX_B), bph: f64s(MAX_B), btx: f64s(MAX_B), bty: f64s(MAX_B),
+  bowner: i32s(MAX_B), bflags: i32s(MAX_B), bcol: i32s(MAX_B), brefl: i32s(MAX_B), bmv: i32s(MAX_B), bkb: f64s(MAX_B), bstun: f64s(MAX_B), barm: f64s(MAX_B), bspl: f64s(MAX_B), bmst: f64s(MAX_B), bct: f64s(MAX_B), bsea: i32s(MAX_B), bwav: f64s(MAX_B), bph: f64s(MAX_B), btx: f64s(MAX_B), bty: f64s(MAX_B),
   // programmable bullets (spell patterns): age, behaviour kind + params, steering, shape id, group tag
   bag: i32s(MAX_B), bkind: i32s(MAX_B), bsh: i32s(MAX_B), bgrp: i32s(MAX_B), bang: f64s(MAX_B), brot: f64s(MAX_B), bdrg: f64s(MAX_B), bacc: f64s(MAX_B), bvmax: f64s(MAX_B), bp0: f64s(MAX_B), bp1: f64s(MAX_B), bp2: f64s(MAX_B),
 };
@@ -76,6 +76,6 @@ export interface CombatState {
   rifle: Int32Array; cam: Int32Array; clone: Int32Array; spk: Int32Array; cloneHP: Float64Array; spkA: Float64Array; sCD: Float64Array; zawT: number; zawO: number; tstop: number; tso: number;
   nkb: number; kbO: Int32Array; kbPP: Int32Array; kbDep: Int32Array; kbX: Float64Array; kbY: Float64Array; kbA: Float64Array; kbT: Float64Array; kbTT: Float64Array;
   bx: Float64Array; by: Float64Array; bvx: Float64Array; bvy: Float64Array; br: Float64Array; bdmg: Float64Array; blife: Float64Array; bhome: Float64Array; bdist: Float64Array; bmult: Float64Array;
-  bowner: Int32Array; bflags: Int32Array; bcol: Int32Array; brefl: Int32Array; bmv: Int32Array; bkb: Float64Array; bstun: Float64Array; barm: Float64Array; bspl: Float64Array; bmst: Float64Array; bct: Float64Array; bwav: Float64Array; bph: Float64Array; btx: Float64Array; bty: Float64Array;
+  bowner: Int32Array; bflags: Int32Array; bcol: Int32Array; brefl: Int32Array; bmv: Int32Array; bkb: Float64Array; bstun: Float64Array; barm: Float64Array; bspl: Float64Array; bmst: Float64Array; bct: Float64Array; bsea: Int32Array; bwav: Float64Array; bph: Float64Array; btx: Float64Array; bty: Float64Array;
   bag: Int32Array; bkind: Int32Array; bsh: Int32Array; bgrp: Int32Array; bang: Float64Array; brot: Float64Array; bdrg: Float64Array; bacc: Float64Array; bvmax: Float64Array; bp0: Float64Array; bp1: Float64Array; bp2: Float64Array;
 }

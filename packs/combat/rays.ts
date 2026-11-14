@@ -13,11 +13,11 @@ export const RAYF = { warn: 1, follow: 2, clear: 4, nodash: 8 } as const;
 
 export interface RayOpts {
   /** Total frames. */ T: number; /** Warning frames before it fires. */ tele?: number; w?: number; len?: number; dmg?: number; ev?: number; kb?: number; stun?: number;
-  a?: number; spin?: number; push?: number; flags?: number;
+  a?: number; spin?: number; push?: number; flags?: number; /** Origin (default: the owner). */ x?: number; y?: number;
 }
 /** Legacy chRay: a straight ray that telegraphs for `tele` frames, then hurts everyone it crosses every `ev` frames; it can follow its owner, rotate (`spin`), push the owner back, and erase light bullets (`clear`). */
 export function fireRay(s: CombatState, p: number, o: RayOpts): void {
-  const i = addEnt(s, EK_RAY, p, o.T, s.x[p]!, s.y[p]!);
+  const i = addEnt(s, EK_RAY, p, o.T, o.x ?? s.x[p]!, o.y ?? s.y[p]!);
   if (i < 0) return;
   s.ebc[i] = o.T; s.eh[i] = o.tele ?? 20; s.ew[i] = o.w ?? 10; s.er[i] = o.len ?? 900; s.ed[i] = o.dmg ?? 2; s.eg[i] = o.ev ?? 6; s.ekb[i] = o.kb ?? 4; s.est[i] = o.stun ?? 14;
   s.ea[i] = o.a ?? s.aim[p]!; s.evx[i] = o.spin ?? 0; s.evy[i] = o.push ?? 0; s.efl[i] = o.flags ?? RAYF.follow;

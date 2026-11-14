@@ -2,6 +2,7 @@ import { bulletArrays, clearBullet, copyBullet } from './arrays';
 import { type World, atan2, clamp, cos, hypot, sin, PI } from '@kernel';
 import { TAU } from '../tuning';
 import { graze } from '../player/graze';
+import { seaHit } from './sea';
 import { lightHit } from '../player/damage';
 import { bodyR, coreR, kB } from '../stats';
 import { mirrorRef } from './mirror';
@@ -56,7 +57,7 @@ export function updateBullets(w: World, s: CombatState): void {
       if (s.mirror[t]! > 0 && d < bodyR(s, t) + r) { mirrorRef(s, i, t); continue; }
       if (s.state[t] === PS.parry && d < T.PARRY_R) { s.bflags[i] = s.bflags[i]! | BF.dead; continue; }
       if (!(s.bflags[i]! & BF.grazed) && d < r + T.GRAZE_R) { s.bflags[i] = s.bflags[i]! | BF.grazed; graze(w, s, t, bx, by, 1); }
-      if (s.state[t] !== PS.dash && s.inv[t]! <= 0 && d < r * 0.68 + coreR(s, t)) { s.bflags[i] = s.bflags[i]! | BF.dead; lightHit(w, s, t, owner, s.bdmg[i]!); }
+      if (s.state[t] !== PS.dash && s.inv[t]! <= 0 && d < r * 0.68 + coreR(s, t)) { s.bflags[i] = s.bflags[i]! | BF.dead; if (s.bsea[i]) seaHit(s, i, t, owner); lightHit(w, s, t, owner, s.bdmg[i]!); }
     }
     if (nf && !(s.bflags[i]! & BF.dead) && hitFairy(s, i)) s.bflags[i] = s.bflags[i]! | BF.dead;
   }
