@@ -35,6 +35,12 @@ export interface CharacterDef {
   heavy?: Partial<Record<'N' | 'F' | 'B', (c: HeavyCtx) => void>>;
   /** Per-frame hook, run after every system on frames where time advances (legacy character `tick`). */
   tick?(w: World, s: CombatState, p: number): void;
+  /** Extra multipliers (legacy `doutM` / `dinM` / `spdM`) on damage dealt by / taken by / speed of this character's player. */
+  doutM?(w: World, s: CombatState, a: number, v: number, heavy: boolean): number;
+  dinM?(w: World, s: CombatState, v: number): number;
+  spdM?(w: World, s: CombatState, p: number): number;
+  /** Runs after a heavy-type hit by this character's player actually hurt `v` (legacy `onHit`). */
+  onHit?(w: World, s: CombatState, a: number, v: number, heavy: boolean): void;
   /** Entity handlers of the character (legacy `EST` kinds), run after every character `tick` (legacy chStep). */
   ents?(w: World, s: CombatState, p: number): void;
   /** Rewrites the virtual input (stick/buttons) before anything reads it, e.g. Reimu's charge-to-throw orbs. Runs for living players only. */

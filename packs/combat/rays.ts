@@ -1,4 +1,4 @@
-import { type World, cos, hypot, sin } from '@kernel';
+import { type World, atan2, cos, hypot, sin } from '@kernel';
 import { addEnt } from './ents';
 import { segD } from './bullets/update';
 import { hit } from './player/hit';
@@ -44,10 +44,25 @@ export function updateRays(w: World, s: CombatState): void {
 }
 
 /** Per-bullet modifier `bmst` (Marisa's light shots): slow down for 14 frames after launch, then speed up from frame 24 until speed 10 (legacy chStep bullet loop). */
+export function waveBullets(s: CombatState): void {
+  for (let i = 0; i < s.nb; i++) {
+    if ((s.bflags[i]! & BF.dead) || !s.bwav[i]) continue;
+    const sp = hypot(s.bvx[i]!, s.bvy[i]!), a = atan2(s.bvy[i]!, s.bvx[i]!) + sin(s.gf * 0.25 + s.bph[i]!) * s.bwav[i]!;
+    s.bvx[i] = cos(a) * sp; s.bvy[i] = sin(a) * sp;
+  }
+}
 export function bulletMods(s: CombatState): void {
   for (let i = 0; i < s.nb; i++) {
-    if ((s.bflags[i]! & BF.dead) || !s.bmst[i]) continue;
-    const g = s.gf - s.bmst[i]!, sp = hypot(s.bvx[i]!, s.bvy[i]!);
-    if (g < 14 && sp > 1.6) { s.bvx[i] = s.bvx[i]! * 0.9; s.bvy[i] = s.bvy[i]! * 0.9; } else if (g > 24 && sp < 10) { s.bvx[i] = s.bvx[i]! * 1.07; s.bvy[i] = s.bvy[i]! * 1.07; }
+    if (s.bflags[i]! & BF.dead) continue;
+    if (s.bmst[i]) {
+      const g = s.gf - s.bmst[i]!, sp = hypot(s.bvx[i]!, s.bvy[i]!);
+      if (g < 14 && sp > 1.6) { s.bvx[i] = s.bvx[i]! * 0.9; s.bvy[i] = s.bvy[i]! * 0.9; } else if (g > 24 && sp < 10) { s.bvx[i] = s.bvx[i]! * 1.07; s.bvy[i] = s.bvy[i]! * 1.07; }
+    }
+    if (s.bflags[i]! & BF.hgr) for (let q = 0; q < s.n; q++) { // gravity bullets (Hecatia's Earth body) shove foes within 80 px away
+      if (q === s.bowner[i] || s.state[q] === PS.dead || !foe(s, s.bowner[i]!, q)) continue;
+      const dx = s.bx[i]! - s.x[q]!, dy = s.by[i]! - s.y[q]!, d = hypot(dx, dy);
+      if (d < 80 && d > 1) { s.vx[q] = s.vx[q]! + dx / d * 0.22; s.vy[q] = s.vy[q]! + dy / d * 0.22; }
+    }
+    if (s.bct[i] === s.gf) { const a = atan2(s.bty[i]! - s.by[i]!, s.btx[i]! - s.bx[i]!); s.bvx[i] = cos(a) * 7; s.bvy[i] = sin(a) * 7; } // Cranberry Trap: converge on the point stored at launch
   }
 }

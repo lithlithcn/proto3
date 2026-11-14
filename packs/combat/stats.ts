@@ -7,15 +7,15 @@ import { T } from './tuning';
  * Stat pipeline (DESIGN §4.4). Today: character multipliers only. Statuses (items, spells, rules) plug in here as modifiers,
  * so no system ever sprinkles `if (flag)` checks. Order of multiplication is fixed and deterministic.
  */
-export const speedMul = (w: World, s: CombatState, p: number): number => charOf(w, s, p).spd;
+export const speedMul = (w: World, s: CombatState, p: number): number => { const c = charOf(w, s, p); return c.spd * (c.spdM ? c.spdM(w, s, p) : 1) * (s.slowT[p]! > s.gf ? 0.5 : 1); };
 /**
  * Damage multiplier (legacy chDmg wrappers): attacker `dout`, victim `din`, then the attacker's accumulated parry streak
  * (×1.3 per streak step, applies to its melee and to non-heavy shots).
  */
 export function damageMul(w: World, s: CombatState, victim: number, attacker: number, heavy = false): number {
   let d = 1;
-  if (attacker >= 0 && attacker !== victim) d *= charOf(w, s, attacker).dout;
-  d *= charOf(w, s, victim).din;
+  if (attacker >= 0 && attacker !== victim) { const c = charOf(w, s, attacker); d *= c.dout * (c.doutM ? c.doutM(w, s, attacker, victim, heavy) : 1); }
+  const cv = charOf(w, s, victim); d *= cv.din * (cv.dinM ? cv.dinM(w, s, victim) : 1);
   if (attacker >= 0 && s.pStk[attacker]! > 0 && (s.state[attacker] === PS.atk || !heavy)) d *= pow(1.3, s.pStk[attacker]!);
   return d;
 }

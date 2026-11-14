@@ -4,6 +4,7 @@ import { BTN, World, newInput, setInput } from '@kernel';
 import combat from '../../packs/combat/pack';
 import touhou from '../../packs/touhou/pack';
 import { PS, type CombatState } from '../../packs/combat/state';
+import { spellPool } from '../../packs/combat/api';
 
 const require_ = createRequire(import.meta.url);
 const { createLegacy } = require_('../../tools/parity/legacy.cjs') as { createLegacy(o: object): Legacy };
@@ -36,6 +37,7 @@ export function makePair(chars: string[], seed = 1, opt: PairOpt = {}) {
     world: { players: chars.map(c => ({ char: `touhou:${c}` })), ...(opt.items ? { items: true, itemSet: opt.items.map(i => `touhou:${i}`), maxCards: opt.maxCards ?? 1 } : { items: false }) },
   });
   const s = world.slice<CombatState>('combat'), KIND = kindMap(world);
+  legacy.eval(`SPELLS.length=${spellPool(world).length}`); // legacy holds every character's card: keep exactly the ported ones, in the same order
   return {
     legacy, world, s, kind: (name: string): number => KIND[name]!,
     /** Advance both with the same input scripts; returns nothing, use `compare()`. */

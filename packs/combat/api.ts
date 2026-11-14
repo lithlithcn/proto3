@@ -15,13 +15,17 @@ export type { MoveDef, MeleeName, HitData } from './moves';
 export { MOVES, SRC } from './moves';
 export { addEnt, entsOf } from './ents';
 export { fireRay, EK_RAY, RAYF, type RayOpts } from './rays';
+export { powerMul } from './stats';
 export { lightHit } from './player/damage';
 export type { ItemDef, ItemCtx } from './items/def';
 export { giveItem } from './items/cards';
 export { fxOn, setFx, clearFx, FXS, MAX_FX, type StatusDef } from './fx';
 export { hit } from './player/hit';
 export { parryFx } from './player/parry';
-export { foe } from './target';
+export { foe, nearFoe } from './target';
+export { bodyR } from './stats';
+export { chHitQ } from './chhit';
+export { ko } from './player/ko';
 export { relStick, moveOf } from './player/atkstart';
 
 export const combatOf = (w: World): CombatState => w.slice<CombatState>('combat');

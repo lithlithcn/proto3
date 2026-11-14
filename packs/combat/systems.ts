@@ -1,7 +1,7 @@
 import type { SystemDef } from '@kernel';
 import { charOf, combatOf } from './api';
 import { PS, type CombatState } from './state';
-import { bulletMods, updateRays } from './rays';
+import { bulletMods, updateRays, waveBullets } from './rays';
 import { updateClone } from './items/clone';
 import { updateTimeStop } from './items/timestop';
 import { bufferInputs } from './input';
@@ -47,7 +47,7 @@ const itemWorld: SystemDef = { id: 'item-world', phase: 'sim', after: ['ko-beam'
 const status: SystemDef = { id: 'status', phase: 'sim', after: ['item-world'], run(w) { const s = combatOf(w); if (!s.skip) tickFx(w, s); } };
 const itemLate: SystemDef = { id: 'item-late', phase: 'sim', after: ['input-buffer'], run(w) { const s = combatOf(w); if (!s.skip) { for (let p = 0; p < s.n; p++) if (s.state[p] !== PS.dead) updateClone(s, p); driftBumpers(s); updateFreezeQueue(s); updateTimeStop(w, s); } } };
 /** Legacy chStep: rays, per-bullet modifiers and entity handlers of characters, after every character hook. */
-const rayStep: SystemDef = { id: 'ray-step', phase: 'sim', after: ['char-tick'], run(w) { const s = combatOf(w); if (s.skip) return; updateRays(w, s); bulletMods(s); for (let p = 0; p < s.n; p++) if (s.state[p] !== PS.dead) charOf(w, s, p).ents?.(w, s, p); for (let p = 0; p < s.n; p++) s.spP[p] = s.spirit[p]!; } };
+const rayStep: SystemDef = { id: 'ray-step', phase: 'sim', after: ['char-tick'], run(w) { const s = combatOf(w); if (s.skip) return; updateRays(w, s); bulletMods(s); for (let p = 0; p < s.n; p++) if (s.state[p] !== PS.dead) charOf(w, s, p).ents?.(w, s, p); waveBullets(s); for (let p = 0; p < s.n; p++) s.spP[p] = s.spirit[p]!; } };
 const beams: SystemDef = { id: 'ko-beam', phase: 'sim', after: ['items'], run(w) { const s = combatOf(w); if (!s.skip) updateBeams(w, s); } };
 const ents: SystemDef = { id: 'entities', phase: 'sim', after: ['status'], run(w) { const s = combatOf(w); if (!s.skip) updateEnts(s); } };
 const buffer: SystemDef = { id: 'input-buffer', phase: 'sim', after: ['entities'], run(w) { const s = combatOf(w); if (!s.skip) bufferInputs(w, s); } };

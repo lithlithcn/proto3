@@ -7,7 +7,7 @@ const idle: Script = () => ({});
  *  `pick` forces the card of the next cast on both sides (legacy: wrapper on startSpell; proto3: `spPick`). */
 function pair(pick = -1): Pair {
   const k = makePair(['reimu', 'reimu']);
-  k.legacy.eval(`SPELLS.length=12;P.forEach(p=>p.spI=11);P[0].spirit=100;seed=777;globalThis.PICK=${pick};{const S=startSpell;startSpell=(p,o,u)=>{S(p,o,u);if(PICK>=0&&p.state==='spell'&&!u)p.spI=PICK}}`);
+  k.legacy.eval(`P.forEach(p=>p.spI=11);P[0].spirit=100;seed=777;globalThis.PICK=${pick};{const S=startSpell;startSpell=(p,o,u)=>{S(p,o,u);if(PICK>=0&&p.state==='spell'&&!u)p.spI=PICK}}`);
   k.s.spirit[0] = 100; k.s.spI.fill(11, 0, 2); k.s.spSeed = 777; k.s.spPick = pick;
   return k;
 }

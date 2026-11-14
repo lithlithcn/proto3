@@ -45,12 +45,18 @@ export function behave(s: CombatState): void {
     if (s.bflags[i]! & BF.dead) continue;
     const rot = s.brot[i]!, drg = s.bdrg[i]!, acc = s.bacc[i]!, kind = s.bkind[i]!;
     if (!(rot || drg || acc || kind)) continue;
+    if (s.bag[i]! < 0) { // born after this pass in legacy order (character entities): skip the clamp once, keep the +5 % rule
+      s.bag[i] = 0;
+      if (acc && hypot(s.bvx[i]!, s.bvy[i]!) < acc) { s.bvx[i] = s.bvx[i]! * 1.05; s.bvy[i] = s.bvy[i]! * 1.05; }
+      continue;
+    }
     if (rot) { const c = cos(rot), sn = sin(rot), vx = s.bvx[i]!; s.bvx[i] = vx * c - s.bvy[i]! * sn; s.bvy[i] = vx * sn + s.bvy[i]! * c; }
     if (drg) { s.bvx[i] = s.bvx[i]! * drg; s.bvy[i] = s.bvy[i]! * drg; }
     if (acc) {
       const l = hypot(s.bvx[i]!, s.bvy[i]!) || 1e-3, n = clamp(l + acc, 0, s.bvmax[i]! || 9);
       s.bvx[i] = s.bvx[i]! * n / l; s.bvy[i] = s.bvy[i]! * n / l;
       if (l < 2e-3) setV(s, i, s.bang[i]!, n);
+      if (hypot(s.bvx[i]!, s.bvy[i]!) < acc) { s.bvx[i] = s.bvx[i]! * 1.05; s.bvy[i] = s.bvy[i]! * 1.05; } // legacy chStep: slower than `acc` -> +5 %/frame (stacks with the clamp above)
     }
     if (kind) { s.bag[i] = s.bag[i]! + 1; run(s, i, kind, s.bag[i]!); }
     if (s.bvx[i] || s.bvy[i]) s.bang[i] = atan2(s.bvy[i]!, s.bvx[i]!);

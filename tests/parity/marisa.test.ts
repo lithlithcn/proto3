@@ -39,7 +39,7 @@ describe('parity: Marisa (vs legacy)', () => {
   });
   it('Love Sign「Final Spark」: huge rotating beam (36 f warning)', () => {
     const k = duel(45);
-    k.legacy.eval('SPELLS.length=13;P.forEach(p=>p.spI=12);P[0].spirit=100;seed=777;P[1].inv=1e6;{const S=startSpell;startSpell=(p,o,u)=>{S(p,o,u);if(p.state==="spell"&&!u)p.spI=12}}'); k.s.spirit[0] = 100; k.s.spI.fill(12, 0, 2); k.s.spSeed = 777; k.s.spPick = 12; k.s.inv[1] = 1e6;
+    k.legacy.eval('P.forEach(p=>p.spI=12);P[0].spirit=100;seed=777;P[1].inv=1e6;{const S=startSpell;startSpell=(p,o,u)=>{S(p,o,u);if(p.state==="spell"&&!u)p.spI=12}}'); k.s.spirit[0] = 100; k.s.spI.fill(12, 0, 2); k.s.spSeed = 777; k.s.spPick = 12; k.s.inv[1] = 1e6;
     const [ray] = run(k, 'marisa-spell', f => (f === 10 ? { btn: ['spell'] } : {}), still, 420, ['ENT.filter(e=>e.k==="cray").length']);
     expect(ray).toBeGreaterThan(0);
   });

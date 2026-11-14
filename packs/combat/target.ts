@@ -4,6 +4,13 @@ import { PS, type CombatState } from './state';
 const ally = (s: CombatState, a: number, b: number): boolean => s.teams !== 0 && a !== b && s.team[a] === s.team[b];
 export const foe = (s: CombatState, a: number, b: number): boolean => a !== b && !ally(s, a, b);
 
+/** Nearest living foe of `p` to (x,y), -1 if none (legacy `nearFoe`; no target stickiness). */
+export function nearFoe(s: CombatState, p: number, x: number, y: number): number {
+  let best = -1, bd = 1e9;
+  for (let q = 0; q < s.n; q++) { if (q === p || s.state[q] === PS.dead || ally(s, p, q)) continue; const d = hypot(s.x[q]! - x, s.y[q]! - y); if (d < bd) { bd = d; best = q; } }
+  return best;
+}
+
 /** Nearest living foe, keeping the previous target while it stays within 25 % of the best distance (legacy tgt). */
 export function pickTarget(s: CombatState, p: number): number {
   let best = -1, bd = 1e9;
