@@ -564,6 +564,7 @@ No other runtime network dependency is allowed without an entry here.
 | R63 | Scenario assertions that don't actually exercise the mechanic pass vacuously | scenarios assert their own precondition (e.g. a KO really happened) |
 | R64 | Hidden input-buffer wrappers in legacy: starting any non-idle action empties the whole press buffer, then an end-of-step wrapper re-stamps the same press (unless that key was stamped ≤ 8 frames ago); frozen frames (hit-stop, KO slow-mo) run only the base step, so the wrapper does not run there | ported as `updatePlayer` buffer clear + `input-buffer` system skipped when `skip`; found by the tech-timing divergence at a wall; scenarios with spam inputs |
 | R65 | Hit-stun/atk `pr('dash')` etc. read the buffer, but `atk` reads `p.prev.melee` AFTER prev was overwritten, i.e. "held now", not "held last frame" | `updAtk` uses `held()`; do not "fix" it |
+| R67 | A parried attacker is set to parrystun with t = 50 inside `melee`, then `atk` immediately re-checks `t >= start+act+rec` and sets idle: moves shorter than 50 frames are NOT actually punished by the parry stun | keep: `updAtk` re-reads `t` live after the strike; decide deliberately (not by accident) if the owner wants it fixed |
 | R66 | Stun-repeat reduction is a wrapper around `hit` that records the hit even when the victim is invulnerable and the hit is rejected | `hit()` computes it before the invulnerability return |
 
 ## 26. Owner decisions log

@@ -13,7 +13,7 @@ export default definePack({
   contentTypes: ['character'],
   events: [
     'combat:graze', 'combat:power-up', 'combat:hit-light', 'combat:ko:before', 'combat:ko', 'combat:respawn', 'combat:spell-ready',
-    'combat:dash', 'combat:glide', 'combat:wall-kick', 'combat:hit', 'combat:wall-pip', 'combat:tech', 'combat:wall-bounce', 'combat:cancel',
+    'combat:dash', 'combat:glide', 'combat:wall-kick', 'combat:hit', 'combat:wall-pip', 'combat:tech', 'combat:wall-bounce', 'combat:cancel', 'combat:parry', 'combat:shield-break', 'combat:clash', 'combat:grab',
   ],
   state: combatSchema,
   systems,
@@ -27,7 +27,7 @@ export default definePack({
       const a = PI + i / n * TAU;
       s.x[i] = s.mapW / 2 + cos(a) * 300; s.y[i] = s.mapH / 2 + sin(a) * Math.min(300, s.mapH * 0.3);
       s.hp[i] = T.HP; s.stocks[i] = stocks; s.boost[i] = T.DASH_CHARGES; s.power[i] = 1; s.pips[i] = T.PIPS; s.inv[i] = 60; s.state[i] = PS.idle;
-      s.burst[i] = T.BURST_MAX; s.gLast[i] = -99; s.tgt[i] = -1; s.lastHit[i] = -1;
+      s.burst[i] = T.BURST_MAX; s.pg[i] = 100; s.pLast[i] = -9999; s.pOK[i] = -1; s.gLast[i] = -99; s.tgt[i] = -1; s.lastHit[i] = -1;
       const pc = ps[i], id = pc?.char ?? chars[0]?.[0] ?? '';
       s.charIdx[i] = Math.max(0, chars.findIndex(c => c[0] === id)); s.team[i] = pc?.team ?? i; s.cpu[i] = pc?.cpu ? 1 : 0;
     }

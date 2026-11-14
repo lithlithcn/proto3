@@ -6,6 +6,7 @@ import { T } from '../tuning';
 import { MV } from '../moves';
 import { doDash, glide } from './dash';
 import { rel, startAtk } from './atkstart';
+import { startParry } from './parry';
 
 /** Idle locomotion + actions (legacy updP after the state switch). */
 export function updIdle(c: PCtx): void {
@@ -25,7 +26,8 @@ export function updIdle(c: PCtx): void {
   }
   if (pr(c, BTN.focus) && hypot(s.vx[p]!, s.vy[p]!) > T.BRAKE_MIN) { s.vx[p] = s.vx[p]! * 0.15; s.vy[p] = s.vy[p]! * 0.15; s.slide[p] = 0; s.run[p] = 0; } // sharp brake
   if (s.shotCd[p]! > 0) s.shotCd[p] = s.shotCd[p]! - 1;
-  // TODO(next batches): parry start, melee, heavy (they return before the light shot in the legacy order)
+  // TODO(heavy batch): heavy shot (returns before the light shot in the legacy order)
+  if (pr(c, BTN.parry)) { startParry(s, p); return; }
   if (pr(c, BTN.dash) && s.boost[p]! >= T.DASH_COST) {
     if (focus) { s.boost[p] = s.boost[p]! - T.DASH_COST; s.dashCd[p] = T.DASH_REGEN_DELAY; glide(c); }
     else doDash(c);

@@ -16,7 +16,9 @@ export const T = {
   SPIRIT_SLOW: 0.5, SPIRIT_BIG: 25,
   LIGHT_CD: 6, LIGHT_CD_F: 4, COMBO_WIN: 8, KO_T: 130,
   /** Hit system: hit-stop base, directional-influence max turn, stun decay per combo hit, knockback growth with lost HP, spirit cost of a move cancel. */
-  HITSTOP: 4, DI_MAX: 0.35, STUN_DECAY: 0.82, KB_SCALE: 1.3, CANCEL_COST: 25,
+  HITSTOP: 4, DI_MAX: 0.35, STUN_DECAY: 0.82, KB_SCALE: 1.3, CANCEL_COST: 25, DASH_PARRY: 1,
+  /** Guard gauge: a whiffed parry costs GUARD_WHIFF; at 0 the guard crushes (stun GUARD_CRUSH_STUN, gauge back to GUARD_RESET); regen per frame outside parry. */
+  GUARD_WHIFF: 28, GUARD_RESET: 55, GUARD_REGEN: 0.45, SHIELD_BREAK_STUN: 110, CLASH_PUSH: 9, CLASH_INV: 10, PARRY_INV: 12,
   /** Stun-repeat reduction: same move on the same victim within STUN_REPEAT_WIN frames shortens stun by 8 % per repeat (floor 40 %). */
   STUN_REPEAT_WIN: 120,
 } as const;

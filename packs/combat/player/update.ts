@@ -6,6 +6,9 @@ import { updDash, updDashLag } from './dash';
 import { updHitstun } from './hitstun';
 import { updIdle } from './idle';
 import { updAtk } from './melee';
+import { updParry, updParrylag, updParrystun } from './parry';
+import { startAtk } from './atkstart';
+import { MV } from '../moves';
 import { ko } from './ko';
 import { respawn } from './respawn';
 
@@ -24,6 +27,10 @@ export function updatePlayer(w: World, s: CombatState, p: number): void {
 /** The state machine itself (legacy `updP`, ported incrementally). The order of statements is the legacy order and is parity-tested. */
 function step(w: World, s: CombatState, p: number): void {
   const c = begin(w, s, p);
+  const st = s.state[p];
+  if (held(c, BTN.parry) && (st === PS.idle || st === PS.parry || st === PS.parrylag || st === PS.dashlag)) { // parry + melee = grab (only catches a parrying foe); parry + heavy = breaker (heavy batch)
+    if (pr(c, BTN.melee)) { startAtk(s, p, MV.grab); w.emit('combat:grab', { p }); return; }
+  }
   if (s.state[p] === PS.dead) { if (s.stocks[p]! > 0) { s.t[p] = s.t[p]! - 1; if (s.t[p]! <= 0) respawn(w, s, p); } return; }
   if (pr(c, BTN.dash) || pr(c, BTN.parry)) s.techBuf[p] = 10; else if (s.techBuf[p]! > 0) s.techBuf[p] = s.techBuf[p]! - 1;
   if (s.inv[p]! > 0) s.inv[p] = s.inv[p]! - 1;
@@ -48,6 +55,9 @@ function step(w: World, s: CombatState, p: number): void {
     case PS.dashlag: updDashLag(c); return;
     case PS.hitstun: updHitstun(c); return;
     case PS.atk: updAtk(c); return;
+    case PS.parry: updParry(c); return;
+    case PS.parrylag: updParrylag(c); return;
+    case PS.parrystun: updParrystun(c); return;
     default: updIdle(c); // TODO(next batches): parry*, spell, bursting, rifle, ...
   }
 }

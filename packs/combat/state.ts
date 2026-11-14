@@ -21,11 +21,11 @@ export const combatSchema: Schema = {
   aim: f64s(MAXP), shotCd: f64s(MAXP), dashCd: f64s(MAXP), slide: f64s(MAXP), inv: f64s(MAXP), flash: f64s(MAXP), t: f64s(MAXP), noSteer: f64s(MAXP),
   spP: f64s(MAXP), graze: f64s(MAXP), gStreak: f64s(MAXP), gLast: f64s(MAXP), techBuf: f64s(MAXP), comboT: f64s(MAXP),
   dmgDealt: f64s(MAXP), dmgTaken: f64s(MAXP), bigHit: f64s(MAXP), lastHitF: f64s(MAXP),
-  kbx: f64s(MAXP), kby: f64s(MAXP), charge: f64s(MAXP), nextHit: f64s(MAXP), atkA: f64s(MAXP), carry: f64s(MAXP), lastByF: f64s(MAXP), stF: f64s(MAXP * NSRC),
+  kbx: f64s(MAXP), kby: f64s(MAXP), charge: f64s(MAXP), nextHit: f64s(MAXP), atkA: f64s(MAXP), carry: f64s(MAXP), lastByF: f64s(MAXP), stF: f64s(MAXP * NSRC), pg: f64s(MAXP), pLast: f64s(MAXP), pOK: f64s(MAXP), pStart: f64s(MAXP), pCnt: f64s(MAXP), sbT: f64s(MAXP), brCD: f64s(MAXP),
   // players (i32)
   state: i32s(MAXP), stocks: i32s(MAXP), run: i32s(MAXP), focus: i32s(MAXP), kicked: i32s(MAXP), spReady: i32s(MAXP), charIdx: i32s(MAXP), team: i32s(MAXP),
   cpu: i32s(MAXP), pips: i32s(MAXP), tgt: i32s(MAXP), prevB: i32s(MAXP), lastHit: i32s(MAXP), pStk: i32s(MAXP), outAt: i32s(MAXP), bufF: i32s(MAXP * NBTN),
-  combo: i32s(MAXP), bpv: i32s(MAXP), comboN: i32s(MAXP), mvId: i32s(MAXP), mHit: i32s(MAXP), hitDone: i32s(MAXP), charging: i32s(MAXP), diPend: i32s(MAXP), koPend: i32s(MAXP), bounceN: i32s(MAXP), lastBy: i32s(MAXP), stN: i32s(MAXP * NSRC),
+  combo: i32s(MAXP), parN: i32s(MAXP), pChain: i32s(MAXP), lstS: i32s(MAXP), bpv: i32s(MAXP), comboN: i32s(MAXP), mvId: i32s(MAXP), mHit: i32s(MAXP), hitDone: i32s(MAXP), charging: i32s(MAXP), diPend: i32s(MAXP), koPend: i32s(MAXP), bounceN: i32s(MAXP), lastBy: i32s(MAXP), stN: i32s(MAXP * NSRC),
   // bullets
   bx: f64s(MAX_B), by: f64s(MAX_B), bvx: f64s(MAX_B), bvy: f64s(MAX_B), br: f64s(MAX_B), bdmg: f64s(MAX_B), blife: f64s(MAX_B), bhome: f64s(MAX_B), bdist: f64s(MAX_B), bmult: f64s(MAX_B),
   bowner: i32s(MAX_B), bflags: i32s(MAX_B), bcol: i32s(MAX_B),
@@ -37,10 +37,10 @@ export interface CombatState {
   aim: Float64Array; shotCd: Float64Array; dashCd: Float64Array; slide: Float64Array; inv: Float64Array; flash: Float64Array; t: Float64Array; noSteer: Float64Array;
   spP: Float64Array; graze: Float64Array; gStreak: Float64Array; gLast: Float64Array; techBuf: Float64Array; comboT: Float64Array;
   dmgDealt: Float64Array; dmgTaken: Float64Array; bigHit: Float64Array; lastHitF: Float64Array;
-  kbx: Float64Array; kby: Float64Array; charge: Float64Array; nextHit: Float64Array; atkA: Float64Array; carry: Float64Array; lastByF: Float64Array; stF: Float64Array;
+  kbx: Float64Array; kby: Float64Array; charge: Float64Array; nextHit: Float64Array; atkA: Float64Array; carry: Float64Array; lastByF: Float64Array; stF: Float64Array; pg: Float64Array; pLast: Float64Array; pOK: Float64Array; pStart: Float64Array; pCnt: Float64Array; sbT: Float64Array; brCD: Float64Array;
   state: Int32Array; stocks: Int32Array; run: Int32Array; focus: Int32Array; kicked: Int32Array; spReady: Int32Array; charIdx: Int32Array; team: Int32Array;
   cpu: Int32Array; pips: Int32Array; tgt: Int32Array; prevB: Int32Array; lastHit: Int32Array; pStk: Int32Array; outAt: Int32Array; bufF: Int32Array;
-  combo: Int32Array; bpv: Int32Array; comboN: Int32Array; mvId: Int32Array; mHit: Int32Array; hitDone: Int32Array; charging: Int32Array; diPend: Int32Array; koPend: Int32Array; bounceN: Int32Array; lastBy: Int32Array; stN: Int32Array;
+  combo: Int32Array; parN: Int32Array; pChain: Int32Array; lstS: Int32Array; bpv: Int32Array; comboN: Int32Array; mvId: Int32Array; mHit: Int32Array; hitDone: Int32Array; charging: Int32Array; diPend: Int32Array; koPend: Int32Array; bounceN: Int32Array; lastBy: Int32Array; stN: Int32Array;
   bx: Float64Array; by: Float64Array; bvx: Float64Array; bvy: Float64Array; br: Float64Array; bdmg: Float64Array; blife: Float64Array; bhome: Float64Array; bdist: Float64Array; bmult: Float64Array;
   bowner: Int32Array; bflags: Int32Array; bcol: Int32Array;
 }

@@ -1,5 +1,6 @@
 import { BTN, type World } from '@kernel';
 import type { CombatState } from './state';
+import { guardGauge } from './player/parry';
 import { NBTN } from './state';
 
 /** Per-player input context for the current frame. Reused object (no allocation); NOT state — rebuilt every step. */
@@ -43,5 +44,6 @@ export function bufferInputs(w: World, s: CombatState): void {
       if (!(f > 0 && s.gf - f <= 8)) s.bufF[p * NBTN + i] = s.gf;
     }
     s.bpv[p] = b;
+    guardGauge(w, s, p);
   }
 }
