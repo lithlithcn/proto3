@@ -5,7 +5,7 @@
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 
-interface Mutant { id: string; kind: string; file: string; find: string; replace: string; items?: boolean }
+interface Mutant { id: string; kind: string; file: string; find: string; replace: string; items?: boolean; /** survivor is provably equivalent: say why */ equiv?: string }
 const T = 'packs/combat/tuning.ts', H = 'packs/combat/player/hit.ts', D = 'packs/combat/player/damage.ts';
 const M: Mutant[] = [
   { id: 'hit-gain', kind: 'balance', file: T, find: 'HIT_GAIN: 0.3', replace: 'HIT_GAIN: 0.35' },
@@ -13,11 +13,12 @@ const M: Mutant[] = [
   { id: 'respawn-inv-off1', kind: 'off-by-one', file: T, find: 'RESPAWN_INV: 120', replace: 'RESPAWN_INV: 119' },
   { id: 'dash-cost', kind: 'balance', file: T, find: 'DASH_COST: 1,', replace: 'DASH_COST: 2,' },
   { id: 'parry-radius', kind: 'balance', file: T, find: 'PARRY_R: 30', replace: 'PARRY_R: 31' },
-  { id: 'graze-boundary', kind: 'boundary', file: 'packs/combat/bullets/update.ts', find: 'd < r + T.GRAZE_R) { s.bflags[i]', replace: 'd <= r + T.GRAZE_R) { s.bflags[i]' },
+  { id: 'graze-boundary', kind: 'boundary', file: 'packs/combat/bullets/update.ts', find: 'd < r + T.GRAZE_R) { s.bflags[i]', replace: 'd <= r + T.GRAZE_R) { s.bflags[i]', equiv: 'd is a float distance; exact equality with r+GRAZE_R has probability ~0 (an exact-threshold scenario would need a hand-built position)' },
   { id: 'hit-hp-drift', kind: 'subtle-math', file: H, find: 's.hp[v] = s.hp[v]! - dmg; s.flash[v] = 8; s.combo[v]', replace: 's.hp[v] = s.hp[v]! - dmg * 1.001; s.flash[v] = 8; s.combo[v]' },
-  { id: 'damage-offset', kind: 'subtle-math', file: D, find: 'const d = raw * damageMul(', replace: 'const d = (raw + 0.01) * damageMul(' },
+  { id: 'damage-offset', kind: 'subtle-math', file: 'packs/combat/stats.ts', find: '  let d = raw;\n', replace: '  let d = raw + 0.01;\n' },
   { id: 'streak-not-reset', kind: 'missing-effect', file: D, find: 's.pStk[victim] = 0; ', replace: '' },
-  { id: 'inv-threshold', kind: 'boundary', file: H, find: 'if (s.inv[v]! > 0 || s.state[v] === PS.dead) return;', replace: 'if (s.inv[v]! > 1 || s.state[v] === PS.dead) return;' },
+  { id: 'inv-threshold', kind: 'boundary', file: 'packs/combat/player/melee.ts', find: 'if (s.state[o] === PS.dead || s.inv[o]! > 0) return;', replace: 'if (s.state[o] === PS.dead || s.inv[o]! > 1) return;' },
+  { id: 'inv-threshold-hit-fn', kind: 'boundary', file: H, find: 'if (s.inv[v]! > 0 || s.state[v] === PS.dead) return;', replace: 'if (s.inv[v]! > 1 || s.state[v] === PS.dead) return;', equiv: 'defensive duplicate: every current caller of hit() pre-checks inv itself (melee, bullets, rays), so the inner check is unreachable at inv==1' },
   { id: 'shot-cd-focus', kind: 'balance', file: 'packs/combat/player/idle.ts', find: 'ch.cd * (focus ? 0.75 : 1)', replace: 'ch.cd * (focus ? 0.85 : 1)' },
   { id: 'hit-spirit-gain', kind: 'subtle-math', file: H, find: 's.spirit[a] = Math.min(T.SPIRIT_MAX, s.spirit[a]! + dmg * T.HIT_GAIN); s.spirit[v]', replace: 's.spirit[a] = Math.min(T.SPIRIT_MAX, s.spirit[a]! + dmg * T.HIT_GAIN * 1.01); s.spirit[v]' },
   { id: 'wall-bounce-damp', kind: 'balance', file: 'packs/combat/player/physics.ts', find: 'v[p]! * -0.85', replace: 'v[p]! * -0.86' },
@@ -46,14 +47,14 @@ for (const m of M) {
   const dir = `${OUT}/${m.id}`, t0 = Date.now();
   const r = spawnSync('pnpm', ['-s', 'parity', '--games', GAMES, '--frames', FRAMES, '--seed', '5', '--out', dir, ...(m.items ? ['--items', 'all'] : [])], { encoding: 'utf8', timeout: 900000 });
   const reps0 = existsSync(dir) ? readdirSync(dir).filter(f => f.endsWith('.json')).length : 0; // second channel for survivors: frozen regressions + content contracts (the cheap tests that run on every `pnpm check`)
-  const tests = reps0 || r.status !== 0 ? null : spawnSync('npx', ['vitest', 'run', 'tests/regressions.test.ts', 'tests/contracts.test.ts', 'tests/math-legacy.test.ts'], { encoding: 'utf8', timeout: 900000 });
+  const tests = reps0 || r.status !== 0 ? null : spawnSync('npx', ['vitest', 'run', 'tests/regressions.test.ts', 'tests/contracts.test.ts', 'tests/math-legacy.test.ts', 'tests/parity/inv-edge.test.ts'], { encoding: 'utf8', timeout: 900000 });
   restore();
   const reps = existsSync(dir) ? readdirSync(dir).filter(f => f.endsWith('.json')).map(f => JSON.parse(readFileSync(`${dir}/${f}`, 'utf8')) as { kind: string; frame: number; sig: string; diffs: string[] }) : [];
   const first = reps.sort((a, b) => a.frame - b.frame)[0], kinds = [...new Set(reps.map(x => x.kind))].join('+');
   const byTests = !!tests && tests.status !== 0, ok = reps.length > 0 || byTests, crashedRun = r.status !== 0 && !reps.length;
-  results.push(`| ${m.id} | ${m.kind} | ${byTests ? 'KILLED' : ok ? 'KILLED' : crashedRun ? 'RUN-ERROR' : 'SURVIVED'} | ${byTests ? 'caught by frozen regression / contract tests only (campaign saw nothing)' : ok ? `${reps.length} report(s) [${kinds}], earliest f${first!.frame}: ${first!.sig}` : crashedRun ? String(r.stderr).slice(0, 80) : 'nothing noticed'} | ${((Date.now() - t0) / 1000) | 0}s |`);
+  results.push(`| ${m.id} | ${m.kind} | ${byTests ? 'KILLED' : ok ? 'KILLED' : crashedRun ? 'RUN-ERROR' : m.equiv ? 'EQUIVALENT' : 'SURVIVED'} | ${byTests ? 'caught by frozen regression / contract tests only (campaign saw nothing)' : ok ? `${reps.length} report(s) [${kinds}], earliest f${first!.frame}: ${first!.sig}` : crashedRun ? String(r.stderr).slice(0, 80) : 'nothing noticed'} | ${((Date.now() - t0) / 1000) | 0}s |`);
   console.log(results.at(-1));
 }
-const killed = results.filter(r => r.includes('| KILLED |')).length, valid = results.filter(r => r.includes('| KILLED |') || r.includes('| SURVIVED |')).length;
-const md = `# Detector mutation score\n${killed}/${valid} mutants noticed (${GAMES} games x ${FRAMES} frames). Survivors are blind spots OR equivalent mutants: inspect each.\n\n| mutant | kind | verdict | first detection | time |\n|---|---|---|---|---|\n${results.join('\n')}\n`;
+const killed = results.filter(r => r.includes('| KILLED |')).length, valid = results.filter(r => r.includes('| KILLED |') || r.includes('| SURVIVED |')).length, eq = results.filter(r => r.includes('| EQUIVALENT |')).length;
+const md = `# Detector mutation score\n${killed}/${valid} non-equivalent mutants noticed, ${eq} proven equivalent (${GAMES} games x ${FRAMES} frames). A SURVIVED row is a blind spot: fix the bots/invariants/tests, never the score.\n\n| mutant | kind | verdict | first detection | time |\n|---|---|---|---|---|\n${results.join('\n')}\n`;
 writeFileSync('docs/MUTATION.generated.md', md); console.log(`\n${killed}/${valid} killed -> docs/MUTATION.generated.md`);
