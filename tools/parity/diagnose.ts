@@ -46,13 +46,13 @@ function writers(k: K, step: () => void, want: RegExp | null): string[] {
 
 export interface Diagnosis { cls: string; suspect: string; onset: string; trace: object[]; at: object; writers?: string[] }
 
-export function diagnose(a: string, b: string, seed: number, frame: number, firstDiff: string, items: string[] = [], window = 12): Diagnosis {
+export function diagnose(a: string, b: string, seed: number, frame: number, firstDiff: string, items: string[] = [], watch?: string, window = 12): Diagnosis {
   const chars = [a, b], ss = session(a, b, seed, items), k = ss.k, ev: string[] = [], trace: object[] = [];
   const w0 = k.world as unknown as { emit: (t: string, p: unknown) => unknown }, e0 = w0.emit.bind(w0); w0.emit = (t: string, p: unknown) => { ev.push(t + ' ' + JSON.stringify(p).slice(0, 90)); return e0(t, p); };
   let drift0 = '', driftVar = '', wr: string[] = [];
   for (let f = 1; f <= frame; f++) {
     ev.length = 0; const g = ss.pre(f); if (g) ev.push('GIVE ' + g); const [i0, i1] = ss.inputs(f);
-    if (f === frame) { const m = /(?:^|\s)([PBE])\d+\.(\w+)/.exec(firstDiff); const arr = m ? (m[1] === 'P' ? m[2]! : (m[1]!.toLowerCase() + m[2]!)) : null; wr = writers(k, () => k.step([() => i0, () => i1], f), arr ? new RegExp(`^${arr}$`) : null); } else k.step([() => i0, () => i1], f);
+    if (f === frame) { const m = /(?:^|\s)([PBE])\d+\.(\w+)/.exec(firstDiff); const arr = watch ?? (m ? (m[1] === 'P' ? m[2]! : (m[1]!.toLowerCase() + m[2]!)) : null); wr = writers(k, () => k.step([() => i0, () => i1], f), arr ? new RegExp(`^${arr}$`) : null); } else k.step([() => i0, () => i1], f);
     const d = k.diffs('', 1e-9, 5);
     if (d.length && !drift0) { drift0 = `f${f}`; driftVar = d[0]!.trim(); }
     if (f > frame - window) trace.push({ f, drift: d.map(x => x.trim().slice(0, 100)), events: ev.slice(0, 8), players: players(k, chars) });
@@ -67,6 +67,6 @@ export function diagnose(a: string, b: string, seed: number, frame: number, firs
   if (m) { const i = +m[2]!; suspect = m[1] === 'P' ? chars[i]! : m[1] === 'B' ? (chars[(k.s.bowner[i] ?? lbs[i]?.owner) as number] ?? '?') : m[1] === 'E' ? (chars[k.s.eo[i] ?? 0] ?? '?') : '?'; }
   else if (/bullet count/.test(firstDiff) && bad >= 0) suspect = chars[(k.s.bowner[bad] ?? lbs[bad]?.owner) as number] ?? '?';
   const nums = [...firstDiff.matchAll(/proto3=(-?[\d.e+-]+) legacy=(-?[\d.e+-]+)/g)].map(x => Math.abs(+x[1]! - +x[2]!));
-  const cls = /count/.test(firstDiff) ? 'spawn/despawn mismatch' : nums.length && Math.max(...nums) < 1e-9 ? 'float-noise (ulp flip? R97/R109 family)' : /state|stocks|kind/.test(firstDiff) ? 'state-machine mismatch' : drift0 && drift0 !== `f${frame}` ? 'gradual drift (formula/order slightly off)' : 'sudden jump (missing or extra effect)';
+  const cls = firstDiff === 'anomaly' ? 'invariant violation (port still equals legacy: engine rule or shared legacy quirk)' : /count/.test(firstDiff) ? 'spawn/despawn mismatch' : nums.length && Math.max(...nums) < 1e-9 ? 'float-noise (ulp flip? R97/R109 family)' : /state|stocks|kind/.test(firstDiff) ? 'state-machine mismatch' : drift0 && drift0 !== `f${frame}` ? 'gradual drift (formula/order slightly off)' : 'sudden jump (missing or extra effect)';
   return { writers: wr.slice(0, 60), cls, suspect, onset: drift0 ? `${drift0} ${driftVar}` : 'none before failing frame', trace, at };
 }

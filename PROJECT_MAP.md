@@ -22,6 +22,7 @@
 | change KO / respawn | `packs/combat/player/{ko,respawn}.ts` |
 | add or change a character | `packs/touhou/characters/<id>/` (+ `CharacterDef` in `packs/combat/character.ts`) |
 | compare with the old game | `tests/parity/` + `tools/parity/legacy.cjs` |
+| add a self-check for a new system | `packs/<pack>/invariants.ts` (`InvariantDef[]`, registered in the pack; engine in `src/kernel/invariants.ts`, `diag` level in `WorldConfig`; test in `tests/invariants.test.ts`) |
 | hunt parity bugs at scale (user runs it, sends `reports/SEND-ME.md`) | `pnpm parity --games 500 --frames 3600 [--items all]` → `reports/` (SUMMARY, SEND-ME, one JSON per bug with surgical diagnosis: `tools/parity/{campaign,diagnose}.ts`); `pnpm parity replay <file>`; every legacy player field with a same-name port array is auto-compared (`autoKeys`, exemptions in `AUTO_SKIP` with reasons); reports list which system wrote the diverging field (`world.sysTrace`) |
 | see how a pack looks | `packs/sandbox/pack.ts` (demo only) |
 | boot the game in the browser | `src/main.ts`, `src/packs.ts` (auto-discovers `packs/*/pack.ts`) |

@@ -1,3 +1,4 @@
+import type { InvariantDef } from './invariants';
 import type { Schema } from './schema';
 import type { World } from './world';
 import { KernelError } from './errors';
@@ -30,6 +31,8 @@ export interface PackManifest {
   rng?: string[];
   state?: Schema;
   systems?: SystemDef[];
+  /** Self-checks run after every step when `WorldConfig.diag` ≥ 1 (see invariants.ts). */
+  invariants?: InvariantDef[];
   hooks?: HookDef[];
   /** Runs once after state allocation, before frame 0. Seeding initial state goes here. */
   init?(w: World): void;

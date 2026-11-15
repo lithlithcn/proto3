@@ -2,6 +2,7 @@ import { cos, definePack, sin, PI } from '@kernel';
 import { combatSchema, MAXP, PS, type CombatState } from './state';
 import { MAP_LARGE, T, TAU } from './tuning';
 import { systems } from './systems';
+import { invariants } from './invariants';
 import { characters, itemPool, spellPool } from './api';
 import type { ItemDef } from './items/def';
 
@@ -18,6 +19,7 @@ export default definePack({
   ],
   state: combatSchema,
   systems,
+  invariants,
   init(w) {
     const s = w.slice<CombatState>('combat'), cfg = w.cfg.world ?? {}, ps = (cfg['players'] as PlayerCfg[] | undefined) ?? [];
     const map = { ...MAP_LARGE, ...((cfg['map'] as object | undefined) ?? {}) };

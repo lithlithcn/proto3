@@ -7,6 +7,7 @@ export * from './sort';
 export * from './handles';
 export * from './input';
 export * from './pack';
+export * from './invariants';
 export * from './loop';
 export * from './sanitizer';
 export * from './world';

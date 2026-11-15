@@ -19,15 +19,16 @@ const gameOf = (g: number): { a: string; b: string; seed: number } => ({ a: CHAR
 const sigOf = (m: string): string => (/ ([A-Za-z]+\d*\.\w+|[a-z ]+):/.exec(m)?.[1] ?? m.slice(0, 30)).replace(/\d+/g, '#');
 
 const COMMIT = ((): string => { try { const h = execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim(), d = execSync('git status --porcelain', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim(); return h + (d ? '+dirty' : ''); } catch { return 'unknown'; } })();
-interface Report { commit: string; a: string; b: string; seed: number; frame: number; sig: string; kind: 'diff' | 'crash'; items: string[]; gives: string[]; diffs: string[]; crash?: string; inputs: { f: number; p0: unknown; p1: unknown }[]; repro: string; diag?: Diagnosis }
+interface Report { commit: string; a: string; b: string; seed: number; frame: number; sig: string; kind: 'diff' | 'crash' | 'anomaly'; items: string[]; gives: string[]; diffs: string[]; crash?: string; inputs: { f: number; p0: unknown; p1: unknown }[]; repro: string; diag?: Diagnosis }
 
 /** Plays one game; returns a report on the first divergence (all differing variables of that frame) or crash, else null. */
 export function play(a: string, b: string, seed: number, frames: number, until = Infinity, items: string[] = itemList()): Report | null {
-  const ss = session(a, b, seed, items), k = ss.k, ring: Report['inputs'] = [], gives: string[] = [];
+  const ss = session(a, b, seed, items), k = ss.k, ring: Report['inputs'] = [], gives: string[] = []; let nrep = 0;
   const mk = (frame: number, kind: Report['kind'], diffs: string[], crash?: string): Report => ({ commit: COMMIT, a, b, seed, frame, kind, diffs, crash, items, gives: gives.slice(-6), sig: sigOf(diffs[0] ?? crash ?? ''), inputs: ring.slice(), repro: `pnpm parity replay <this file>` });
   for (let f = 1; f <= Math.min(frames, until); f++) {
     const g = ss.pre(f); if (g) gives.push(`f${f} ${g}`); const [i0, i1] = ss.inputs(f); ring.push({ f, p0: i0, p1: i1 }); if (ring.length > 60) ring.shift();
     try { k.step([() => i0, () => i1], f); } catch (e) { return mk(f, 'crash', [], String((e as Error).stack ?? e).split('\n').slice(0, 8).join('\n')); }
+    const reps = k.world.reports; if (reps.length > nrep) { const msgs = reps.slice(nrep).map(x => `${x.code} ${x.where}: ${x.message}`); nrep = reps.length; const r = mk(f, 'anomaly', msgs); if (until === Infinity) { const arr = /: (\w+?)(?:\[|\s|=)/.exec(msgs[0]!.split(': ').slice(1).join(': '))?.[1]; r.diag = diagnose(a, b, seed, f, 'anomaly', items, arr); r.sig = `anomaly ${msgs[0]!.split(' ')[1]} @${r.diag.suspect}`; } return r; }
     const d = k.diffs(`${a}/${b}`, 1e-6, 60); if (d.length) { const r = mk(f, 'diff', d); if (until === Infinity) { r.diag = diagnose(a, b, seed, f, d[0]!, items); r.sig += ` @${r.diag.suspect}`; } return r; }
   }
   return null;
@@ -57,8 +58,9 @@ if (argv[0] === '--worker') { // child: games idx, idx+W, ...
   const g = new Map<string, typeof rs>(); for (const x of rs) g.set(x.r.sig, [...(g.get(x.r.sig) ?? []), x]);
   const rows = [...g].sort((x, y) => y[1].length - x[1].length).map(([sig, l]) => { const e = l.reduce((m, x) => (x.r.frame < m.r.frame ? x : m)); return `| ${sig} | ${l.length} | ${e.r.diag?.cls ?? e.r.kind} | ${e.r.a}/${e.r.b} | ${e.r.frame} | ${e.f} | ${(e.r.diffs[0] ?? e.r.crash ?? '').split('\n')[0]!.slice(0, 110)} |`; });
   const md = `# Parity campaign\n${GAMES} games x ${FRAMES} frames, seed ${SEED0}, commit ${COMMIT}, ${((Date.now() - t0) / 1000).toFixed(0)}s: **${fail} failing**, ${GAMES - fail} identical to legacy.\n\n| signature (variable @character) | games | class | earliest repro | frame | report file | first difference |\n|---|---|---|---|---|---|---|\n${rows.join('\n')}\n`;
-  writeFileSync(`${OUT}/SUMMARY.md`, md); console.log('\n' + md);
+  const un = makePair(['reimu', 'reimu'], 1).uncovered(); const cov = `\n## Oracle coverage\nLegacy player fields NOT compared (no same-name port array; to map by hand or justify): ${un.length}\n${un.join(' ')}\n`;
+  writeFileSync(`${OUT}/SUMMARY.md`, md + cov); console.log('\n' + md);
   // one self-contained file to send: the summary + the full diagnosis of the earliest repro of each signature (2 shortest per signature, capped)
-  let send = md + '\n'; for (const [sig, l] of [...g].sort((x, y) => y[1].length - x[1].length)) for (const x of l.sort((p, q) => p.r.frame - q.r.frame).slice(0, 2)) { const { inputs, ...rest } = x.r; const blob = `\n## ${sig} — ${x.f}\n\`\`\`json\n${JSON.stringify({ ...rest, inputs: inputs.slice(-12) })}\n\`\`\`\n`; if (send.length + blob.length < 150000) send += blob; }
+  let send = md + cov + '\n'; for (const [sig, l] of [...g].sort((x, y) => y[1].length - x[1].length)) for (const x of l.sort((p, q) => p.r.frame - q.r.frame).slice(0, 2)) { const { inputs, ...rest } = x.r; const blob = `\n## ${sig} — ${x.f}\n\`\`\`json\n${JSON.stringify({ ...rest, inputs: inputs.slice(-12) })}\n\`\`\`\n`; if (send.length + blob.length < 150000) send += blob; }
   writeFileSync(`${OUT}/SEND-ME.md`, send); console.log(`\n=> send me ${OUT}/SEND-ME.md (${(send.length / 1024).toFixed(0)} KB); all ${rs.length} reports are in ${OUT}/`);
 }

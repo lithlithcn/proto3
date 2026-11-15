@@ -17,7 +17,10 @@ export interface WorldConfig {
   sanitize?: boolean;
   /** Rethrow hook/system errors instead of isolating them (tests). */
   strict?: boolean;
+  /** Self-diagnosis level (0 off, 1 pack invariants, 2 + non-finite scan of all state). Reads state only; never alters the simulation. */
+  diag?: DiagLevel;
 }
+import { type DiagLevel, runInvariants } from './invariants';
 export interface Report { frame: number; code: string; where: string; message: string }
 
 const MAX_CHAIN = 32;
@@ -49,6 +52,7 @@ export class World {
   private readonly rngCache = new Map<string, RngStream>();
   private readonly systems: Ordered<SystemDef>[][];
   /** Diagnosis hook (tools/parity): called before (`false`) and after (`true`) every system run. Never set in the game. */
+  private readonly diagSeen = new Set<string>();
   sysTrace: ((system: string, after: boolean) => void) | null = null;
   private readonly hooks = new Map<string, Ordered<HookDef>[]>();
   private readonly hookFull: string[] = [];
@@ -153,6 +157,7 @@ export class World {
       }
     };
     if (this.cfg.sanitize) withSanitizer(run); else run();
+    if (this.cfg.diag) runInvariants(this, this.cfg.diag, this.diagSeen, (c, wh, m) => this.reports.push({ frame: this.frame, code: c, where: wh, message: m }), () => this.reports.length);
     const prev = this.k['prevBtn'] as Int32Array;
     for (let p = 0; p < this.players; p++) prev[p] = this.cur[p * 3 + 2]!;
   }
