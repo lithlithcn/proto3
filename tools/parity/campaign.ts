@@ -1,5 +1,6 @@
 /* Parity campaign: plays many random games against the frozen legacy game and writes one report per divergence / crash.
  *   pnpm parity [--games 200] [--frames 2400] [--seed 1] [--workers N] [--chars a,b,c] [--out reports]
+ *   pnpm parity verify [dir]              after a fix: replay every report (+600 frames) -> FIXED / STILL / CHANGED, exit 1 if any still fails
  *   pnpm parity replay <report.json>      re-run one report and print every differing variable at its frame
  * Reports are plain JSON (+ SUMMARY.md): send the reports/ folder (or just SUMMARY.md + a few files) to Claude. */
 import { execSync, spawn } from 'node:child_process';
@@ -9,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { makePair } from '../../tests/parity/harness';
 import { ROSTER } from '../../tests/parity/fuzzbot';
 import { session } from './session';
+import { invariantCoverage } from '../../src/kernel';
 import { diagnose, type Diagnosis } from './diagnose';
 
 const argv = process.argv.slice(2), opt = (k: string, d: string): string => { const i = argv.indexOf('--' + k); return i >= 0 ? argv[i + 1]! : d; };
@@ -42,6 +44,14 @@ if (argv[0] === '--worker') { // child: games idx, idx+W, ...
     if (r) writeFileSync(`${OUT}/${r.sig.replace(/[^\w.#-]/g, '_')}__${a}-${b}-${seed}.json`, JSON.stringify(r, null, 1));
     console.log(`${r ? 'FAIL' : 'ok  '} #${g} ${a}/${b} seed ${seed} ${r ? `f${r.frame} ${r.sig}` : ''} (${((Date.now() - t0) / 1000).toFixed(1)}s)`);
   }
+} else if (argv[0] === 'verify') { // after a fix: replay every report of a folder (+600 frames past its divergence) and say FIXED / STILL / CHANGED
+  const dir = argv[1] && !argv[1].startsWith('--') ? argv[1] : OUT; let bad = 0;
+  for (const fn of readdirSync(dir).filter(x => x.endsWith('.json'))) {
+    const r = JSON.parse(readFileSync(`${dir}/${fn}`, 'utf8')) as Report; if (!r.a) continue;
+    const again = play(r.a, r.b, r.seed, r.frame + 600, Infinity, r.items), same = again && again.sig === r.sig, st = !again ? 'FIXED  ' : same ? (again.frame === r.frame ? 'STILL  ' : 'MOVED  ') : 'CHANGED';
+    if (again) bad++; console.log(`${st} ${fn}${again ? `  -> f${again.frame} ${again.sig}: ${(again.diffs[0] ?? again.crash ?? '').slice(0, 100)}` : ''}`);
+  }
+  console.log(`\n${bad ? bad + ' report(s) still failing: not done' : 'all reports replay clean'} — now run a fresh campaign (pnpm parity --games 100 --items all) and pnpm check to catch regressions elsewhere`); process.exit(bad ? 1 : 0);
 } else if (argv[0] === 'replay' && argv[1]) {
   const r = JSON.parse(readFileSync(argv[1], 'utf8')) as Report; const again = play(r.a, r.b, r.seed, r.frame + 1, r.frame, r.items);
   console.log(`${r.a}/${r.b} seed ${r.seed} frame ${r.frame} (${r.kind})`); console.log((again?.diffs ?? ['no divergence reproduced']).join('\n')); if (r.diag) console.log(JSON.stringify({ cls: r.diag.cls, suspect: r.diag.suspect, onset: r.diag.onset, at: r.diag.at }, null, 1)); if (r.crash) console.log(r.crash);
@@ -58,7 +68,7 @@ if (argv[0] === '--worker') { // child: games idx, idx+W, ...
   const g = new Map<string, typeof rs>(); for (const x of rs) g.set(x.r.sig, [...(g.get(x.r.sig) ?? []), x]);
   const rows = [...g].sort((x, y) => y[1].length - x[1].length).map(([sig, l]) => { const e = l.reduce((m, x) => (x.r.frame < m.r.frame ? x : m)); return `| ${sig} | ${l.length} | ${e.r.diag?.cls ?? e.r.kind} | ${e.r.a}/${e.r.b} | ${e.r.frame} | ${e.f} | ${(e.r.diffs[0] ?? e.r.crash ?? '').split('\n')[0]!.slice(0, 110)} |`; });
   const md = `# Parity campaign\n${GAMES} games x ${FRAMES} frames, seed ${SEED0}, commit ${COMMIT}, ${((Date.now() - t0) / 1000).toFixed(0)}s: **${fail} failing**, ${GAMES - fail} identical to legacy.\n\n| signature (variable @character) | games | class | earliest repro | frame | report file | first difference |\n|---|---|---|---|---|---|---|\n${rows.join('\n')}\n`;
-  const un = makePair(['reimu', 'reimu'], 1).uncovered(); const cov = `\n## Oracle coverage\nLegacy player fields NOT compared (no same-name port array; to map by hand or justify): ${un.length}\n${un.join(' ')}\n`;
+  const probe = makePair(['reimu', 'reimu'], 1), un = probe.uncovered(), ic = invariantCoverage(probe.world); const cov = `\n## Self-diagnosis coverage (fields with a value contract / all fields; the rest only get the NaN/Infinity scan)\n${Object.entries(ic).map(([k, v]) => `- ${k}: ${v.contracts}/${v.fields}`).join('\n')}\n\n## Oracle coverage\nLegacy player fields NOT compared (no same-name port array; to map by hand or justify): ${un.length}\n${un.join(' ')}\n`;
   writeFileSync(`${OUT}/SUMMARY.md`, md + cov); console.log('\n' + md);
   // one self-contained file to send: the summary + the full diagnosis of the earliest repro of each signature (2 shortest per signature, capped)
   let send = md + cov + '\n'; for (const [sig, l] of [...g].sort((x, y) => y[1].length - x[1].length)) for (const x of l.sort((p, q) => p.r.frame - q.r.frame).slice(0, 2)) { const { inputs, ...rest } = x.r; const blob = `\n## ${sig} — ${x.f}\n\`\`\`json\n${JSON.stringify({ ...rest, inputs: inputs.slice(-12) })}\n\`\`\`\n`; if (send.length + blob.length < 150000) send += blob; }

@@ -47,8 +47,8 @@ function entities(s: CombatState): string[] {
   return o;
 }
 export const invariants: InvariantDef[] = [
-  { id: 'counts', check: w => { const s = combatOf(w); return s.n < 1 || s.n > MAXP ? `n = ${s.n}, expected 1..${MAXP}` : null; } },
-  { id: 'players', check: w => players(combatOf(w)) },
-  { id: 'bullets', check: w => bullets(combatOf(w)) },
-  { id: 'entities', check: w => entities(combatOf(w)) },
+  { id: 'counts', covers: ['n'], check: w => { const s = combatOf(w); return s.n < 1 || s.n > MAXP ? `n = ${s.n}, expected 1..${MAXP}` : null; } },
+  { id: 'players', covers: ['state', 'stocks', 'spirit', 'boost', 'hp', 'x', 'y', 'vx', 'vy', 'tgt', 'lastHit', 'lastBy'], check: w => players(combatOf(w)) },
+  { id: 'bullets', covers: ['nb', 'bowner', 'br', 'bvx', 'bvy', 'bx', 'by', 'blife', 'bkind'], check: w => bullets(combatOf(w)) },
+  { id: 'entities', covers: ['nent', 'eo', 'ek', 'ex', 'ey'], check: w => entities(combatOf(w)) },
 ];
