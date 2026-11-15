@@ -29,5 +29,9 @@ Owner: Houcine (HKN), French-speaking; reply in French, code/docs in English. Mi
 ## Game knowledge base
 `docs/game/` (README = template): one short English sheet per mechanic/character/item (rule, legacy location, port files, tests, bugs). A port/fix/feature is DONE only when its sheet is created/updated; `tests/docs.test.ts` rejects dead paths. Read the sheet before touching the area (`pnpm map` lists them).
 
+## After every push
+Check CI (`gh run list --limit 1`, `gh run watch`): local gate passing is not enough (GitHub runners are slower: no test may sit near the 5 s default timeout). A red CI e-mails the owner; never leave main red.
+Bug log: `docs/game/bugs.md` is filled by `pnpm parity keep` (`--attempts` = what failed); read it before fixing similar things.
+
 ## Before coding a feature
 Answer DESIGN §21 (which pack, state slice, events, inputs, UI slot, i18n keys, tests, debug output).

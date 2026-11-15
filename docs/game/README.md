@@ -16,5 +16,6 @@ Layout: `mechanics/<name>.md` (cross-cutting rules), `characters/<id>.md`, `item
 Links to code use file paths and symbol names (stable), never line numbers (they rot). `tests/docs.test.ts` fails when a backticked `packs/`, `src/`, `tools/` or `tests/` path in a sheet no longer exists.
 
 ## Index
+- [bugs.md](bugs.md) — every fixed bug: symptom, cause, failed attempts, fix
 - [mechanics/frame-order.md](mechanics/frame-order.md) — legacy step order vs port systems (3 bugs came from this)
 - [mechanics/doppelganger.md](mechanics/doppelganger.md) — clone item and its bare stand-in

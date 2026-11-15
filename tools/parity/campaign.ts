@@ -59,7 +59,7 @@ if (!isMain) { /* imported by tests: expose play() only */ } else if (argv[0] ==
   }
   console.log(`\n${bad ? bad + ' report(s) still failing: not done' : 'all reports replay clean'} — now run a fresh campaign (pnpm parity --games 100 --items all) and pnpm check to catch regressions elsewhere`); process.exit(bad ? 1 : 0);
 } else if (argv[0] === 'keep' && argv[1]) {
-  // post-mortem is MANDATORY: every fixed bug teaches the environment (DESIGN §28.x): --cause "<confirmed root cause>" [--family x] [--quirk <id> --tags a,b --port path1,path2] [--missed "why detection was late"] [--probes N manual probes used]
+  // post-mortem is MANDATORY: every fixed bug teaches the environment (DESIGN §28.x): --cause "<confirmed root cause>" [--family x] [--quirk <id> --tags a,b --port path1,path2] [--missed "why detection was late"] [--probes N manual probes used] [--attempts "what I tried that failed"]
   if (!argv.includes('--cause')) { console.error('keep needs --cause "<confirmed root cause>" (and ideally --family, --quirk <id> --tags a,b --port files, --missed "<why it was not caught earlier>", --probes N)'); process.exit(2); }
   const o = (k: string): string | undefined => { const i = argv.indexOf('--' + k); return i > 0 ? argv[i + 1] : undefined; };
   const { readFileSync: rf, writeFileSync: wf, appendFileSync: af } = await import('node:fs'), cause = o('cause')!;
@@ -68,6 +68,8 @@ if (!isMain) { /* imported by tests: expose play() only */ } else if (argv[0] ==
   const r = JSON.parse(readFileSync(argv[1], 'utf8')) as Report; mkdirSync('tests/regressions', { recursive: true });
   const name = `${r.sig.replace(/[^\w#-]+/g, '_')}__${r.a}-${r.b}-${r.seed}`, spec = { a: r.a, b: r.b, seed: r.seed, items: r.items, plan: r.plan, frames: Math.max(r.frame + 600, r.frames ?? 0), was: { frame: r.frame, sig: r.sig, first: r.diffs[0] ?? r.crash ?? '', commit: r.commit } };
   writeFileSync(`tests/regressions/${name}.json`, JSON.stringify(spec, null, 1)); console.log(`kept tests/regressions/${name}.json (${spec.frames} frames)`);
+  // human-readable bug log (newest last): what happened, why, what did NOT work, how it was fixed — read it before fixing anything similar
+  mkdirSync('docs/game', { recursive: true }); af('docs/game/bugs.md', `\n## ${new Date().toISOString().slice(0, 10)} · ${r.a}/${r.b} · ${o('family') ?? 'misc'}\n- Symptom: ${r.diffs[0] ?? r.crash ?? r.sig} (seed ${r.seed}, frame ${r.frame})\n- Cause: ${cause}\n- Fix in: ${o('port') ? o('port')!.split(',').map(x => '`' + x + '`').join(', ') : '-'}${o('quirk') ? ` · quirk \`${o('quirk')}\`` : ''}\n- Not detected earlier because: ${o('missed') ?? '-'}\n${o('attempts') ? `- Attempts that did NOT work: ${o('attempts')}\n` : ''}- Regression: \`tests/regressions/${name}.json\`\n`);
 } else if (argv[0] === 'replay' && argv[1]) {
   const r = JSON.parse(readFileSync(argv[1], 'utf8')) as Report; const again = play(r.a, r.b, r.seed, r.frame + 1, r.frame, r.items, r.plan);
   console.log(`${r.a}/${r.b} seed ${r.seed} frame ${r.frame} (${r.kind})`); console.log((again?.diffs ?? ['no divergence reproduced']).join('\n')); if (r.diag) console.log(JSON.stringify({ cls: r.diag.cls, suspect: r.diag.suspect, onset: r.diag.onset, at: r.diag.at }, null, 1)); if (r.crash) console.log(r.crash);
