@@ -1,6 +1,6 @@
 /* pnpm gate — THE definition of done for any lot of work (DESIGN §28, CLAUDE.md). One command, in order, stops at the first failure:
  *   1 typecheck + lint + all tests (incl. frozen regressions, contracts, math, diagnostics neutrality)
- *   2 oracle campaign: fresh seed per commit (so repeated gates keep exploring), 0 divergences required (also with all items when --items)
+ *   2 oracle campaign: fresh seed per commit (so repeated gates keep exploring), 0 divergences required (plus, with --items, the MATRIX: every item x every character, 128 short games)
  *   3 coverage never goes down: value-contract fields per pack + oracle-compared fields vs docs/coverage.baseline.json (raise it with --bless)
  * Output ends with one line: GATE PASS / GATE FAIL <step>. Nothing here is optional: a lot is not "done" until it passes. */
 import { spawnSync } from 'node:child_process';
@@ -15,7 +15,7 @@ const run = (name: string, cmd: string, args: string[]): void => { console.log(`
 run('check (typecheck + lint + tests)', 'pnpm', ['-s', 'check']);
 const head = (() => { try { return parseInt(execSync('git rev-parse --short=7 HEAD', { encoding: 'utf8' }).trim(), 16) % 90000 + 1000; } catch { return 1; } })();
 run(`oracle campaign (${GAMES} games x ${FRAMES} f, seed ${head})`, 'pnpm', ['-s', 'parity', '--games', GAMES, '--frames', FRAMES, '--seed', String(head), '--out', 'reports/gate']);
-if (has('items')) run('oracle campaign with all items', 'pnpm', ['-s', 'parity', '--games', GAMES, '--frames', FRAMES, '--seed', String(head + 1), '--items', 'all', '--out', 'reports/gate-items']);
+if (has('items')) run('matrix: every item x every character', 'pnpm', ['-s', 'parity', '--matrix', '--frames', '700', '--seed', String(head + 1), '--out', 'reports/gate-items']);
 console.log('\n== coverage ratchet');
 const probe = makePair(['reimu', 'reimu'], 1), ic = invariantCoverage(probe.world), now: Record<string, number> = { oracleUncovered: probe.uncovered().length };
 for (const [pack, c] of Object.entries(ic)) now[`contracts:${pack}`] = c.contracts;

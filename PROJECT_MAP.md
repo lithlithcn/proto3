@@ -23,6 +23,9 @@
 | add or change a character | `packs/touhou/characters/<id>/` (+ `CharacterDef` in `packs/combat/character.ts`) |
 | compare with the old game | `tests/parity/` + `tools/parity/legacy.cjs` |
 | add a self-check for a new system | `packs/<pack>/invariants.ts` (`InvariantDef[]`, registered in the pack; engine in `src/kernel/invariants.ts`, `diag` level in `WorldConfig`; test in `tests/invariants.test.ts`) |
+| find the root cause of a divergence report | `pnpm rca <report.json>` (`tools/parity/why.ts`) |
+| test every item x every character | `pnpm parity --matrix` |
+| what the legacy clone stand-in lacks | `pnpm spec standin` (`tools/spec/standin.ts`) |
 | freeze a fixed bug as a regression test | `pnpm parity keep <report.json>` → `tests/regressions/` (run by `tests/regressions.test.ts`) |
 | after fixing a reported bug | `pnpm parity verify <reports dir>` (FIXED/STILL/CHANGED) then `pnpm check` and a fresh `pnpm parity --items all` |
 | hunt parity bugs at scale (user runs it, sends `reports/SEND-ME.md`) | `pnpm parity --games 500 --frames 3600 [--items all]` → `reports/` (SUMMARY, SEND-ME, one JSON per bug with surgical diagnosis: `tools/parity/{campaign,diagnose}.ts`); `pnpm parity replay <file>`; every legacy player field with a same-name port array is auto-compared (`autoKeys`, exemptions in `AUTO_SKIP` with reasons); reports list which system wrote the diverging field (`world.sysTrace`) |

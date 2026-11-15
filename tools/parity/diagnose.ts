@@ -56,8 +56,8 @@ function traced(k: K, step: () => void, f: number, final: boolean, want: { arr: 
 
 export interface Diagnosis { cls: string; suspect: string; onset: string; trace: object[]; at: object; provenance?: Prov; report: { facts: string[]; confirmed: string[]; probable: string[]; hypotheses: string[]; missing: string[] } }
 
-export function diagnose(a: string, b: string, seed: number, frame: number, firstDiff: string, items: string[] = [], watch?: string, window = 60): Diagnosis {
-  const chars = [a, b], ss = session(a, b, seed, items), k = ss.k, ev: string[] = [], trace: object[] = [];
+export function diagnose(a: string, b: string, seed: number, frame: number, firstDiff: string, items: string[] = [], watch?: string, window = 60, plan = ''): Diagnosis {
+  const chars = [a, b], ss = session(a, b, seed, items, plan), k = ss.k, ev: string[] = [], trace: object[] = [];
   const w0 = k.world as unknown as { emit: (t: string, p: unknown) => unknown }, e0 = w0.emit.bind(w0); w0.emit = (t: string, p: unknown) => { ev.push(t + ' ' + JSON.stringify(p).slice(0, 90)); return e0(t, p); };
   let drift0 = '', driftVar = ''; const prov: Prov = { writes: [], births: [], summary: [] };
   bw.clear();

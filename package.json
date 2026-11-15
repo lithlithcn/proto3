@@ -4,7 +4,9 @@
   "version": "0.0.1",
   "type": "module",
   "packageManager": "pnpm@10.28.0",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -20,7 +22,8 @@
     "mutate": "tsx tools/parity/mutate.ts",
     "gate": "tsx tools/gate.ts",
     "map": "tsx tools/spec/cli.ts map",
-    "audit:legacy": "python3 tools/audit/extract.py && node tools/audit/dump.js build/legacy-main.js && node tools/audit/gen-inventory.js"
+    "audit:legacy": "python3 tools/audit/extract.py && node tools/audit/dump.js build/legacy-main.js && node tools/audit/gen-inventory.js",
+    "rca": "tsx tools/parity/why.ts"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
