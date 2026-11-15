@@ -55,7 +55,7 @@ function fireLight(c: PCtx, focus: boolean): void {
   if (s.clone[p]! > 0) { // the Doppelganger fires the same pattern from its own spot (legacy cloneOf): the shooter is moved there for the call
     const [x, y] = clonePos(s, p), ox = s.x[p]!, oy = s.y[p]!, oa = s.aim[p]!, a = cloneAim(s, p);
     s.x[p] = x; s.y[p] = y; s.aim[p] = a;
-    ch.shot({ w, s, p, a, focus, pm: powerMul(s, p, 0) * CLONE.shotMul, lv: s.power[p]! | 0 });
+    ch.shot({ w, s, p, a, focus, pm: powerMul(s, p, 0) * CLONE.shotMul, lv: s.power[p]! | 0, clone: true });
     s.x[p] = ox; s.y[p] = oy; s.aim[p] = oa;
   }
 }

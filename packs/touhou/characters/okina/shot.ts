@@ -5,7 +5,7 @@ import { EK_ODR, SEA, SEAC } from './kinds';
 
 /** Okina's light shot: the shot of the current season, fired from her and from every door (doors aim at the nearest foe; with Focus only the doors shoot). Total power is shared out between sources. */
 export function okinaShot(c: ShotCtx): void {
-  const { s, p, a } = c, sn = c.w.slice<TouhouState>('touhou').oS[p]!, D: number[] = []; entsOf(s, EK_ODR, p, D);
+  const { s, p, a } = c, sn = c.clone ? 0 : c.w.slice<TouhouState>('touhou').oS[p]!, D: number[] = []; entsOf(s, EK_ODR, p, D);
   const src: [number, number, number][] = c.focus && D.length ? [] : [[s.x[p]!, s.y[p]!, 1]];
   for (const d of D) src.push([s.ex[d]!, s.ey[d]!, 0]);
   const k = c.pm * (src.length > 1 ? 1.3 / src.length : 1);

@@ -3,7 +3,7 @@ import type { PCtx } from './input';
 import type { MeleeName, MoveDef } from './moves';
 
 /** Context handed to a character's heavy-shot function: `k` is the per-bullet damage base (power multiplier), `src` the stun-repeat source id for `heavyBullet`. */
-export interface HeavyCtx { w: World; s: CombatState; p: number; m: MoveDef; src: number; a: number; k: number }
+export interface HeavyCtx { w: World; s: CombatState; p: number; m: MoveDef; src: number; a: number; k: number; /** fired by the Doppelganger (bare stand-in in legacy: per-player extras such as cooldown fields read as unset and are not written back) */ clone?: boolean }
 import type { CombatState } from './state';
 
 /** Virtual input of one player this frame (legacy `I`): a character's `inp` hook may rewrite it before the combat logic reads it. */
@@ -14,7 +14,7 @@ export interface SpellCtx { w: World; s: CombatState; p: number; o: number; k: n
 export interface SpellDef { name: string; loop: number; fn(c: SpellCtx): void }
 
 /** Context handed to a character's light-shot function (all values already resolved by the combat systems). */
-export interface ShotCtx { w: World; s: CombatState; p: number; a: number; focus: boolean; pm: number; lv: number }
+export interface ShotCtx { w: World; s: CombatState; p: number; a: number; focus: boolean; pm: number; lv: number; /** fired by the Doppelganger: legacy hands the shot a bare stand-in object, so per-player extras (e.g. Okina's season) read as 0 */ clone?: boolean }
 
 /** Content type `character` (DESIGN §15). More members (heavy, melee, spell, skills, passives, cpu, visuals) are added as batches are ported. */
 export interface CharacterDef {
