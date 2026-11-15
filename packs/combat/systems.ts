@@ -64,5 +64,5 @@ const rayStep: SystemDef = { id: 'ray-step', phase: 'sim', after: ['char-tick'],
 const beams: SystemDef = { id: 'ko-beam', phase: 'sim', after: ['items'], run(w) { const s = combatOf(w); if (!s.skip) updateBeams(w, s); } };
 const ents: SystemDef = { id: 'entities', phase: 'sim', after: ['status'], run(w) { const s = combatOf(w); if (!s.skip) updateEnts(s); } };
 const buffer: SystemDef = { id: 'input-buffer', phase: 'sim', after: ['entities'], run(w) { const s = combatOf(w); if (!s.skip) bufferInputs(w, s); } };
-const motionStep: SystemDef = { id: 'bullet-motion', phase: 'sim', after: ['input-buffer'], run(w) { const s = combatOf(w); if (!s.skip) motion(s); } };
+const motionStep: SystemDef = { id: 'bullet-motion', phase: 'sim', after: ['input-buffer'], run(w) { const s = combatOf(w); if (!s.skip) motion(s, w); } };
 export const systems: SystemDef[] = [spiritBegin, gate, players, phys, bullets, items, beams, itemWorld, status, ents, buffer, baseEnd, itemLate, motionStep, charTick, rayStep, spiritEnd];

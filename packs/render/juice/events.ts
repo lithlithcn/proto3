@@ -9,7 +9,7 @@ import { big, burst, crack, flash, juiceOf, tickJuice, txt, type Juice } from '.
 const jq = (w: Parameters<typeof juiceOf>[0]): { ev: string; gf: number }[] => { const q = juiceOf(w).q; if (q.length > 4096) q.splice(0, 2048); return q; };
 type Ev = Record<string, number | boolean | undefined> & { gf: number };
 const H: Record<string, (j: Juice, e: never) => void> = {};
-const on = <P>(id: string, event: string, f: (j: Juice, p: P & { gf: number }) => void): HookDef<P> => { H[event] = f as never; return { id, event, phase: 'after', run(w, ev) { const s = combatOf(w), p = ev.payload as Record<string, number>; const q = p['p']; jq(w).push({ ev: event, gf: s.gf, x: q !== undefined ? s.x[q]! : 0, y: q !== undefined ? s.y[q]! : 0, ...p, px: q !== undefined ? s.x[q]! : 0, py: q !== undefined ? s.y[q]! : 0, pa: q !== undefined ? s.aim[q]! : 0 } as never); } }; };
+const on = <P>(id: string, event: string, f: (j: Juice, p: P & { gf: number }) => void): HookDef<P> => { H[event] = f as never; return { id, event, phase: 'after', run(w, ev) { const s = combatOf(w), p = ev.payload as Record<string, number>; const q = p['p'] ?? p['victim']; jq(w).push({ ev: event, gf: s.gf, x: q !== undefined ? s.x[q]! : 0, y: q !== undefined ? s.y[q]! : 0, ...p, px: q !== undefined ? s.x[q]! : 0, py: q !== undefined ? s.y[q]! : 0, pa: q !== undefined ? s.aim[q]! : 0, pcpu: q !== undefined ? s.cpu[q]! : 0 } as never); } }; };
 const col = (p: number): string => COLS[(p < 0 ? 0 : p) % 8]!;
 
 interface HitP { victim: number; attacker: number; dmg: number; combo: number; heavy: boolean; x: number; y: number; dx: number; dy: number }
@@ -45,7 +45,7 @@ const onTick: HookDef<{ gf: number }> = { id: 'juice-tick', event: 'combat:fx-ti
   const pos: number[] = []; for (let p = 0; p < s.n; p++) pos.push(s.x[p]!, s.y[p]!);
   jq(w).push({ ev: 'combat:fx-tick', gf: ev.payload.gf, tr, pos } as never);
 } };
-type Pp = { p: number; px: number; py: number; pa: number };
+type Pp = { p: number; px: number; py: number; pa: number; pcpu: number };
 const onGraze = on<Pp & { x: number; y: number; k: number; streak: number }>('juice-graze', 'combat:graze', (j, e) => {
   burst(j, e.x, e.y, '#bdf', 2); if (e.k > 1) burst(j, e.x, e.y, '#fff', 4);
   if (j.GZ.length < 60) j.GZ.push({ x: e.px, y: e.py, p: e.p, a: Math.atan2(e.y - e.py, e.x - e.px), t: e.k > 1 ? 12 : 8 });
@@ -95,6 +95,7 @@ const onFx = on<{ op: string; a: (number | string)[] }>('juice-fx', 'combat:fx',
     case 'flash': flash(j, a[0] as number, a[1] as string); break;
     case 'add': { const n = a[0] as string, v = J[n]! + (a[1] as number), cap = a[2] as number; J[n] = cap ? Math.min(cap, v) : v; break; }
     case 'max': J[a[0] as string] = Math.max(J[a[0] as string]!, a[1] as number); break;
+    case 'edge': j.FX.push({ x: (a[0] as number) + (j.rnd() - 0.5) * 20, y: (a[1] as number) + (j.rnd() - 0.5) * 20, vx: 0, vy: -1, t: 16, c: '#f44' }); break; // red-zone damage sparks (line 357)
     case 'crack': crack(j, a[0] as number, a[1] as number); break;
     case 'push': { const o: Record<string, unknown> = {}; for (let i = 1; i + 1 < a.length; i += 2) o[a[i] as string] = a[i + 1]; (j as unknown as Record<string, unknown[]>)[a[0] as string]!.push(o); break; }
   }
@@ -105,7 +106,21 @@ const onClash = on<{ x: number; y: number }>('juice-clash', 'combat:clash', (j, 
   const x = e.x, y = e.y; burst(j, x, y, '#fff', 24); j.WAVES.push({ x, y, t: 14, T: 14, spd: 14, th: 24, inv: 1 }); for (let i = 0; i < 10; i++) j.LINES.push({ x, y, a: i * 6.2832 / 10, t: 12, T: 12, len: 90 });
   j.shake = Math.min(40, j.shake + 16); j.invF = Math.max(j.invF, 4); txt(j, x, y - 30, 'CLASH!', '#fff', 20);
 });
-export const juiceHooks: HookDef[] = [onCancel, onClash, onReady, onFx, onPivot, onCancelB, onCd, onKick, onGlide, onGrab, onHeavy, onBClash, onLight, onSpell, onCapture, onTick, onHit, onBreak, onPip, onGraze, onPower, onRefused, onParry];
+const onChip = on<Pp & { dmg: number }>('juice-spell-chip', 'combat:spell-chip', (j, e) => txt(j, e.px, e.py - 40, '-' + Math.round(e.dmg), '#f8f', 14));
+const onKo = on<Pp & { why: string; x: number; y: number }>('juice-ko', 'combat:ko', (j, e) => { // legacy ko (lines 709-715)
+  const x = e.x, y = e.y, why = e.why || 'K.O.', c = col(e.p);
+  big(j, why, '#fff', why.length > 6 ? 72 : 110); if (!e.pcpu) big(j, 'AIM YOUR KO BEAM!', c, 30, 'kb' + e.p);
+  j.zk = 0.35; flash(j, 0.8); j.invF = Math.max(j.invF, 6); j.chroma = Math.max(j.chroma, 32); j.focusL = 1.5; j.zblur = 0.18; j.bright = 1; crack(j, x, y); crack(j, x, y);
+  j.WAVES.push({ x, y, t: 50, T: 50, spd: 55, th: 160, inv: 1 }, { x, y, t: 36, T: 36, spd: 30, th: 70, inv: 1 }, { x, y, t: 24, T: 24, spd: 14, th: 30, inv: 1 });
+  j.shake = 60; txt(j, x, y - 40, why, '#fff', 28); burst(j, x, y, c, 60); j.RINGS.push({ x, y, r: 0, m: 260, t: 30, c });
+});
+const onRespawn = on<Pp & { x: number; y: number }>('juice-respawn', 'combat:respawn', (j, e) => { j.RINGS.push({ x: e.x, y: e.y, r: 0, m: 120, t: 30, c: '#fff' }); j.WAVES.push({ x: e.x, y: e.y, t: 20, T: 20, spd: 14, th: 30, inv: 1 }); flash(j, 0.2, col(e.p)); });
+const onSB = on<Pp>('juice-shield-break', 'combat:shield-break', (j, e) => { // xShieldBreak (lines 1920-1921)
+  const x = e.px, y = e.py; big(j, 'SHIELD BREAK!', '#fff', 60); j.shake = Math.min(50, j.shake + 20); flash(j, 0.3, '#fff'); j.chroma = Math.max(j.chroma, 30);
+  for (let i = 0; i < 10; i++) j.FX.push({ x, y, vx: Math.cos(i * 6.2832 / 10) * 3, vy: Math.sin(i * 6.2832 / 10) * 3, t: 30, c: '#ffd23a' }); j.WAVES.push({ x, y, t: 16, T: 16, spd: 12, th: 30, inv: 1 });
+});
+const onBeamCancel = on<{ p: number; kx: number; ky: number }>('juice-kobeam-cancel', 'combat:kobeam-cancel', (j, e) => txt(j, e.kx, e.ky - 40, 'BEAM CANCELED', '#aaa', 16));
+export const juiceHooks: HookDef[] = [onSB, onBeamCancel, onRespawn, onKo, onChip, onCancel, onClash, onReady, onFx, onPivot, onCancelB, onCd, onKick, onGlide, onGrab, onHeavy, onBClash, onLight, onSpell, onCapture, onTick, onHit, onBreak, onPip, onGraze, onPower, onRefused, onParry];
 export { on as juiceHook };
 export function runJuiceEvent(j: Juice, e: { ev: string }): void { (H[e.ev] as ((j: Juice, e: unknown) => void) | undefined)?.(j, e); }
 export type { Ev };

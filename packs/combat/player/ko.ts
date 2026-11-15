@@ -10,7 +10,7 @@ import { bestId } from '../rank';
  * K.O. (legacy `ko`, core part). Presentation (KO beam, shake, rings) belongs to listeners of `combat:ko`.
  * TODO: phoenix/rebirth hook (before-event is in place). The KO beam itself lives in kobeam.ts.
  */
-export function ko(w: World, s: CombatState, p: number, why = 'ko'): void {
+export function ko(w: World, s: CombatState, p: number, why = 'K.O.'): void { // why = the legacy KO caption (shown as is)
   if (s.state[p] === PS.dead) return;
   const ev = w.emit('combat:ko:before', { p, cancelled: false });
   if (ev.cancelled) return;

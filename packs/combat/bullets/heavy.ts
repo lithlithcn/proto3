@@ -33,7 +33,7 @@ export function heavyContact(w: World, s: CombatState, i: number, t: number, d: 
     s.bflags[i] = f | BF.dead;
     const n = s.brefl[i]!;
     if (f & BF.oneshot) s.hp[t] = 0;
-    if (n >= 7) { s.hp[t] = 0; s.kbx[t] = s.bvx[i]!; s.kby[t] = s.bvy[i]!; ko(w, s, t, 'max-power'); }
+    if (n >= 7) { s.hp[t] = 0; s.kbx[t] = s.bvx[i]!; s.kby[t] = s.bvy[i]!; ko(w, s, t, 'MAX POWER K.O.!'); }
     else hit(w, s, t, owner, s.bvx[i]!, s.bvy[i]!, { dmg: s.bdmg[i]!, kb: s.bkb[i]! * (1 + 0.35 * n), stun: s.bstun[i]! * (1 + 0.1 * n) }, n ? -1 : s.bmv[i]!, s.bmult[i]!, true);
   } else if (!(f & BF.grazed) && armed && d < r + T.GRAZE_R) { s.bflags[i] = f | BF.grazed; graze(w, s, t, s.bx[i]!, s.by[i]!, 2); }
 }

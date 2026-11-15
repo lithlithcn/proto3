@@ -1,3 +1,4 @@
+import { big, txt } from '../jfx';
 import type { World } from '@kernel';
 import type { PCtx } from '../input';
 import { T } from '../tuning';
@@ -48,7 +49,7 @@ export function updParrystun(c: PCtx): void {
 export function guardGauge(w: World, s: CombatState, p: number): void {
   if (s.lstS[p] === PS.parry && s.state[p] !== PS.parry && !(Math.max(-1, s.pOK[p]!) >= s.pStart[p]!) && s.state[p] !== PS.dead) {
     s.pg[p] = s.pg[p]! - T.GUARD_WHIFF;
-    if (s.pg[p]! <= 0) { s.pg[p] = T.GUARD_RESET; shieldBreak(w, s, p); }
+    if (s.pg[p]! <= 0) { s.pg[p] = T.GUARD_RESET; shieldBreak(w, s, p); big(w, 'GUARD CRUSH!', '#6ff', 40); } else if (s.pg[p]! < 35) txt(w, s.x[p]!, s.y[p]! - 40, 'GUARD LOW', '#6ff', 12);
   }
   if (s.state[p] !== PS.parry) s.pg[p] = Math.min(100, s.pg[p]! + T.GUARD_REGEN);
   s.lstS[p] = s.state[p]!;

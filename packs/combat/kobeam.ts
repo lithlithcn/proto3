@@ -46,7 +46,7 @@ export function updateBeams(w: World, s: CombatState): void {
   for (let i = 0; i < s.nkb; i++) { // pool may grow while iterating (reflections), like the legacy for-of
     const p = s.kbO[i]!;
     const pp = (w.buttons(p) & BTN.parry) !== 0 ? 1 : 0;
-    if (pp && !s.kbPP[i] && s.kbTT[i]! - s.kbT[i]! > 8) { s.kbT[i] = -1; w.emit('combat:kobeam-cancel', { p }); continue; }
+    if (pp && !s.kbPP[i] && s.kbTT[i]! - s.kbT[i]! > 8) { s.kbT[i] = -1; w.emit('combat:kobeam-cancel', { p, kx: s.kbX[i]!, ky: s.kbY[i]! }); continue; }
     s.kbPP[i] = pp;
     if (s.cpu[p]) {
       const q = s.tgt[p]!;

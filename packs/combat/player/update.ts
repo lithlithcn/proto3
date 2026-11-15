@@ -1,3 +1,4 @@
+import { jfx } from '../jfx';
 import { BTN, atan2, type World } from '@kernel';
 import { begin, clearBuf, held, pr } from '../input';
 import { T } from '../tuning';
@@ -52,15 +53,15 @@ function step(w: World, s: CombatState, p: number): void {
   }
   s.burst[p] = Math.min(T.BURST_MAX, s.burst[p]! + T.BURST_REGEN);
   if (inEdge(s, p) && s.inv[p]! <= 0) { // red zone near the walls hurts slowly
-    s.hp[p] = s.hp[p]! - T.EDGE_DMG;
+    s.hp[p] = s.hp[p]! - T.EDGE_DMG; if (s.gf % 8 === 0) jfx(w, 'edge', s.x[p]!, s.y[p]!);
     if (s.hp[p]! <= 0) { ko(w, s, p); return; }
   }
   const o = s.tgt[p]!;
   s.aim[p] = atan2(s.y[o]! - s.y[p]!, s.x[o]! - s.x[p]!);
   s.focus[p] = held(c, BTN.focus) ? 1 : 0;
-  const sp = s.spirit[p]!;
-  if (sp >= T.SPELL_COST) { if (!s.spReady[p]) { s.spReady[p] = 1; w.emit('combat:spell-ready', { p }); } } else s.spReady[p] = 0;
   if (spellInput(c, pr(c, BTN.spell))) return;
+  const sp = s.spirit[p]!; // legacy line 367: after the spell inputs (a cast returns before the READY check)
+  if (sp >= T.SPELL_COST) { if (!s.spReady[p]) { s.spReady[p] = 1; w.emit('combat:spell-ready', { p }); } } else s.spReady[p] = 0;
   switch (s.state[p]) {
     case PS.spell: updSpell(c); return;
     case PS.rifle: updRifle(c); return;

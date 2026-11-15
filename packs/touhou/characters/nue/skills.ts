@@ -1,5 +1,5 @@
 import { type World, cos, sin } from '@kernel';
-import { PS, type CombatState, entsOf, jBurst } from '@pack/combat/api';
+import { PS, type CombatState, entsOf, jBurst, jTxt } from '@pack/combat/api';
 import type { TouhouState } from '../../state';
 import { EK_NUFO } from './kinds';
 
@@ -17,7 +17,7 @@ export function nueDisguise(w: World, s: CombatState, p: number): void {
 
 /** Skill 2 — swap places with the UFO furthest ahead of her aim (4 s cooldown; nothing without a UFO). */
 export function nueSwap(w: World, s: CombatState, p: number): void {
-  const U: number[] = []; entsOf(s, EK_NUFO, p, U); if (!U.length) return;
+  const U: number[] = []; entsOf(s, EK_NUFO, p, U); if (!U.length) { jTxt(w, s.x[p]!, s.y[p]! - 40, 'NO UFO', '#888', 13); return; }
   if (s.skC2[p]! > s.gf) { w.emit('combat:skill-cooldown', { p, left: s.skC2[p]! - s.gf, n: 'SWAP' }); return; }
   s.skC2[p] = s.gf + 240;
   let u = U[0]!, bd = -1e9;

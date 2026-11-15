@@ -14,3 +14,10 @@ None yet: render parity (port ops vs legacy ops) is the next step; ledger entry 
 Port: `packs/render/hud.ts` (+ `ui.ts` helpers). Legacy: final `drawHUD` (~line 3948). `pnpm render compare` → drawHUD 8/8 identical (gradient ids renumbered, shake translate excluded: uses Math.random).
 Not yet: team colours, Last-Stock pulse, profile names, `wsA` inverted HP, hidden HUD while anonymous/Koishi.
 Gotcha: the legacy HUD state (HUDS) lerps once per rendered frame, so the port must draw every frame; compare restores state before sampling.
+
+## Juice (presentation effects) — ported, verified per frame
+- State: `packs/render/juice/state.ts` (legacy globals shake/zk/kx/chroma/bright/focusL/zblur/flashS/invF + FX/TX/RINGS/WAVES/LINES/KOFX/BIG/CRACK/GZ). `tickJuice` = legacy `stepFx`.
+- Feed: combat events + the `combat:fx` command channel (`packs/combat/jfx.ts`: spark/burst/txt/big/flash/addJ/maxJ/pushJ) called at the exact legacy juice site. Hooks only journal (they run inside the sanitized sim window); `syncJuice` replays them in order, `combat:fx-tick` (system `base-end`, the legacy `stepFx` point) ticks.
+- Character juice lives in the sim files of each character (jfx calls) or in `packs/touhoufx/presentation/juice.ts` for touhou events.
+- Oracle: `pnpm render compare a,b frames` prints, per juice variable, the first frame that differs + the legacy html line that pushed (`legacy pushes`), legacy sfx sites and the port events of that frame. FX is compared as pushes per frame (lifetimes are random).
+- Known open: TX cap order (legacy dedupes at the 2381 wrapper, port in the tick), hlB count in spells 06/08/10/11, Nue `nDs` shadow trail (field not ported), Reimu `rbnd` entity (not ported).

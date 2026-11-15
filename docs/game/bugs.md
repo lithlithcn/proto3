@@ -35,3 +35,10 @@ Written by `pnpm parity keep ... --cause ... [--attempts "tried X: failed"]`; re
 - Fix in: `packs/combat/player/ko.ts`
 - Not detected earlier because: needs KO in spell state with only residual velocity.
 - Regression: `tests/regressions/K#_a___nazrin-nue-5700193.json`
+
+## 2026-11-15 · combat · spell-ready order (found by the juice oracle)
+- Symptom: `pnpm render compare flandre,hecatia 1700` → TX/RINGS one too many at f800: the port fired `spell-ready` for the player who was casting that very frame.
+- Cause: port checked `spReady` BEFORE the spell inputs; legacy line 367 runs after them (a cast `return`s first, so READY is not shown that frame).
+- Fix in: `packs/combat/player/update.ts`
+- Not detected earlier because: `spReady` only drives presentation; the sim oracle never compared it. The per-frame juice oracle (render compare) is what caught it.
+- Regression: render compare juice section (no sim report).

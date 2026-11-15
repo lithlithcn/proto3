@@ -1,3 +1,4 @@
+import { burst, pushJ } from '../jfx';
 import { BTN, type World, atan2, clamp, cos, hypot, sin } from '@kernel';
 import { BF, MAX_B, PS, type CombatState } from '../state';
 import { bulletArrays, clearBullet, stamp } from './arrays';
@@ -61,38 +62,40 @@ function motionOne(s: CombatState, i: number): void {
  * Legacy step wrapper (runs right after the base step, before the character hooks): per live bullet curve, drag, accelerate, then its behaviour kind and heading.
  * Children spawned by a behaviour are visited in the same pass, like legacy's for-of over a growing array. Only on frames where time advances.
  */
-export function motion(s: CombatState): void {
+/** `w` only feeds presentation (legacy hlB flashes / bursts); motion itself never reads it. */
+export function motion(s: CombatState, w?: World): void {
   for (let i = 0; i < s.nb; i++) {
     if (s.bflags[i]! & BF.dead) continue;
     motionOne(s, i);
     const kind = s.bkind[i]!;
-    if (kind) { s.bag[i] = s.bag[i]! + 1; run(s, i, kind, s.bag[i]!); }
+    if (kind) { s.bag[i] = s.bag[i]! + 1; run(s, i, kind, s.bag[i]!, w); }
     if (s.bvx[i] || s.bvy[i]) s.bang[i] = atan2(s.bvy[i]!, s.bvx[i]!);
   }
 }
 
-function run(s: CombatState, i: number, kind: number, ag: number): void {
+const hl = (w: World | undefined, s: CombatState, i: number): void => { if (w) pushJ(w, 'FX', 'x', s.bx[i]!, 'y', s.by[i]!, 'r', 7, 't', 8, 'c', '#fff'); }; // legacy hlB
+function run(s: CombatState, i: number, kind: number, ag: number, w?: World): void {
   const p = s.bcast[i]!; // the caster at spawn: legacy behaviours are closures over it, so a parry-reflected bullet keeps following its ORIGINAL caster (DESIGN §25)
   switch (kind) {
     case BK.home: if (ag < s.bp0[i]!) { // curve toward the target fixed at cast (bp2) for the first bp0 frames, at most bp1 rad/frame
       const o = s.bp2[i]!, t = atan2(s.y[o]! - s.by[i]!, s.x[o]! - s.bx[i]!), d = atan2(sin(t - s.bang[i]!), cos(t - s.bang[i]!));
       setV(s, i, s.bang[i]! + clamp(d, -s.bp1[i]!, s.bp1[i]!), hypot(s.bvx[i]!, s.bvy[i]!));
     } break;
-    case BK.launch: if (ag === s.bp0[i]!) setV(s, i, s.bp1[i]!, s.bp2[i]!); break; // at age bp0: heading bp1, speed bp2
+    case BK.launch: if (ag === s.bp0[i]!) { setV(s, i, s.bp1[i]!, s.bp2[i]!); hl(w, s, i); } break; // at age bp0: heading bp1, speed bp2
     case BK.orbit: // ring of phase bp0, direction bp1, ring index bp2 around the caster, then released along the tangent
       if (ag < 80) { const a = s.bp0[i]! + s.bp1[i]! * ag * 0.04, R = 30 + ag * (1 + s.bp2[i]! * 0.55); s.bx[i] = s.x[p]! + cos(a) * R; s.by[i] = s.y[p]! + sin(a) * R; s.bvx[i] = 0; s.bvy[i] = 0; s.bang[i] = a + s.bp1[i]! * 1.5707963267948966; }
-      else if (ag === 80) setV(s, i, s.bang[i]!, 2.6);
+      else if (ag === 80) { setV(s, i, s.bang[i]!, 2.6); hl(w, s, i); }
       break;
     case BK.moth: {
       if (ag === 45) s.bcol[i] = 0xff5a2a;
       if (ag > 45) {
         const dx = s.x[p]! - s.bx[i]!, dy = s.y[p]! - s.by[i]!, d = hypot(dx, dy) || 1, f = Math.min(0.3, (ag - 45) * 0.005);
         s.bvx[i] = s.bvx[i]! * 0.97 + dx / d * f * 3; s.bvy[i] = s.bvy[i]! * 0.97 + dy / d * f * 3;
-        if (d < 24) { s.bflags[i] = s.bflags[i]! | BF.dead; for (let j = 0; j < 3; j++) sB(s, p, s.bx[i]!, s.by[i]!, s.bang[i]! + 3.141592653589793 + (j - 1) * 0.8, 0.4, { sh: SH.flea, r: 2.5, col: 0xff9a6a, acc: 0.03, vmax: 2.4, life: 300 }); }
+        if (d < 24) { s.bflags[i] = s.bflags[i]! | BF.dead; if (w) burst(w, s.bx[i]!, s.by[i]!, '#ff9a6a', 6); for (let j = 0; j < 3; j++) sB(s, p, s.bx[i]!, s.by[i]!, s.bang[i]! + 3.141592653589793 + (j - 1) * 0.8, 0.4, { sh: SH.flea, r: 2.5, col: 0xff9a6a, acc: 0.03, vmax: 2.4, life: 300 }); }
       }
     } break;
-    case BK.dollH: if (ag === 34) { s.bdrg[i] = 0; setV(s, i, tgA(s, p, s.bx[i]!, s.by[i]!) + (spRand(s) - 0.5) * 0.1, 0); s.bacc[i] = 0.12; s.bvmax[i] = 5.2; s.bcol[i] = 0xff5a7a; } break;
+    case BK.dollH: if (ag === 34) { s.bdrg[i] = 0; setV(s, i, tgA(s, p, s.bx[i]!, s.by[i]!) + (spRand(s) - 0.5) * 0.1, 0); s.bacc[i] = 0.12; s.bvmax[i] = 5.2; s.bcol[i] = 0xff5a7a; hl(w, s, i); } break;
     case BK.dollK: if (ag === 34) { s.bdrg[i] = 0; setV(s, i, s.bang[i]! + 1.5707963267948966, 0); s.bacc[i] = 0.1; s.bvmax[i] = 4; } break;
-    case BK.meteor: if (ag === 70) { s.bdrg[i] = 0; s.bacc[i] = 0.035; s.bvmax[i] = 3.4; } break;
+    case BK.meteor: if (ag === 70) { s.bdrg[i] = 0; s.bacc[i] = 0.035; s.bvmax[i] = 3.4; hl(w, s, i); } break;
   }
 }

@@ -26,7 +26,7 @@ function wall(w: World, s: CombatState, p: number, ax: number): void {
       w.emit('combat:tech', { p, x: s.x[p]!, y: s.y[p]! });
       return;
     }
-    if (s.pips[p]! <= 0) { ko(w, s, p, 'street-smash'); return; } // no wall pips left: the wall kills
+    if (s.pips[p]! <= 0) { ko(w, s, p, 'STREET SMASH!'); return; } // no wall pips left: the wall kills
     if (s.bounceN[p]! > 0) { s.bounceN[p] = s.bounceN[p]! - 1; v[p] = v[p]! * -0.85; w.emit('combat:wall-bounce', { p, x: s.x[p]!, y: s.y[p]!, big: 1 }); return; } // overpowered launch: bounces
     v[p] = v[p]! * -0.5; s.t[p] = s.t[p]! + 6;
     w.emit('combat:wall-bounce', { p, x: s.x[p]!, y: s.y[p]!, big: 0 });
