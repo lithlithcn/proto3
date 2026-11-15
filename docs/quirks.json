@@ -212,6 +212,29 @@
    ],
    "family": "update-order",
    "found": "2026-11-15"
+  },
+  {
+   "id": "wrappers-after-base",
+   "tags": [
+    "rng",
+    "order"
+   ],
+   "rule": "Every legacy step wrapper (clone soak, bumpers, freeze queue, The World knives) runs AFTER the base step incl. bullet motion; the port ran item-late BEFORE motion, so the shared rng stream was drawn in another order (knife angles vs dollH fn callback)",
+   "port": [
+    "packs/combat/systems.ts"
+   ],
+   "family": "update-order",
+   "found": "2026-11-15"
+  },
+  {
+   "id": "exact-zero-or",
+   "tags": [],
+   "rule": "KO beam direction used a 1e-9 tolerance on p.vx; legacy is p.vx||p.kbx (only exact 0 falls back), so a 3e-12 friction residue still picks the direction",
+   "port": [
+    "packs/combat/player/ko.ts"
+   ],
+   "family": "stale-tolerance",
+   "found": "2026-11-15"
   }
  ]
 }

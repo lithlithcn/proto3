@@ -1,0 +1,31 @@
+{
+ "a": "nazrin",
+ "b": "nue",
+ "seed": 5700193,
+ "items": [
+  "yellow",
+  "white",
+  "green",
+  "purple",
+  "blue",
+  "orange",
+  "mirror",
+  "gap",
+  "clone",
+  "spark",
+  "freeze",
+  "world",
+  "oni",
+  "elixir",
+  "camera",
+  "bumpers"
+ ],
+ "plan": "",
+ "frames": 2073,
+ "was": {
+  "frame": 1473,
+  "sig": "K#.a @?",
+  "first": "nazrin/nue f1473 K0.a: proto3=3.6796628238430267 legacy=0.023178882475662466",
+  "commit": "b5a2ee6"
+ }
+}

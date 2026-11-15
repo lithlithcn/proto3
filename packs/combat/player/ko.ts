@@ -17,7 +17,7 @@ export function ko(w: World, s: CombatState, p: number, why = 'ko'): void {
   const killer = s.gf - s.lastByF[p]! < 600 ? s.lastBy[p]! : -1; // credit the last attacker within 10 s, else self-destruct
   if (killer >= 0 && killer !== p) s.kos[killer] = s.kos[killer]! + 1; else s.sd[p] = s.sd[p]! + 1;
   s.lastByF[p] = -1e9;
-  const ev0 = (v: number, kb: number): number => (Math.abs(v) > 1e-9 ? v : kb); // friction leaves denormal-ish residues (1e-19) that must not pick the beam direction: treat them as 0
+  const ev0 = (v: number, kb: number): number => (v || kb); // legacy `p.vx||p.kbx`: ONLY an exact 0 falls back to the knockback (a 1e-12 friction residue still picks the beam direction)
   const mx = ev0(s.vx[p]!, s.kbx[p]!), my = ev0(s.vy[p]!, s.kby[p]!);
   const a = mx || my ? atan2(my, mx) + 3.141592653589793 : atan2(s.mapH / 2 - s.y[p]!, s.mapW / 2 - s.x[p]!);
   addBeam(s, p, s.x[p]!, s.y[p]!, a, BEAM_T, 0);

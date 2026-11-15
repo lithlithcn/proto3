@@ -1,0 +1,31 @@
+{
+ "a": "reimu",
+ "b": "flandre",
+ "seed": 5700187,
+ "items": [
+  "yellow",
+  "white",
+  "green",
+  "purple",
+  "blue",
+  "orange",
+  "mirror",
+  "gap",
+  "clone",
+  "spark",
+  "freeze",
+  "world",
+  "oni",
+  "elixir",
+  "camera",
+  "bumpers"
+ ],
+ "plan": "",
+ "frames": 2000,
+ "was": {
+  "frame": 691,
+  "sig": "P#.y @reimu",
+  "first": "reimu/flandre f691 P0.y: proto3=1334 legacy=1319.0889290258588",
+  "commit": "b5a2ee6"
+ }
+}
