@@ -12,8 +12,10 @@ export const speedMul = (w: World, s: CombatState, p: number): number => { const
  * Damage multiplier (legacy chDmg wrappers): attacker `dout`, victim `din`, then the attacker's accumulated parry streak
  * (×1.3 per streak step, applies to its melee and to non-heavy shots).
  */
-export function damageMul(w: World, s: CombatState, victim: number, attacker: number, heavy = false): number {
-  let d = 1;
+export function scaleDamage(w: World, s: CombatState, victim: number, attacker: number, raw: number, heavy = false): number {
+  // Same operation ORDER as legacy (outermost wrapper first: attacker out, victim in, then the base parry-streak factor), applied to the raw damage
+  // one factor at a time: float multiplication is not associative and the last bit decides knife-edge outcomes (DESIGN §25 R117).
+  let d = raw;
   if (attacker >= 0 && attacker !== victim) { const c = charOf(w, s, attacker); d *= c.dout * (c.doutM ? c.doutM(w, s, attacker, victim, heavy) : 1); }
   const cv = charOf(w, s, victim); d *= cv.din * (cv.dinM ? cv.dinM(w, s, victim) : 1);
   if (attacker >= 0 && s.pStk[attacker]! > 0 && (s.state[attacker] === PS.atk || !heavy)) d *= pow(1.3, s.pStk[attacker]!);

@@ -45,3 +45,6 @@ Everything gameplay-related will live under `packs/<id>/` (see DESIGN §2.2, §1
 | understand an area before changing it (owner, deps, systems, events, invariants, numbers, tests, regressions) | `pnpm map <term>` (`tools/spec/cli.ts`) |
 | change a content number on purpose | edit the content file, then `pnpm spec lock` (+ reason in the commit); `tests/contracts.test.ts` also checks T/MOVES against legacy |
 | spec / knowledge architecture | `docs/DESIGN.md` §27, `tools/spec/` |
+| finish a lot of work | `pnpm gate` (`tools/gate.ts`; baseline `docs/coverage.baseline.json`) |
+| measure how good the detectors are | `pnpm mutate` (`tools/parity/mutate.ts` → `docs/MUTATION.generated.md`) |
+| compare / look at what the legacy draws | `tools/parity/recorder.cjs`, `tools/render/{cli,raster}.ts`, `pnpm render legacy a,b <frames> out.png` |

@@ -6,13 +6,15 @@ Owner: Houcine (HKN), French-speaking; reply in French, code/docs in English. Mi
 
 **Permanent purpose (owner, never forget):** Proto3 is rebuilt not for cleaner code but to be the best, most autonomous, self-sufficient workspace for YOU (the AI): fast to understand, easy to locate where to change, consequences visible, bugs self-detected/diagnosed/reproduced, fixes verified, features added without breaking old ones, maintainable for years. Judge every decision by that (DESIGN §27); invest in foundations now, but no artificial complexity — each tool must earn its place. Before touching an area run `pnpm map <term>`.
 
+**Detection is the core (DESIGN §28):** a lot of work is DONE only when `pnpm gate` prints GATE PASS (check + oracle campaign 0 divergences + coverage ratchet). Fixed bug → `pnpm parity keep <report>`. New feature → rule written first, scenario test from the rule, invariants where a value contract has worth, then gate. Drawing code must draw through a given `Ctx2D` (recordable) — see render parity. Never report "parity complete" without a gate pass and the mutation score (`pnpm mutate`) known.
+
 ## Read first
 1. `PROJECT_MAP.md` — "to change X, open Y".
 2. `docs/DESIGN.md` — the full design (§21 checklist before any new feature, §24 working method, §25 risk register: add every new failure mode).
 3. `docs/INVENTORY.md` — parity checklist vs the old game (`legacy/shmup-fighter.html`, frozen).
 
 ## Commands
-`pnpm check` (typecheck + lint + tests) · `pnpm check:all` (+ build) · `pnpm map <term>` (what to know before touching X) · `pnpm spec lock|check` (content contracts) · `pnpm dev` · `pnpm sim demo|run|bisect` · `pnpm audit:legacy` (regenerate old-game inventory).
+`pnpm check` (typecheck + lint + tests) · `pnpm check:all` (+ build) · `pnpm map <term>` (what to know before touching X) · `pnpm gate` (definition of done) · `pnpm spec lock|check` (content contracts) · `pnpm parity …` / `pnpm mutate` / `pnpm render legacy …` · `pnpm dev` · `pnpm sim demo|run|bisect` · `pnpm audit:legacy` (regenerate old-game inventory).
 
 ## Hard rules
 - Kernel (`src/kernel`) never imports a pack. Packs import only `@kernel` and packs listed in their `requires`. Enforced by `pnpm lint`.

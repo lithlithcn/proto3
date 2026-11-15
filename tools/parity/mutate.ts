@@ -18,7 +18,7 @@ const M: Mutant[] = [
   { id: 'damage-offset', kind: 'subtle-math', file: D, find: 'const d = raw * damageMul(', replace: 'const d = (raw + 0.01) * damageMul(' },
   { id: 'streak-not-reset', kind: 'missing-effect', file: D, find: 's.pStk[victim] = 0; ', replace: '' },
   { id: 'inv-threshold', kind: 'boundary', file: H, find: 'if (s.inv[v]! > 0 || s.state[v] === PS.dead) return;', replace: 'if (s.inv[v]! > 1 || s.state[v] === PS.dead) return;' },
-  { id: 'shot-cd-focus', kind: 'balance', file: 'packs/combat/player/idle.ts', find: 'ch.cd * (focus ? 0.75 : 1)', replace: 'ch.cd * (focus ? 0.76 : 1)' },
+  { id: 'shot-cd-focus', kind: 'balance', file: 'packs/combat/player/idle.ts', find: 'ch.cd * (focus ? 0.75 : 1)', replace: 'ch.cd * (focus ? 0.85 : 1)' },
   { id: 'hit-spirit-gain', kind: 'subtle-math', file: H, find: 's.spirit[a] = Math.min(T.SPIRIT_MAX, s.spirit[a]! + dmg * T.HIT_GAIN); s.spirit[v]', replace: 's.spirit[a] = Math.min(T.SPIRIT_MAX, s.spirit[a]! + dmg * T.HIT_GAIN * 1.01); s.spirit[v]' },
   { id: 'wall-bounce-damp', kind: 'balance', file: 'packs/combat/player/physics.ts', find: 'v[p]! * -0.85', replace: 'v[p]! * -0.86' },
   { id: 'heavy-fake-filter', kind: 'regression(R112)', file: 'packs/combat/bullets/heavy.ts', find: 'BF.breaker | BF.fake)) === BF.heavy', replace: 'BF.breaker)) === BF.heavy', items: true },

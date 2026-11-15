@@ -1,12 +1,12 @@
 import type { World } from '@kernel';
-import { damageMul } from '../stats';
+import { scaleDamage } from '../stats';
 import { T } from '../tuning';
 import { PS, type CombatState } from '../state';
 import { ko } from './ko';
 
 /** Final damage of a hit + the legacy chDmg bookkeeping (stats, parry-streak reset, last-hit attribution). Does not touch hp. */
 export function dealDamage(w: World, s: CombatState, victim: number, attacker: number, raw: number, heavy: boolean): number {
-  const d = raw * damageMul(w, s, victim, attacker, heavy);
+  const d = scaleDamage(w, s, victim, attacker, raw, heavy);
   if (attacker !== victim) {
     s.pStk[victim] = 0; s.dmgDealt[attacker] = s.dmgDealt[attacker]! + d; s.dmgTaken[victim] = s.dmgTaken[victim]! + d;
     if (d > s.bigHit[attacker]!) s.bigHit[attacker] = d;

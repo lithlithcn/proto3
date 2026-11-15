@@ -1,6 +1,7 @@
 import { BTN, type World, atan2, cos, hypot, sin } from '@kernel';
 import { type PCtx, held, pr } from '../input';
-import { MV, MV_NAMES, SRC, type MoveDef } from '../moves';
+import { MV, MV_NAMES, SRC, type MeleeName, type MoveDef } from '../moves';
+import { characters } from '../api';
 import { T, TAU } from '../tuning';
 import { PS, type CombatState } from '../state';
 import { bodyR } from '../stats';
@@ -12,6 +13,7 @@ import { hit } from './hit';
 import { parryFx, shieldBreak } from './parry';
 import { clearBuf } from '../input';
 
+const SRC_IDX = ['jab', 'lunge', 'strong', 'dashatk', 'tslam', 'grab'];
 const SRC_OF: Record<string, number> = { jab: SRC.jab, lunge: SRC.lunge, strong: SRC.strong, dashatk: SRC.dashatk, tslam: SRC.tslam, grab: SRC.grab };
 
 /** Attack state tick (legacy `atk`): charge, movement, hit window, then the cancel options, then recovery. */
@@ -55,7 +57,7 @@ function strike(w: World, s: CombatState, p: number, o: number, m: MoveDef): voi
   const name = MV_NAMES[s.mvId[p]!]!;
   if (name === 'grab') { if (s.state[o] === PS.parry || s.state[o] === PS.parrylag) { s.hitDone[p] = 1; shieldBreak(w, s, o); } return; }
   const om = s.state[o] === PS.atk ? moveOf(w, s, o) : null;
-  if (om && s.mvId[o] !== MV.grab && s.t[o]! >= om.start - 3 && s.t[o]! <= om.start + (om.act || 4) + 2) { // clash: both moves cancel, both pushed apart
+  if (om && !om.spd && !m.spd && s.mvId[o] !== MV.grab && s.t[o]! >= om.start - 3 && s.t[o]! <= om.start + (om.act || 4) + 2) { // clash: both moves cancel, both pushed apart
     s.hitDone[p] = 1; s.hitDone[o] = 1;
     const l = hypot(dx, dy) || 1;
     for (const [q, k] of [[p, -1], [o, 1]] as const) { s.state[q] = PS.idle; s.t[q] = 0; s.vx[q] = dx / l * T.CLASH_PUSH * k; s.vy[q] = dy / l * T.CLASH_PUSH * k; s.inv[q] = T.CLASH_INV; clearBuf(s, q); }
@@ -70,6 +72,8 @@ function strike(w: World, s: CombatState, p: number, o: number, m: MoveDef): voi
   }
   const mult = (1 + s.charge[p]! / (m.charge || 1) * 0.7) * (s.giant[p]! > 0 ? 1.5 : 1);
   s.mHit[p] = 1;
-  hit(w, s, o, p, dx, dy, m, SRC_OF[name]!, mult, name !== 'jab', true);
+  // stun-repeat counters are keyed by the hit-data OBJECT in legacy: a character's own override of a move is a different object from the shared default (ids 64+, DESIGN §25)
+  const own = characters(w)[s.mvCh[p]!]![1].melee?.[name as MeleeName] !== undefined, src = own ? 64 + s.mvCh[p]! * 8 + SRC_IDX.indexOf(name) : SRC_OF[name]!;
+  hit(w, s, o, p, dx, dy, m, src, mult, name !== 'jab', true);
   if (m.multi) { s.hitDone[p] = 0; s.nextHit[p] = s.t[p]! + (m.every ?? 1); }
 }

@@ -47,7 +47,7 @@ function motionOne(s: CombatState, i: number): void {
   if (drg) { s.bvx[i] = s.bvx[i]! * drg; s.bvy[i] = s.bvy[i]! * drg; }
   if (acc) {
     const l = hypot(s.bvx[i]!, s.bvy[i]!) || 1e-3, n = clamp(l + acc, 0, s.bvmax[i]! || 9);
-    s.bvx[i] = s.bvx[i]! * n / l; s.bvy[i] = s.bvy[i]! * n / l;
+    s.bvx[i] = s.bvx[i]! * (n / l); s.bvy[i] = s.bvy[i]! * (n / l); // legacy `vx*=n/l`: multiply by the quotient (association changes the last bit)
     if (l < 2e-3) setV(s, i, s.bang[i]!, n);
   }
 }
