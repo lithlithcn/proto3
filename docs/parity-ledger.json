@@ -52,7 +52,7 @@
     {
       "id": "render-parity",
       "status": "not-ported",
-      "area": "all rendering; only the legacy op recorder + rasteriser exist, no port renderer to compare",
+      "area": "rendering: only floor/grid/edge, light+heavy bullets, player body/melee wedge and a temporary HUD exist (playable slice); WebGL layer, post-FX, per-character draws, items, full HUD, menus not ported; no op-level comparison yet",
       "see": "DESIGN §28"
     },
     {

@@ -23,7 +23,7 @@ export { fxOn, setFx, clearFx, FXS, MAX_FX, type StatusDef } from './fx';
 export { hit } from './player/hit';
 export { parryFx } from './player/parry';
 export { foe, nearFoe } from './target';
-export { bodyR } from './stats';
+export { bodyR, coreR } from './stats';
 export { chHitQ } from './chhit';
 export { ko } from './player/ko';
 export { relStick, moveOf } from './player/atkstart';
