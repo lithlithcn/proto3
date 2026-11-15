@@ -26,5 +26,8 @@ Owner: Houcine (HKN), French-speaking; reply in French, code/docs in English. Mi
 - Never enter or repeat secrets (TURN token lives only in the Cloudflare Worker secret).
 - Parity scenarios are short and isolate one mechanic; tolerance-level equality with the legacy game.
 
+## Game knowledge base
+`docs/game/` (README = template): one short English sheet per mechanic/character/item (rule, legacy location, port files, tests, bugs). A port/fix/feature is DONE only when its sheet is created/updated; `tests/docs.test.ts` rejects dead paths. Read the sheet before touching the area (`pnpm map` lists them).
+
 ## Before coding a feature
 Answer DESIGN §21 (which pack, state slice, events, inputs, UI slot, i18n keys, tests, debug output).
