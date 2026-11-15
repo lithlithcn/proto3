@@ -15,14 +15,14 @@ export const nazrinHeavy = {
     const L: number[] = []; entsOf(s, EK_NPD, p, L); for (const i of L) if (!s.efl[i]) s.et[i] = 0;
     pendulum(s, p, s.x[p]! + cos(a) * 30, s.y[p]! + sin(a) * 30, a, 95, 6 * k, false);
   },
-  F({ w, s, p, a }: HeavyCtx): void {
+  F({ w, s, p, a, clone }: HeavyCtx): void {
     let best = -1, bd = 1e9;
     for (let q = 0; q < s.n; q++) {
       if (q === p || s.state[q] === PS.dead || s.inv[q]! > 0 || !foe(s, p, q)) continue;
       const dx = s.x[q]! - s.x[p]!, dy = s.y[q]! - s.y[p]!, d = hypot(dx, dy); let da = Math.abs(atan2(dy, dx) - a); da = Math.min(da, TAU - da);
       if (d < 420 && da < 0.5 && d < bd) { bd = d; best = q; }
     }
-    if (best >= 0) { const t = w.slice<TouhouState>('touhou'); t.nTg[p] = best; t.nTgF[p] = s.gf + 200; }
+    if (best >= 0 && !clone) { const t = w.slice<TouhouState>('touhou'); t.nTg[p] = best; t.nTgF[p] = s.gf + 200; }
   },
   B({ s, p }: HeavyCtx): void {
     const L: number[] = []; entsOf(s, EK_NPG, p, L); for (const i of L) s.et[i] = 0;

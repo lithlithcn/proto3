@@ -32,4 +32,5 @@ else if (cmd === 'map' && args[0]) {
   const reg = existsSync('tests/regressions') ? readdirSync('tests/regressions').filter(f => f.toLowerCase().includes(q)) : [];
   if (files) out.push(`FILES\n  ${files.replace(/\n/g, '\n  ')}`); if (tests) out.push(`TESTS mentioning it\n  ${tests.replace(/\n/g, '\n  ')}`); if (docs) out.push(`DOCS\n  ${docs.replace(/\n/g, '\n  ')}`); if (reg.length) out.push(`FROZEN REGRESSIONS ${reg.join(', ')}`);
   console.log(out.join('\n') || `nothing matches '${args[0]}'`);
-} else console.log('usage: pnpm spec lock|check   |   pnpm map <pack|system|event|content id|file|move>');
+} else if (cmd === 'standin') console.log((await import('./standin')).standin());
+else console.log('usage: pnpm spec lock|check|standin   |   pnpm map <pack|system|event|content id|file|move>');
