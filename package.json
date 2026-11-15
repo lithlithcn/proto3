@@ -14,6 +14,7 @@
     "check": "pnpm typecheck && pnpm lint && pnpm test",
     "check:all": "pnpm check && pnpm build",
     "sim": "tsx tools/sim/cli.ts",
+    "parity": "tsx tools/parity/campaign.ts",
     "audit:legacy": "python3 tools/audit/extract.py && node tools/audit/dump.js build/legacy-main.js && node tools/audit/gen-inventory.js"
   },
   "devDependencies": {

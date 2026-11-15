@@ -1,5 +1,4 @@
 import { createRequire } from 'node:module';
-import { expect } from 'vitest';
 import { BTN, World, newInput, setInput } from '@kernel';
 import combat from '../../packs/combat/pack';
 import touhou from '../../packs/touhou/pack';
@@ -49,30 +48,35 @@ export function makePair(chars: string[], seed = 1, opt: PairOpt = {}) {
       world.step(inp);
     },
     /** Assert observable equality (tolerance 1e-6 abs/rel) at the current frame. */
-    compare(tag: string, tol = 1e-6): void {
+    diffs(tag: string, tol = 1e-6, max = 40): string[] {
+      const out: string[] = [];
       const o = legacy.obs();
-      const near = (a: number, b: number, what: string): void => { const d = Math.abs(a - b); if (!(d <= tol * Math.max(1, Math.abs(b)))) throw new Error(`${tag} f${o.f} ${what}: proto3=${a} legacy=${b}`); };
-      expect(s.gf, `${tag} game frame`).toBe(o.f);
+      const near = (a: number, b: number, what: string): void => { const d = Math.abs(a - b); if (!(d <= tol * Math.max(1, Math.abs(b))) && out.length < max) out.push(`${tag} f${o.f} ${what}: proto3=${a} legacy=${b}`); };
+      const eq = (a: unknown, b: unknown, msg: string): void => { if (a !== b && out.length < max) out.push(`${msg}: proto3=${String(a)} legacy=${String(b)}`); };
+      eq(s.gf, o.f, `${tag} game frame`);
       o.P.forEach((lp, i) => {
         near(s.x[i]!, lp.x, `P${i}.x`); near(s.y[i]!, lp.y, `P${i}.y`); near(s.vx[i]!, lp.vx, `P${i}.vx`); near(s.vy[i]!, lp.vy, `P${i}.vy`);
         near(s.hp[i]!, lp.hp, `P${i}.hp`); near(s.boost[i]!, lp.boost, `P${i}.boost`); near(s.spirit[i]!, lp.spirit, `P${i}.spirit`); near(s.power[i]!, lp.power, `P${i}.power`);
         near(s.graze[i]!, lp.graze, `P${i}.graze`); near(s.inv[i]!, lp.inv, `P${i}.inv`); near(s.slide[i]!, lp.slide, `P${i}.slide`); near(s.shotCd[i]!, lp.shotCd, `P${i}.shotCd`); near(s.t[i]!, lp.t, `P${i}.t`);
-        expect(STATE_NAME[s.state[i]!], `${tag} f${o.f} P${i}.state`).toBe(lp.state); expect(s.stocks[i], `${tag} f${o.f} P${i}.stocks`).toBe(lp.stocks);
-        expect(s.run[i] === 1, `${tag} f${o.f} P${i}.run`).toBe(lp.run);
+        eq(STATE_NAME[s.state[i]!], lp.state, `${tag} f${o.f} P${i}.state`); eq(s.stocks[i], lp.stocks, `${tag} f${o.f} P${i}.stocks`);
+        eq(s.run[i] === 1, lp.run, `${tag} f${o.f} P${i}.run`);
       });
-      o.P.forEach((lp, i) => { expect(s.kos[i], `${tag} f${o.f} P${i}.kos`).toBe(lp.kos); expect(s.sd[i], `${tag} f${o.f} P${i}.sd`).toBe(lp.sd); expect(s.pips[i], `${tag} f${o.f} P${i}.pips`).toBe(lp.pips); expect(s.spit[i], `${tag} f${o.f} P${i}.spit`).toBe(lp.spit); });
-      expect(s.ncard, `${tag} f${o.f} card count`).toBe(o.C.length);
-      o.C.forEach((lc, i) => { near(s.cx[i]!, lc.x, `C${i}.x`); near(s.cy[i]!, lc.y, `C${i}.y`); expect(s.con[i], `${tag} f${o.f} C${i}.on`).toBe(lc.on); near(s.cage[i]!, lc.age, `C${i}.age`); expect(s.ckind[i], `${tag} f${o.f} C${i}.kind`).toBe(KIND[lc.type]); lc.cp.forEach((v, q) => near(s.ccp[i * 32 + q]!, v, `C${i}.cp${q}`)); });
-      o.P.forEach((lp, i) => { expect(s.fx[i * 128], `${tag} f${o.f} P${i}.elx`).toBe(lp.elx); expect(s.fx[i * 128 + 1], `${tag} f${o.f} P${i}.imm`).toBe(lp.imm); expect(s.mirror[i], `${tag} f${o.f} P${i}.mirror`).toBe(lp.mirror); expect(s.giant[i], `${tag} f${o.f} P${i}.giant`).toBe(lp.giant); for (const k of ['rifle', 'cam', 'clone', 'spk'] as const) expect(s[k][i], `${tag} f${o.f} P${i}.${k}`).toBe(lp[k]); near(s.cloneHP[i]!, lp.cHP, `P${i}.cloneHP`); });
-      expect(s.tstop, `${tag} f${o.f} time stop`).toBe(o.ts);
-      expect(s.nent, `${tag} f${o.f} entity count`).toBe(o.E.length);
+      o.P.forEach((lp, i) => { eq(s.kos[i], lp.kos, `${tag} f${o.f} P${i}.kos`); eq(s.sd[i], lp.sd, `${tag} f${o.f} P${i}.sd`); eq(s.pips[i], lp.pips, `${tag} f${o.f} P${i}.pips`); eq(s.spit[i], lp.spit, `${tag} f${o.f} P${i}.spit`); });
+      eq(s.ncard, o.C.length, `${tag} f${o.f} card count`);
+      o.C.forEach((lc, i) => { near(s.cx[i]!, lc.x, `C${i}.x`); near(s.cy[i]!, lc.y, `C${i}.y`); eq(s.con[i], lc.on, `${tag} f${o.f} C${i}.on`); near(s.cage[i]!, lc.age, `C${i}.age`); eq(s.ckind[i], KIND[lc.type], `${tag} f${o.f} C${i}.kind`); lc.cp.forEach((v, q) => near(s.ccp[i * 32 + q]!, v, `C${i}.cp${q}`)); });
+      o.P.forEach((lp, i) => { eq(s.fx[i * 128], lp.elx, `${tag} f${o.f} P${i}.elx`); eq(s.fx[i * 128 + 1], lp.imm, `${tag} f${o.f} P${i}.imm`); eq(s.mirror[i], lp.mirror, `${tag} f${o.f} P${i}.mirror`); eq(s.giant[i], lp.giant, `${tag} f${o.f} P${i}.giant`); for (const k of ['rifle', 'cam', 'clone', 'spk'] as const) eq(s[k][i], lp[k], `${tag} f${o.f} P${i}.${k}`); near(s.cloneHP[i]!, lp.cHP, `P${i}.cloneHP`); });
+      eq(s.tstop, o.ts, `${tag} f${o.f} time stop`);
+      eq(s.nent, o.E.length, `${tag} f${o.f} entity count`);
       const idx = [...Array(s.nent).keys()].sort((a, b) => s.ek[a]! - s.ek[b]! || a - b); // legacy keeps one list per kind
-      o.E.forEach((le, i) => { const j = idx[i]!; expect(s.ek[j], `${tag} f${o.f} E${i}.kind`).toBe(le.k); near(s.et[j]!, le.t, `E${i}.t`); near(s.ex[j]!, le.x, `E${i}.x`); near(s.ey[j]!, le.y, `E${i}.y`); near(s.evx[j]!, le.vx, `E${i}.vx`); near(s.evy[j]!, le.vy, `E${i}.vy`); expect(s.eg[j], `${tag} f${o.f} E${i}.g`).toBe(le.g); if (le.k === 2 || le.k === 10) near(s.ea[j]!, le.a, `E${i}.a`); if (le.k === 104) { near(s.ew[j]!, le.w!, `E${i}.hp`); near(s.er[j]!, le.r!, `E${i}.loot`); } });
-      expect(s.nkb, `${tag} f${o.f} KO beam count`).toBe(o.K.length);
-      o.K.forEach((lk, i) => { expect(s.kbO[i], `${tag} f${o.f} K${i}.o`).toBe(lk.o); near(s.kbX[i]!, lk.x, `K${i}.x`); near(s.kbY[i]!, lk.y, `K${i}.y`); near(s.kbA[i]!, lk.a, `K${i}.a`); near(s.kbT[i]!, lk.t, `K${i}.t`); expect(s.kbDep[i], `${tag} f${o.f} K${i}.dep`).toBe(lk.dep); });
-      expect(s.nb, `${tag} f${o.f} bullet count`).toBe(o.B.length);
-      o.B.forEach((lb, i) => { expect(s.bflags[i]! & 32 ? 1 : 0, `${tag} f${o.f} B${i}.frozen`).toBe(lb.fz); near(s.bx[i]!, lb.x, `B${i}.x`); near(s.by[i]!, lb.y, `B${i}.y`); near(s.bvx[i]!, lb.vx, `B${i}.vx`); near(s.bvy[i]!, lb.vy, `B${i}.vy`); if (lb.heavy) { near(s.bmult[i]!, lb.mult!, `B${i}.mult`); near(s.bdist[i]!, lb.dist!, `B${i}.dist`); expect(s.brefl[i], `${tag} f${o.f} B${i}.refl`).toBe(lb.refl); near(s.br[i]!, lb.r, `B${i}.r`); } else near(s.bdmg[i]!, lb.dmg!, `B${i}.dmg`); near(s.blife[i]!, lb.life, `B${i}.life`); expect(s.bowner[i]).toBe(lb.owner); });
+      o.E.forEach((le, i) => { const j = idx[i]!; eq(s.ek[j], le.k, `${tag} f${o.f} E${i}.kind`); near(s.et[j]!, le.t, `E${i}.t`); near(s.ex[j]!, le.x, `E${i}.x`); near(s.ey[j]!, le.y, `E${i}.y`); near(s.evx[j]!, le.vx, `E${i}.vx`); near(s.evy[j]!, le.vy, `E${i}.vy`); eq(s.eg[j], le.g, `${tag} f${o.f} E${i}.g`); if (le.k === 2 || le.k === 10) near(s.ea[j]!, le.a, `E${i}.a`); if (le.k === 104) { near(s.ew[j]!, le.w!, `E${i}.hp`); near(s.er[j]!, le.r!, `E${i}.loot`); } });
+      eq(s.nkb, o.K.length, `${tag} f${o.f} KO beam count`);
+      o.K.forEach((lk, i) => { eq(s.kbO[i], lk.o, `${tag} f${o.f} K${i}.o`); near(s.kbX[i]!, lk.x, `K${i}.x`); near(s.kbY[i]!, lk.y, `K${i}.y`); near(s.kbA[i]!, lk.a, `K${i}.a`); near(s.kbT[i]!, lk.t, `K${i}.t`); eq(s.kbDep[i], lk.dep, `${tag} f${o.f} K${i}.dep`); });
+      eq(s.nb, o.B.length, `${tag} f${o.f} bullet count`);
+      o.B.forEach((lb, i) => { eq(s.bflags[i]! & 32 ? 1 : 0, lb.fz, `${tag} f${o.f} B${i}.frozen`); near(s.bx[i]!, lb.x, `B${i}.x`); near(s.by[i]!, lb.y, `B${i}.y`); near(s.bvx[i]!, lb.vx, `B${i}.vx`); near(s.bvy[i]!, lb.vy, `B${i}.vy`); if (lb.heavy) { near(s.bmult[i]!, lb.mult!, `B${i}.mult`); near(s.bdist[i]!, lb.dist!, `B${i}.dist`); eq(s.brefl[i], lb.refl, `${tag} f${o.f} B${i}.refl`); near(s.br[i]!, lb.r, `B${i}.r`); } else near(s.bdmg[i]!, lb.dmg!, `B${i}.dmg`); near(s.blife[i]!, lb.life, `B${i}.life`); eq(s.bowner[i], lb.owner, `B${i}.owner`); });
+      return out;
     },
+    /** Assert observable equality (tolerance 1e-6 abs/rel) at the current frame; throws the first difference. */
+    compare(tag: string, tol = 1e-6): void { const d = this.diffs(tag, tol, 1); if (d.length) throw new Error(d[0]); },
     /** Run scripts for `frames` frames, comparing after every frame. */
     run(tag: string, scripts: Script[], frames: number): void { for (let f = 1; f <= frames; f++) { this.step(scripts, f); this.compare(tag); } },
   };
