@@ -38,7 +38,7 @@ export function makePair(chars: string[], seed = 1, opt: PairOpt = {}) {
   const s = world.slice<CombatState>('combat'), KIND = kindMap(world);
   legacy.eval(`SPELLS.length=${spellPool(world).length}`); // legacy holds every character's card: keep exactly the ported ones, in the same order
   return {
-    legacy, world, s, kind: (name: string): number => KIND[name]!,
+    legacy, world, s, kind: (name: string): number => KIND[name]!, itemNames: Object.keys(KIND).filter(n => n !== "rainbow"),
     /** Advance both with the same input scripts; returns nothing, use `compare()`. */
     step(scripts: Script[], f: number): void {
       const frames = scripts.map(sc => sc(f));

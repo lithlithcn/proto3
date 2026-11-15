@@ -7,25 +7,27 @@ import { cpus } from 'node:os';
 import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { makePair } from '../../tests/parity/harness';
-import { ROSTER, bot } from '../../tests/parity/fuzzbot';
+import { ROSTER } from '../../tests/parity/fuzzbot';
+import { session } from './session';
 import { diagnose, type Diagnosis } from './diagnose';
 
 const argv = process.argv.slice(2), opt = (k: string, d: string): string => { const i = argv.indexOf('--' + k); return i >= 0 ? argv[i + 1]! : d; };
 const FROM = +opt('from', '0'), OUT = opt('out', 'reports'), FRAMES = +opt('frames', '2400'), SEED0 = +opt('seed', '1'), GAMES = +opt('games', '200');
+const ITEMS_OPT = opt('items', 'none'); let ALLI: string[] | undefined; const itemList = (): string[] => ITEMS_OPT === 'none' ? [] : ITEMS_OPT === 'all' ? (ALLI ??= makePair(['reimu', 'reimu'], 1).itemNames) : ITEMS_OPT.split(',');
 const CHARS = opt('chars', 'all') === 'all' ? ROSTER : opt('chars', 'all').split(',');
 const gameOf = (g: number): { a: string; b: string; seed: number } => ({ a: CHARS[g % CHARS.length]!, b: CHARS[(g * 7 + (g / CHARS.length | 0)) % CHARS.length]!, seed: SEED0 * 100003 + g });
 const sigOf = (m: string): string => (/ ([A-Za-z]+\d*\.\w+|[a-z ]+):/.exec(m)?.[1] ?? m.slice(0, 30)).replace(/\d+/g, '#');
 
-interface Report { a: string; b: string; seed: number; frame: number; sig: string; kind: 'diff' | 'crash'; diffs: string[]; crash?: string; inputs: { f: number; p0: unknown; p1: unknown }[]; repro: string; diag?: Diagnosis }
+interface Report { a: string; b: string; seed: number; frame: number; sig: string; kind: 'diff' | 'crash'; items: string[]; gives: string[]; diffs: string[]; crash?: string; inputs: { f: number; p0: unknown; p1: unknown }[]; repro: string; diag?: Diagnosis }
 
 /** Plays one game; returns a report on the first divergence (all differing variables of that frame) or crash, else null. */
-export function play(a: string, b: string, seed: number, frames: number, until = Infinity): Report | null {
-  const k = makePair([a, b], seed), s0 = bot(k, 0, seed * 3), s1 = bot(k, 1, seed * 7), ring: Report['inputs'] = [];
-  const mk = (frame: number, kind: Report['kind'], diffs: string[], crash?: string): Report => ({ a, b, seed, frame, kind, diffs, crash, sig: sigOf(diffs[0] ?? crash ?? ''), inputs: ring.slice(), repro: `pnpm parity replay <this file>` });
+export function play(a: string, b: string, seed: number, frames: number, until = Infinity, items: string[] = itemList()): Report | null {
+  const ss = session(a, b, seed, items), k = ss.k, ring: Report['inputs'] = [], gives: string[] = [];
+  const mk = (frame: number, kind: Report['kind'], diffs: string[], crash?: string): Report => ({ a, b, seed, frame, kind, diffs, crash, items, gives: gives.slice(-6), sig: sigOf(diffs[0] ?? crash ?? ''), inputs: ring.slice(), repro: `pnpm parity replay <this file>` });
   for (let f = 1; f <= Math.min(frames, until); f++) {
-    const i0 = s0(f), i1 = s1(f); ring.push({ f, p0: i0, p1: i1 }); if (ring.length > 60) ring.shift();
+    const g = ss.pre(f); if (g) gives.push(`f${f} ${g}`); const [i0, i1] = ss.inputs(f); ring.push({ f, p0: i0, p1: i1 }); if (ring.length > 60) ring.shift();
     try { k.step([() => i0, () => i1], f); } catch (e) { return mk(f, 'crash', [], String((e as Error).stack ?? e).split('\n').slice(0, 8).join('\n')); }
-    const d = k.diffs(`${a}/${b}`, 1e-6, 60); if (d.length) { const r = mk(f, 'diff', d); if (until === Infinity) { r.diag = diagnose(a, b, seed, f, d[0]!); r.sig += ` @${r.diag.suspect}`; } return r; }
+    const d = k.diffs(`${a}/${b}`, 1e-6, 60); if (d.length) { const r = mk(f, 'diff', d); if (until === Infinity) { r.diag = diagnose(a, b, seed, f, d[0]!, items); r.sig += ` @${r.diag.suspect}`; } return r; }
   }
   return null;
 }
@@ -34,12 +36,12 @@ if (argv[0] === '--worker') { // child: games idx, idx+W, ...
   const idx = +argv[1]!, W = +argv[2]!; mkdirSync(OUT, { recursive: true });
   for (let g = FROM + idx; g < GAMES; g += W) {
     const { a, b, seed } = gameOf(g); const t0 = Date.now(); let r: Report | null = null;
-    try { r = play(a, b, seed, FRAMES); } catch (e) { r = { a, b, seed, frame: 0, kind: 'crash', diffs: [], crash: String((e as Error).stack ?? e).split('\n').slice(0, 8).join('\n'), sig: 'setup', inputs: [], repro: '' }; }
+    try { r = play(a, b, seed, FRAMES); } catch (e) { r = { a, b, seed, frame: 0, kind: 'crash', diffs: [], crash: String((e as Error).stack ?? e).split('\n').slice(0, 8).join('\n'), sig: 'setup', inputs: [], repro: '', items: [], gives: [] }; }
     if (r) writeFileSync(`${OUT}/${r.sig.replace(/[^\w.#-]/g, '_')}__${a}-${b}-${seed}.json`, JSON.stringify(r, null, 1));
     console.log(`${r ? 'FAIL' : 'ok  '} #${g} ${a}/${b} seed ${seed} ${r ? `f${r.frame} ${r.sig}` : ''} (${((Date.now() - t0) / 1000).toFixed(1)}s)`);
   }
 } else if (argv[0] === 'replay' && argv[1]) {
-  const r = JSON.parse(readFileSync(argv[1], 'utf8')) as Report; const again = play(r.a, r.b, r.seed, r.frame + 1, r.frame);
+  const r = JSON.parse(readFileSync(argv[1], 'utf8')) as Report; const again = play(r.a, r.b, r.seed, r.frame + 1, r.frame, r.items);
   console.log(`${r.a}/${r.b} seed ${r.seed} frame ${r.frame} (${r.kind})`); console.log((again?.diffs ?? ['no divergence reproduced']).join('\n')); if (r.diag) console.log(JSON.stringify({ cls: r.diag.cls, suspect: r.diag.suspect, onset: r.diag.onset, at: r.diag.at }, null, 1)); if (r.crash) console.log(r.crash);
 } else { // parent: spawn workers, then summarise
   rmSync(OUT, { recursive: true, force: true }); mkdirSync(OUT, { recursive: true });

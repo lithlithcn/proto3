@@ -1,7 +1,7 @@
 /* Surgical diagnosis of one divergence: re-runs the game deterministically and records, for the last frames before it, every drifting variable (1e-12),
  * both players' state/move, the port's events, the first mismatching bullet/entity with its owner + owner's move, and a classification. Test-side only. */
-import { makePair } from '../../tests/parity/harness';
-import { bot } from '../../tests/parity/fuzzbot';
+import type { makePair } from '../../tests/parity/harness';
+import { session } from './session';
 import { PS } from '../../packs/combat/state';
 
 const SN = Object.fromEntries(Object.entries(PS).map(([k, v]) => [v, k])) as Record<number, string>;
@@ -32,12 +32,12 @@ const kindCounts = (ks: number[]): Record<number, number> => { const m: Record<n
 
 export interface Diagnosis { cls: string; suspect: string; onset: string; trace: object[]; at: object }
 
-export function diagnose(a: string, b: string, seed: number, frame: number, firstDiff: string, window = 12): Diagnosis {
-  const chars = [a, b], k = makePair(chars, seed), s0 = bot(k, 0, seed * 3), s1 = bot(k, 1, seed * 7), ev: string[] = [], trace: object[] = [];
+export function diagnose(a: string, b: string, seed: number, frame: number, firstDiff: string, items: string[] = [], window = 12): Diagnosis {
+  const chars = [a, b], ss = session(a, b, seed, items), k = ss.k, ev: string[] = [], trace: object[] = [];
   const w0 = k.world as unknown as { emit: (t: string, p: unknown) => unknown }, e0 = w0.emit.bind(w0); w0.emit = (t: string, p: unknown) => { ev.push(t + ' ' + JSON.stringify(p).slice(0, 90)); return e0(t, p); };
   let drift0 = '', driftVar = '';
   for (let f = 1; f <= frame; f++) {
-    ev.length = 0; const i0 = s0(f), i1 = s1(f); k.step([() => i0, () => i1], f);
+    ev.length = 0; const g = ss.pre(f); if (g) ev.push('GIVE ' + g); const [i0, i1] = ss.inputs(f); k.step([() => i0, () => i1], f);
     const d = k.diffs('', 1e-9, 5);
     if (d.length && !drift0) { drift0 = `f${f}`; driftVar = d[0]!.trim(); }
     if (f > frame - window) trace.push({ f, drift: d.map(x => x.trim().slice(0, 100)), events: ev.slice(0, 8), players: players(k, chars) });
