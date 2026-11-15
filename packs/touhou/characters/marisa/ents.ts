@@ -1,5 +1,5 @@
 import { type World, hypot } from '@kernel';
-import { PS, T, TAU, addEnt, customHeavy, foe, hit, parryFx, type CombatState } from '@pack/combat/api';
+import { PS, T, TAU, bodyR, addEnt, customHeavy, foe, hit, parryFx, type CombatState } from '@pack/combat/api';
 import { EK_POT, EK_PUD, EK_TRAIL } from './kinds';
 import type { TouhouState } from '../../state';
 
@@ -14,7 +14,7 @@ export function marisaEnts(w: World, s: CombatState, p: number): void {
     } else if (s.ek[i] === EK_TRAIL) { // comet trail: a 14 px hitbox per segment, shared 20-frame cooldown per victim
       const H = w.slice<TouhouState>('touhou').mHc;
       for (let q = 0; q < s.n; q++) {
-        if (q === p || s.state[q] === PS.dead || s.inv[q]! > 0 || !foe(s, p, q) || H[q]! > s.gf || hypot(s.x[q]! - s.ex[i]!, s.y[q]! - s.ey[i]!) >= 14 + T.BODY_R) continue;
+        if (q === p || s.state[q] === PS.dead || s.inv[q]! > 0 || !foe(s, p, q) || H[q]! > s.gf || hypot(s.x[q]! - s.ex[i]!, s.y[q]! - s.ey[i]!) >= 14 + bodyR(s, q)) continue;
         H[q] = s.gf + 20;
         if (s.state[q] === PS.parry) parryFx(w, s, q); else hit(w, s, q, p, s.x[q]! - s.ex[i]!, s.y[q]! - s.ey[i]!, { dmg: 3, kb: 6, stun: 16 }, -1, 1, true);
       }
