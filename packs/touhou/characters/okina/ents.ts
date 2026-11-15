@@ -1,5 +1,5 @@
 import { type World, atan2, hypot } from '@kernel';
-import { BF, PS, TAU, bodyR, chHitQ, customHeavy, foe, moveOf, nearFoe, type CombatState } from '@pack/combat/api';
+import { BF, PS, TAU, bodyR, chHitQ, customHeavy, foe, moveOf, nearFoe, type CombatState, jBurst } from '@pack/combat/api';
 import { EK_OBD, EK_ODN, EK_ODR } from './kinds';
 
 const live = (s: CombatState, o: number, q: number): boolean => q !== o && s.state[q] !== PS.dead && s.inv[q]! <= 0 && foe(s, o, q);
@@ -32,7 +32,7 @@ export function okinaEnts(w: World, s: CombatState, p: number): void {
         if (!live(s, p, q) || s.ehc[i * 32 + q]! > s.gf || hypot(s.x[q]! - s.ex[i]!, s.y[q]! - s.ey[i]!) > 30 + bodyR(s, q)) continue;
         s.ehc[i * 32 + q] = s.gf + 20;
         let dx = S >= 0 ? s.ex[S]! - s.ex[i]! : s.x[q]! - s.ex[i]!, dy = S >= 0 ? s.ey[S]! - s.ey[i]! : s.y[q]! - s.ey[i]!; const l = hypot(dx, dy) || 1; dx /= l; dy /= l;
-        chHitQ(w, s, p, q, dx, dy, 5, S >= 0 ? Math.min(18, 7 + l / 16) : 12, 30);
+        if (chHitQ(w, s, p, q, dx, dy, 5, S >= 0 ? Math.min(18, 7 + l / 16) : 12, 30)) jBurst(w, s.x[q]!, s.y[q]!, s.ebc[i] ? '#5cff7a' : '#ff7ad0', 10);
       }
       s.er[i] = s.er[i]! - 1;
       if (s.er[i]! <= 0) {

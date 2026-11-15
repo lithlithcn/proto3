@@ -1,5 +1,5 @@
 import { atan2, cos, hypot, sin } from '@kernel';
-import { type CombatState, type HeavyCtx, PS, TAU, addEnt, entsOf, foe } from '@pack/combat/api';
+import { type CombatState, type HeavyCtx, PS, TAU, addEnt, entsOf, foe, jTxt } from '@pack/combat/api';
 import type { TouhouState } from '../../state';
 import { EK_NPD, EK_NPG } from './kinds';
 
@@ -22,7 +22,7 @@ export const nazrinHeavy = {
       const dx = s.x[q]! - s.x[p]!, dy = s.y[q]! - s.y[p]!, d = hypot(dx, dy); let da = Math.abs(atan2(dy, dx) - a); da = Math.min(da, TAU - da);
       if (d < 420 && da < 0.5 && d < bd) { bd = d; best = q; }
     }
-    if (best >= 0 && !clone) { const t = w.slice<TouhouState>('touhou'); t.nTg[p] = best; t.nTgF[p] = s.gf + 200; }
+    if (best >= 0 && !clone) { const t = w.slice<TouhouState>('touhou'); t.nTg[p] = best; t.nTgF[p] = s.gf + 200; jTxt(w, s.x[best]!, s.y[best]! - 36, 'FOUND!', '#ffd23a', 15); }
   },
   B({ s, p }: HeavyCtx): void {
     const L: number[] = []; entsOf(s, EK_NPG, p, L); for (const i of L) s.et[i] = 0;

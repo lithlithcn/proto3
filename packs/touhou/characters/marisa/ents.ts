@@ -1,5 +1,5 @@
 import { type World, hypot } from '@kernel';
-import { PS, T, TAU, bodyR, addEnt, customHeavy, foe, hit, parryFx, type CombatState } from '@pack/combat/api';
+import { PS, T, TAU, bodyR, addEnt, customHeavy, foe, hit, parryFx, type CombatState, jBurst, addJ } from '@pack/combat/api';
 import { EK_POT, EK_PUD, EK_TRAIL } from './kinds';
 import type { TouhouState } from '../../state';
 
@@ -30,6 +30,7 @@ export function marisaEnts(w: World, s: CombatState, p: number): void {
         if (d < 70 + T.BODY_R) { if (s.state[q] === PS.parry) parryFx(w, s, q); else hit(w, s, q, p, dx / d, dy / d, { dmg: 11, kb: 14, stun: 36 }, -1, 1, true); }
       }
       for (let k = 0; k < 10; k++) customHeavy(s, p, x, y, k * TAU / 10, 5, 6, { dmg: 3, kb: 3, stun: 12, arm: 0 }, 90, k % 2 ? 0xffe14a : 0x7cff7a);
+      jBurst(w, x, y, '#c070ff', 24); addJ(w, 'shake', 6, 28);
     }
   }
 }

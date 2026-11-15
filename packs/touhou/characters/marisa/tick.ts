@@ -1,5 +1,5 @@
 import type { World } from '@kernel';
-import { PS, addEnt, type CombatState } from '@pack/combat/api';
+import { PS, addEnt, type CombatState, pushJ } from '@pack/combat/api';
 import { EK_TRAIL } from './kinds';
 import type { TouhouState } from '../../state';
 
@@ -8,7 +8,7 @@ export function marisaTick(w: World, s: CombatState, p: number): void {
   const t = w.slice<TouhouState>('touhou');
   if (s.focus[p] && s.state[p] !== PS.spell) {
     t.mH[p] = Math.min(130, t.mH[p]! + 0.8);
-    if (t.mH[p]! >= 100) s.hp[p] = Math.max(1, s.hp[p]! - 0.06);
+    if (t.mH[p]! >= 100) { s.hp[p] = Math.max(1, s.hp[p]! - 0.06); if (s.gf % 6 === 0) pushJ(w, 'FX', 'x', s.x[p]!, 'y', s.y[p]! - 10, 'vx', 0, 'vy', -1.2, 't', 24, 'c', '#777'); }
   } else t.mH[p] = Math.max(0, t.mH[p]! - 0.4);
   if (t.mBS[p]) {
     if (s.state[p] === PS.dash && s.gf < t.mBS[p]!) { if (s.gf % 2 === 0) addEnt(s, EK_TRAIL, p, 40, s.x[p]!, s.y[p]!); return; }

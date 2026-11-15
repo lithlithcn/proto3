@@ -1,5 +1,5 @@
 import { cos, hypot, sin } from '@kernel';
-import { BF, type HeavyCtx, PS, addEnt, chHitQ, entsOf, foe, heavyBullet } from '@pack/combat/api';
+import { BF, type HeavyCtx, PS, addEnt, chHitQ, entsOf, foe, heavyBullet, pushJ } from '@pack/combat/api';
 import { EK_ATN } from './kinds';
 
 /** Aya's heavies: N = slow tornado (max 2, pulls foes, erases light bullets, can be dashed through for a Hyper Dash), F = piercing wind blade, B = gust that shoves foes and bends foreign bullets away. */
@@ -24,5 +24,6 @@ export const ayaHeavy = {
       const dx = s.bx[b]! - s.x[p]!, dy = s.by[b]! - s.y[p]!, d = hypot(dx, dy) || 1;
       if (d < 180) { const sp = hypot(s.bvx[b]!, s.bvy[b]!); s.bvx[b] = dx / d * sp; s.bvy[b] = dy / d * sp; }
     }
+    pushJ(w, 'WAVES', 'x', s.x[p]!, 'y', s.y[p]!, 't', 18, 'T', 18, 'spd', 14, 'th', 22, 'inv', 0, 'c', '#bfffe0');
   },
 } as const;

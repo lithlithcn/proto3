@@ -1,5 +1,5 @@
 import { type World, atan2, cos, hypot, sin } from '@kernel';
-import { BF, PS, TAU, bodyR, chHitQ, customHeavy, foe, nearFoe, type CombatState } from '@pack/combat/api';
+import { BF, PS, TAU, bodyR, chHitQ, customHeavy, foe, nearFoe, type CombatState, jBurst, addJ } from '@pack/combat/api';
 import type { TouhouState } from '../../state';
 import { EK_NCOIN, EK_NMS, EK_NPD, EK_NPG, EK_NRC } from './kinds';
 
@@ -48,6 +48,7 @@ export function nazrinEnts(w: World, s: CombatState, p: number): void {
     } else if (k === EK_NCOIN) { // bomb coin: arcs to the foe, explodes on its last frame
       const u = 1 - s.et[i]! / s.ebc[i]!; s.ex[i] = s.er[i]! + (s.ea[i]! - s.er[i]!) * u; s.ey[i] = s.eh[i]! + (s.ew[i]! - s.eh[i]!) * u;
       if (s.et[i] === 1) for (let q = 0; q < s.n; q++) if (live(s, p, q)) { const dx = s.x[q]! - s.ex[i]!, dy = s.y[q]! - s.ey[i]!, d = hypot(dx, dy) || 1; if (d < 70 + bodyR(s, q)) chHitQ(w, s, p, q, dx / d, dy / d, 10, 13, 34); }
+      if (s.et[i] === 1) { jBurst(w, s.ex[i]!, s.ey[i]!, '#ffd23a', 22); addJ(w, 'shake', 6, 28); }
     }
   }
 }

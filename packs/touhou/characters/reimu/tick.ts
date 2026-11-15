@@ -1,5 +1,5 @@
 import { type World, atan2, cos, hypot, sin } from '@kernel';
-import { BF, PS, T, TAU, customHeavy, entsOf, foe, hit, moveOf, parryFx, type CombatState } from '@pack/combat/api';
+import { BF, PS, T, TAU, customHeavy, entsOf, foe, hit, jBurst, jTxt, moveOf, parryFx, pushJ, spark, type CombatState } from '@pack/combat/api';
 import type { TouhouState } from '../../state';
 import { EK_BAR, EK_ORB } from './kinds';
 
@@ -26,6 +26,7 @@ export function reimuTick(w: World, s: CombatState, p: number): void {
     if (!focus || out || !nOs || s.state[p] === PS.spell) {
       for (let k = 0; k < nOs; k++) { const e = OS[k]!; s.evx[e] = cos(t.rA[p]!) * 6.5; s.evy[e] = sin(t.rA[p]!) * 6.5; s.eg[e] = 0; s.et[e] = Math.max(s.et[e]!, 240); s.ehc.fill(0, e * 32, e * 32 + 32); }
       t.rG[p] = 0; t.rGC[p] = s.gf + 60; if (out) t.rGW[p] = 1;
+      if (nOs) pushJ(w, 'RINGS', 'x', s.x[p]!, 'y', s.y[p]!, 'r', 0, 'm', 50, 't', 12, 'c', '#fff');
     }
   } else if (focus && !t.rGW[p] && s.gf >= t.rGC[p]! && nOs && s.state[p] !== PS.spell) { t.rG[p] = 1; t.rGT[p] = s.gf; t.rA[p] = s.aim[p]!; }
   const ghost = t.rG[p] !== 0;
@@ -46,7 +47,7 @@ export function reimuTick(w: World, s: CombatState, p: number): void {
       let q = -1, bd = 900;
       for (let c = 0; c < s.n; c++) if (c !== p && s.state[c] !== PS.dead && foe(s, p, c)) { const d = hypot(s.x[c]! - s.ex[e]!, s.y[c]! - s.ey[e]!); if (d < bd) { bd = d; q = c; } }
       const sp = Math.min(10, hypot(s.evx[e]!, s.evy[e]!) * 1.4), a2 = q >= 0 ? atan2(s.y[q]! - s.ey[e]!, s.x[q]! - s.ex[e]!) : atan2(s.evy[e]!, s.evx[e]!) + Math.PI;
-      s.evx[e] = cos(a2) * sp; s.evy[e] = sin(a2) * sp; s.ebc[e] = s.gf + 20;
+      s.evx[e] = cos(a2) * sp; s.evy[e] = sin(a2) * sp; s.ebc[e] = s.gf + 20; pushJ(w, 'RINGS', 'x', s.ex[e]!, 'y', s.ey[e]!, 'r', 0, 'm', 40, 't', 12, 'c', '#9fe0ff');
     }
     if (hypot(s.evx[e]!, s.evy[e]!) > 4.6) { s.evx[e] = s.evx[e]! * 0.995; s.evy[e] = s.evy[e]! * 0.995; }
     for (let b = 0; b < s.nb; b++) { // orbs erase foe light bullets
@@ -61,18 +62,18 @@ export function reimuTick(w: World, s: CombatState, p: number): void {
       s.ehc[e * 32 + q] = s.gf + 30;
       const sp = hypot(s.evx[e]!, s.evy[e]!); s.evx[e] = -dx / d * sp; s.evy[e] = -dy / d * sp;
       if (s.state[q] === PS.parry) { parryFx(w, s, q); continue; }
-      hit(w, s, q, p, dx / d, dy / d, { dmg: 8, kb: 9, stun: 26 }, -1, 1, true);
+      hit(w, s, q, p, dx / d, dy / d, { dmg: 8, kb: 9, stun: 26 }, -1, 1, true); jBurst(w, s.ex[e]!, s.ey[e]!, '#ff3a4a', 8);
     }
   }
   for (let b = 0; b < nBars; b++) {
     const z = BARS[b]!;
-    for (let i = 0; i < s.nb; i++) if (!(s.bflags[i]! & BF.dead) && s.bowner[i] !== p && foe(s, s.bowner[i]!, p) && inBar(s, z, s.bx[i]!, s.by[i]!, s.br[i]!)) { s.bflags[i] = s.bflags[i]! | BF.dead; s.efl[z] = s.gf; }
+    for (let i = 0; i < s.nb; i++) if (!(s.bflags[i]! & BF.dead) && s.bowner[i] !== p && foe(s, s.bowner[i]!, p) && inBar(s, z, s.bx[i]!, s.by[i]!, s.br[i]!)) { s.bflags[i] = s.bflags[i]! | BF.dead; spark(w, s.bx[i]!, s.by[i]!); s.efl[z] = s.gf; }
     for (let q = 0; q < s.n; q++) { // melee attackers inside the Border are stunned (not heavy shots)
       if (!canHit(s, p, q) || s.state[q] !== PS.atk) continue;
       const m = moveOf(w, s, q);
       if (!m || m.spd || s.t[q]! < m.start || s.ehc[z * 32 + q]! > s.gf || !inBar(s, z, s.x[q]!, s.y[q]!, T.BODY_R + m.range * 0.8)) continue;
       s.ehc[z * 32 + q] = s.gf + 90; s.efl[z] = s.gf;
-      hit(w, s, q, p, 0, 0, { dmg: 2, kb: 0, stun: 75 }, -1, 1, true); s.mvId[q] = 0;
+      hit(w, s, q, p, 0, 0, { dmg: 2, kb: 0, stun: 75 }, -1, 1, true); s.mvId[q] = 0; jTxt(w, s.x[q]!, s.y[q]! - 34, 'STUN!', '#7cc8ff', 16); jBurst(w, s.x[q]!, s.y[q]!, '#7cc8ff', 16);
     }
   }
 }

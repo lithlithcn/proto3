@@ -8,7 +8,7 @@ export const flandreHeavy = {
     const q = nearFoe(s, p, s.x[p]!, s.y[p]!), cx = q >= 0 ? s.x[q]! : s.x[p]! + cos(a) * 250, cy = q >= 0 ? s.y[q]! : s.y[p]! + sin(a) * 250;
     for (let i = 0; i < 7; i++) {
       const r = i ? 55 + i * 6 : 0, t = 22 + i * 5, e = addEnt(s, EK_FSB, p, t, cx + cos(i * 2.4) * r, cy + sin(i * 2.4) * r);
-      if (e >= 0) { s.ebc[e] = t; s.ed[e] = 6 * k; }
+      if (e >= 0) { s.ebc[e] = t; s.ed[e] = 6 * k; s.ea[e] = i; } // ea = colour index (presentation)
     }
   },
   F({ s, p, a, k }: HeavyCtx): void {

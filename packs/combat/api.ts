@@ -24,6 +24,7 @@ export { hit } from './player/hit';
 export { parryFx } from './player/parry';
 export { foe, nearFoe } from './target';
 export { bodyR, coreR } from './stats';
+export { jfx, spark, burst as jBurst, txt as jTxt, big as jBig, flash as jFlash, addJ, maxJ, pushJ } from './jfx';
 export { chHitQ } from './chhit';
 export { ko } from './player/ko';
 export { relStick, moveOf } from './player/atkstart';

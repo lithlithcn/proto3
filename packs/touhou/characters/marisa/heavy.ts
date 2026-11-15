@@ -1,4 +1,4 @@
-import { type HeavyCtx, RAYF, fireRay, heavyBullet } from '@pack/combat/api';
+import { type HeavyCtx, RAYF, fireRay, heavyBullet, addJ } from '@pack/combat/api';
 import type { TouhouState } from '../../state';
 import { LZ_GAP, LZ_TELE } from './kinds';
 
@@ -11,7 +11,7 @@ export const marisaHeavy = {
   N({ w, s, p, a, k, clone }: HeavyCtx): void {
     const ts = w.slice<TouhouState>('touhou'); if (!clone && ts.mLz[p]! > s.gf) return; // the Doppelganger's stand-in has its own (empty) laser lock (legacy)
     const h = heatMul(ts, p); if (!clone) ts.mLz[p] = s.gf + LZ_TELE + 44 + LZ_GAP;
-    fireRay(s, p, { T: LZ_TELE + 44, tele: LZ_TELE, flags: RAYF.warn | RAYF.follow | RAYF.clear, w: 14 * h, len: 1000, dmg: 1.5 * h * k, ev: 7, kb: 6, stun: 18, push: 0.35, a });
+    fireRay(s, p, { T: LZ_TELE + 44, tele: LZ_TELE, flags: RAYF.warn | RAYF.follow | RAYF.clear, w: 14 * h, len: 1000, dmg: 1.5 * h * k, ev: 7, kb: 6, stun: 18, push: 0.35, a }); addJ(w, 'shake', 6, 28);
   },
   F({ w, s, p, a, k, clone }: HeavyCtx): void {
     const ts = w.slice<TouhouState>('touhou'); if (!clone && ts.mLz[p]! > s.gf) return;

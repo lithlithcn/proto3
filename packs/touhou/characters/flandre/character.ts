@@ -1,3 +1,4 @@
+import { jTxt, jBurst, addJ } from '@pack/combat/api';
 import type { World } from '@kernel';
 import type { CharacterDef, CombatState } from '@pack/combat/api';
 import type { TouhouState } from '../../state';
@@ -17,4 +18,5 @@ export const flandre: CharacterDef = {
   shot: flandreShot, dash: flandreDash, melee: flandreMelee, heavy: flandreHeavy, tick: flandreTick, ents: flandreEnts, entKinds: [6, 9], skill1: flandreClones, skill2: flandreFrenzy, spell: flandreSpell,
   doutM: (w, s, a, _v, heavy) => (!heavy && s.focus[a] ? 1.6 : 1) * (frenzy(w, s, a) ? 1.35 : 1),
   spdM: (w, s, p) => (frenzy(w, s, p) ? 1.25 : 1),
+  onHit(w, s, a, v, heavy) { if (!heavy && s.focus[a]) { jTxt(w, s.x[v]!, s.y[v]! - 30, 'CRUSH!', '#ff3030', 16); jBurst(w, s.x[v]!, s.y[v]!, '#ff3030', 18); addJ(w, 'shake', 6, 28); } }, // presentation only (legacy onHit)
 };

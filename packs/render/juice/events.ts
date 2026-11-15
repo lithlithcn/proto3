@@ -85,7 +85,27 @@ const onCd = on<Pp & { left: number; n: string }>('juice-skill-cd', 'combat:skil
 const onKick = on<Pp>('juice-wall-kick', 'combat:wall-kick', (j, e) => { txt(j, e.px, e.py - 26, 'WALL KICK', '#fff', 13); burst(j, e.px, e.py, '#fff', 12); j.shake += 6; j.chroma = Math.max(j.chroma, 6); j.WAVES.push({ x: e.px, y: e.py, t: 10, T: 10, spd: 8, th: 14, inv: 1 }); });
 const onGlide = on<Pp & { dx: number; dy: number }>('juice-glide', 'combat:glide', (j, e) => { for (let i = 0; i < 6; i++) j.FX.push({ x: e.px, y: e.py, vx: -e.dx * 2 + (j.rnd() - 0.5) * 3, vy: -e.dy * 2 + (j.rnd() - 0.5) * 3, t: 14, c: '#ccc' }); });
 const onPivot = on<Pp>('juice-pivot', 'combat:pivot', (j, e) => burst(j, e.px, e.py, '#888', 3));
-export const juiceHooks: HookDef[] = [onPivot, onCancelB, onCd, onKick, onGlide, onGrab, onHeavy, onBClash, onLight, onSpell, onCapture, onTick, onHit, onBreak, onPip, onGraze, onPower, onRefused, onParry];
+/** Generic presentation commands (combat/jfx.ts): the legacy juice line, replayed verbatim. */
+const onFx = on<{ op: string; a: (number | string)[] }>('juice-fx', 'combat:fx', (j, e) => {
+  const a = e.a, J = j as unknown as Record<string, number>;
+  switch (e.op) {
+    case 'burst': burst(j, a[0] as number, a[1] as number, a[2] as string, a[3] as number); break;
+    case 'txt': txt(j, a[0] as number, a[1] as number, a[2] as string, a[3] as string, a[4] as number); break;
+    case 'big': big(j, a[0] as string, a[1] as string, a[2] as number, (a[3] as string) || undefined); break;
+    case 'flash': flash(j, a[0] as number, a[1] as string); break;
+    case 'add': { const n = a[0] as string, v = J[n]! + (a[1] as number), cap = a[2] as number; J[n] = cap ? Math.min(cap, v) : v; break; }
+    case 'max': J[a[0] as string] = Math.max(J[a[0] as string]!, a[1] as number); break;
+    case 'crack': crack(j, a[0] as number, a[1] as number); break;
+    case 'push': { const o: Record<string, unknown> = {}; for (let i = 1; i + 1 < a.length; i += 2) o[a[i] as string] = a[i + 1]; (j as unknown as Record<string, unknown[]>)[a[0] as string]!.push(o); break; }
+  }
+});
+const onReady = on<Pp>('juice-spell-ready', 'combat:spell-ready', (j, e) => { txt(j, e.px, e.py - 50, 'SPELL READY', '#f8f', 18); j.RINGS.push({ x: e.px, y: e.py, r: 0, m: 80, t: 24, c: '#f8f' }); flash(j, 0.15, '#f8f'); });
+const onCancel = on<Pp & { kind: string }>('juice-cancel', 'combat:cancel', (j, e) => { if (e.kind === 'confirm') txt(j, e.px, e.py - 30, 'CONFIRM!', '#ffb040', 13); else if (e.kind === 'hit') txt(j, e.px, e.py - 30, 'HIT CANCEL', '#7cf', 13); else txt(j, e.px, e.py - 30, 'CANCEL', '#7cf'); });
+const onClash = on<{ x: number; y: number }>('juice-clash', 'combat:clash', (j, e) => {
+  const x = e.x, y = e.y; burst(j, x, y, '#fff', 24); j.WAVES.push({ x, y, t: 14, T: 14, spd: 14, th: 24, inv: 1 }); for (let i = 0; i < 10; i++) j.LINES.push({ x, y, a: i * 6.2832 / 10, t: 12, T: 12, len: 90 });
+  j.shake = Math.min(40, j.shake + 16); j.invF = Math.max(j.invF, 4); txt(j, x, y - 30, 'CLASH!', '#fff', 20);
+});
+export const juiceHooks: HookDef[] = [onCancel, onClash, onReady, onFx, onPivot, onCancelB, onCd, onKick, onGlide, onGrab, onHeavy, onBClash, onLight, onSpell, onCapture, onTick, onHit, onBreak, onPip, onGraze, onPower, onRefused, onParry];
 export { on as juiceHook };
 export function runJuiceEvent(j: Juice, e: { ev: string }): void { (H[e.ev] as ((j: Juice, e: unknown) => void) | undefined)?.(j, e); }
 export type { Ev };
