@@ -4,13 +4,15 @@ Owner: Houcine (HKN), French-speaking; reply in French, code/docs in English. Mi
 
 **Porting freedom (owner's rule):** if something in the legacy code is problematic or can't be ported as-is, do NOT replicate it — recode a better solution, and optimise/improve the legacy logic whenever possible (document it in DESIGN §25 as a deliberate deviation, keep the parity test meaningful).
 
+**Permanent purpose (owner, never forget):** Proto3 is rebuilt not for cleaner code but to be the best, most autonomous, self-sufficient workspace for YOU (the AI): fast to understand, easy to locate where to change, consequences visible, bugs self-detected/diagnosed/reproduced, fixes verified, features added without breaking old ones, maintainable for years. Judge every decision by that (DESIGN §27); invest in foundations now, but no artificial complexity — each tool must earn its place. Before touching an area run `pnpm map <term>`.
+
 ## Read first
 1. `PROJECT_MAP.md` — "to change X, open Y".
 2. `docs/DESIGN.md` — the full design (§21 checklist before any new feature, §24 working method, §25 risk register: add every new failure mode).
 3. `docs/INVENTORY.md` — parity checklist vs the old game (`legacy/shmup-fighter.html`, frozen).
 
 ## Commands
-`pnpm check` (typecheck + lint + tests) · `pnpm check:all` (+ build) · `pnpm dev` · `pnpm sim demo|run|bisect` · `pnpm audit:legacy` (regenerate old-game inventory).
+`pnpm check` (typecheck + lint + tests) · `pnpm check:all` (+ build) · `pnpm map <term>` (what to know before touching X) · `pnpm spec lock|check` (content contracts) · `pnpm dev` · `pnpm sim demo|run|bisect` · `pnpm audit:legacy` (regenerate old-game inventory).
 
 ## Hard rules
 - Kernel (`src/kernel`) never imports a pack. Packs import only `@kernel` and packs listed in their `requires`. Enforced by `pnpm lint`.
