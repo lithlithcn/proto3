@@ -51,3 +51,4 @@ Everything gameplay-related will live under `packs/<id>/` (see DESIGN §2.2, §1
 | finish a lot of work | `pnpm gate` (`tools/gate.ts`; baseline `docs/coverage.baseline.json`) |
 | measure how good the detectors are | `pnpm mutate` (`tools/parity/mutate.ts` → `docs/MUTATION.generated.md`) |
 | compare / look at what the legacy draws | `tools/parity/recorder.cjs`, `tools/render/{cli,raster}.ts`, `pnpm render legacy a,b <frames> out.png` |
+| "which checks does my diff need?" | `tools/affected.ts` (`pnpm affected`) |

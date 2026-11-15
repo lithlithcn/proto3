@@ -44,8 +44,10 @@ function legacyPass(rep: Rep, win: number, watch: { kind: string; idx: number; p
   return { calls, writes, id, ctx, only, counts, born };
 }
 
-export function why(file: string): string {
-  const rep = JSON.parse(readFileSync(file, 'utf8')) as Rep, first = rep.diffs[0] ?? '', out: string[] = [];
+export interface Facts { portSpawn: number; legSpawn: number; portCenter: [number, number] | null; legCenter: [number, number] | null; legWriters: string[]; portWriters: string[]; fresh: string[]; legCount: number; portCount: number }
+export const why = (file: string): string => analyse(JSON.parse(readFileSync(file, 'utf8')) as Rep).text;
+export function analyse(rep: Rep): { text: string; facts: Facts } {
+  const first = rep.diffs[0] ?? '', out: string[] = [];
   const wm = /(?:^|\s)([PBE])(\d+)\.(\w+)/.exec(first), watch = wm ? { kind: wm[1]!, idx: +wm[2]!, prop: wm[3]! } : null;
   out.push(`WHY ${rep.a}/${rep.b} seed ${rep.seed} f${rep.frame} items:${rep.items.length ? 'on' : 'off'}  gives: ${rep.gives.join(' ') || '-'}`, `DIFF ${first.trim()}`);
   const d = rep.diag ?? diagnose(rep.a, rep.b, rep.seed, rep.frame, first, rep.items, undefined, 30, rep.plan);
@@ -60,6 +62,10 @@ export function why(file: string): string {
   out.push('COUNTS ' + pass1.counts.join(' | '), ...pass1.ctx, ...pass1.only);
   const cloned = rep.gives.some(g => /clone/.test(g)); if (cloned) out.push('HINT clone given: the legacy stand-in (cloneOf) lacks player fields -> `pnpm spec standin`, then check that character\'s shot/heavy handles `clone`.');
   if (/count/.test(first)) out.push('HINT spawn/despawn mismatch: compare "only-port / only-legacy" above with PORT births and LEGACY rare calls.');
-  return out.join('\n');
+  const center = (xs: number[][]): [number, number] | null => xs.length ? [xs.reduce((s, a) => s + a[0]!, 0) / xs.length, xs.reduce((s, a) => s + a[1]!, 0) / xs.length] : null;
+  const born = JSON.parse(pass1.born) as number[][], pxy = pb.map(x => /at \(([\d.-]+),([\d.-]+)\)/.exec(x)).filter(Boolean).map(m => [+m![1]!, +m![2]!]);
+  const m0 = pass1.calls.get(rep.frame), cm = /bullets port (\d+) legacy (\d+)/.exec(pass1.counts[pass1.counts.length - 1] ?? '');
+  const facts: Facts = { portSpawn: pb.length, legSpawn: born.length, portCenter: center(pxy), legCenter: center(born.map(b => [b[1]!, b[2]!])), legWriters: pass2.writes, portWriters: pr?.writes ?? [], fresh: m0 ? [...m0.keys()].filter(n => ![1, 2].some(d => pass1.calls.get(rep.frame - d)?.has(n))) : [], portCount: cm ? +cm[1]! : -1, legCount: cm ? +cm[2]! : -1 };
+  return { text: out.join('\n'), facts };
 }
-if (process.argv[2]) console.log(why(process.argv[2])); // CLI only (imported by nothing)
+if (process.argv[2] && process.argv[1]?.endsWith('why.ts')) console.log(why(process.argv[2]));

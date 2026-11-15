@@ -1,0 +1,204 @@
+{
+ "_doc": "Legacy quirks knowledge base: peculiarities of the frozen legacy game that the port must reproduce (or that explain a divergence). Surfaced by `pnpm map <term>` and `pnpm rca`/`investigate` (matched on tags). Add an entry for EVERY confirmed cause (pnpm parity keep --cause ... does it). `port` files must exist (tests/ledger.test.ts). Never delete: mark `superseded` instead.",
+ "quirks": [
+  {
+   "id": "clone-standin",
+   "tags": [
+    "clone",
+    "doppelganger",
+    "standin",
+    "cloneOf",
+    "heavy",
+    "shot",
+    "myE"
+   ],
+   "rule": "The Doppelganger calls shot/heavy with cloneOf(p): a BARE object {x,y,id,aim,buff,power,focus,mvName,shotT} at the mirrored spot. Every other p.<field> reads undefined (cooldowns unset, season 0, no Trinity, no Double Mice, no nD) and writes are lost. Heavies repeat from the mirror at 0.7x; entity heavies call myE(p,..) so they can kill the REAL caster's entities (Flandre Laevatein replaced).",
+   "port": [
+    "packs/combat/player/heavy.ts",
+    "packs/combat/player/idle.ts",
+    "packs/touhou/characters/okina/heavy.ts",
+    "packs/touhou/characters/okina/shot.ts",
+    "packs/touhou/characters/nazrin/shot.ts",
+    "packs/touhou/characters/nazrin/heavy.ts",
+    "packs/touhou/characters/hecatia/shot.ts",
+    "packs/touhou/characters/hecatia/heavy.ts",
+    "packs/touhou/characters/marisa/heavy.ts"
+   ],
+   "family": "stand-in",
+   "tool": "pnpm spec standin lists the fields per character",
+   "found": "2026-11-15"
+  },
+  {
+   "id": "mvname-persistent",
+   "tags": [
+    "mvName",
+    "onHit",
+    "lunge",
+    "nazrin",
+    "move"
+   ],
+   "rule": "legacy p.mvName keeps the LAST started move name after the move ends (p.mv is the current move). Code reading mvName (Nazrin onHit steal 'lunge') sees stale values. Port: s.mvLast (set in atkstart), not s.mvId.",
+   "port": [
+    "packs/combat/player/atkstart.ts",
+    "packs/touhou/characters/nazrin/character.ts"
+   ],
+   "family": "stale-state",
+   "found": "2026-11-15"
+  },
+  {
+   "id": "onhit-any-path",
+   "tags": [
+    "onHit",
+    "hit",
+    "spell-chip",
+    "wrapper",
+    "hp"
+   ],
+   "rule": "The outermost hit() wrapper calls character onHit whenever the victim's hp dropped, on ANY path (spell-chip included), not only the main damage path.",
+   "port": [
+    "packs/combat/player/hit.ts"
+   ],
+   "family": "wrapper-order",
+   "found": "2026-11-15"
+  },
+  {
+   "id": "wrapper-order",
+   "tags": [
+    "wrapper",
+    "damage",
+    "step",
+    "float",
+    "association"
+   ],
+   "rule": "Legacy layers behaviour by redefining functions: later definitions are OUTER. Damage factors apply one wrapper at a time, outermost first; float association matters at the last bit (vx*=n/l vs vx*n/l). Verify with bit-exact drift probes (pnpm parity replay).",
+   "port": [
+    "packs/combat/stats.ts"
+   ],
+   "family": "float-order",
+   "found": "2026-11"
+  },
+  {
+   "id": "legacy-math",
+   "tags": [
+    "math",
+    "sin",
+    "cos",
+    "atan2",
+    "hypot",
+    "pow",
+    "exp",
+    "log"
+   ],
+   "rule": "Legacy overrides Math.sin/cos/atan/atan2/hypot/log/exp/pow with its own deterministic series; sim.math is an EXACT port (bit-identical, tests/math-legacy.test.ts). Never target V8.",
+   "port": [
+    "src/kernel/math.ts"
+   ],
+   "family": "math",
+   "found": "2026-11"
+  },
+  {
+   "id": "frame-vs-gf",
+   "tags": [
+    "frame",
+    "gf",
+    "hitstop",
+    "report",
+    "diff"
+   ],
+   "rule": "The game frame gf does not advance during hit-stop. Diff messages ('okina/hecatia f1906 ...') use the LEGACY gf; the report's `frame` and `pnpm rca` use the loop frame (can be 40+ larger). Legacy `frame` in rca setter logs is gf.",
+   "port": [],
+   "family": "tooling",
+   "found": "2026-11-15"
+  },
+  {
+   "id": "bodyr-vs-raw",
+   "tags": [
+    "bodyR",
+    "BODY_R",
+    "giant",
+    "oni",
+    "radius",
+    "trail",
+    "bomb",
+    "blade",
+    "clone"
+   ],
+   "rule": "Check the legacy line before choosing: some places use bodyR(q) (giant/tiny aware: Marisa comet trail), others the raw T.BODY_R (cards, clone, melee, bombs, blade).",
+   "port": [
+    "packs/touhou/characters/marisa/ents.ts"
+   ],
+   "family": "radius",
+   "found": "2026-11-15"
+  },
+  {
+   "id": "clash-heavy-rules",
+   "tags": [
+    "clash",
+    "heavy",
+    "breaker",
+    "fake",
+    "parry",
+    "spell"
+   ],
+   "rule": "Clash excludes moves with spd; heavy sweep skips fake/breaker bullets; spell heavies are breakers when the caster holds Parry; stun-repeat reduction is keyed by hit-data object identity; behaviour-kind closures follow the ORIGINAL caster (bcast).",
+   "port": [
+    "packs/combat/bullets/heavy.ts",
+    "packs/combat/player/melee.ts",
+    "packs/combat/bullets/spawn.ts"
+   ],
+   "family": "combat-rules",
+   "found": "2026-11"
+  },
+  {
+   "id": "elements-unported",
+   "tags": [
+    "element",
+    "reaction",
+    "RX",
+    "aura",
+    "xReact",
+    "hellfire",
+    "steam",
+    "melt",
+    "freeze"
+   ],
+   "rule": "Legacy has element auras and reactions (xReact/rx(a,b,..)); NOT ported. The oracle deletes RX (ledger:elements-reactions). Divergences in hecatia/okina/flandre games with burn/freeze items may be this.",
+   "port": [],
+   "family": "not-ported",
+   "found": "2026-11-15"
+  },
+  {
+   "id": "legacy-render-random",
+   "tags": [
+    "render",
+    "random",
+    "cosmetic"
+   ],
+   "rule": "Legacy render uses Math.random for cosmetics; the harness seeds it so frames are reproducible (tools/parity/legacy.cjs).",
+   "port": [],
+   "family": "tooling",
+   "found": "2026-11"
+  },
+  {
+   "id": "addb-no-bounds",
+   "tags": [
+    "addB",
+    "sB",
+    "spell",
+    "bounds",
+    "warp",
+    "spawn",
+    "nue",
+    "okina",
+    "hecatia",
+    "flandre"
+   ],
+   "rule": "Spells that call legacy addB (Nue/Okina/Hecatia/Flandre pools) spawn 14px ahead of the caster with NO map-bounds check; the port used sB which refuses outside the map. Visible when Warp lets a player stand at the edge.",
+   "port": [
+    "packs/combat/bullets/pattern.ts"
+   ],
+   "family": "spawn-bounds",
+   "found": "2026-11-15"
+  }
+ ]
+}

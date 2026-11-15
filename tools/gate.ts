@@ -26,4 +26,5 @@ else {
   if (bad.length) { console.log(`coverage went DOWN:\n  ${bad.join('\n  ')}\n(if intentional: pnpm gate --bless)\n\nGATE FAIL coverage`); process.exit(1); }
   console.log(`coverage ok: ${JSON.stringify(now)}`);
 }
+console.log(`\n${(await import('./spec/ledger')).summary()}\n(GATE PASS = the configured checks pass; it does NOT mean the port is complete: see the ledger above)`);
 console.log('\nGATE PASS');

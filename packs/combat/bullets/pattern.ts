@@ -28,6 +28,11 @@ export function sB(s: CombatState, p: number, x: number, y: number, a: number, s
   if (s.nb >= MAX_B || x < 0 || y < 0 || x > s.mapW || y > s.mapH) return -1;
   const i = s.nb++; fill(s, i, p, x, y, a, sp, o, false); return i;
 }
+/** Legacy addB (light): spawned 14 px ahead of the caster with NO map-bounds check (a Warp player near an edge shoots from outside the map; sB would refuse). */
+export function addB(s: CombatState, p: number, a: number, sp: number, o: PatOpts = {}): number {
+  if (s.nb >= MAX_B) return -1;
+  const i = s.nb++; fill(s, i, p, s.x[p]! + cos(a) * 14, s.y[p]! + sin(a) * 14, a, sp, o, false); return i;
+}
 /** Big hurting danmaku placed anywhere (legacy hB/xBall): armed at once; becomes a breaker if the caster holds Parry. */
 export function hB(w: World, s: CombatState, p: number, x: number, y: number, a: number, sp: number, o: PatOpts = {}): number {
   if (s.nb >= MAX_B) return -1;

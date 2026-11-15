@@ -1,0 +1,83 @@
+{
+  "_doc": "Honest parity ledger (DESIGN §28). One entry per area. status: validated | diverging | not-ported | comparison-disabled | unverifiable. A comparison switched off in code MUST carry a `// ledger:<id>` marker and an entry here (tests/ledger.test.ts). `pnpm spec ledger` prints it; `pnpm gate` prints the summary so GATE PASS is never read as 'port complete'.",
+  "entries": [
+    {
+      "id": "core-combat",
+      "status": "validated",
+      "area": "movement, melee, light shot, graze, power/spirit, hit/stun/parry/clash, spell, KO/respawn",
+      "evidence": "pnpm parity --games 40 --frames 2000 (0 divergences, rotating seeds), frozen regressions, mutation 19/19",
+      "limit": "bots play 1v1 only; <= 2400 frames per game"
+    },
+    {
+      "id": "characters-8",
+      "status": "validated",
+      "area": "8 characters: shot, heavies, melee, spell, skills (no items)",
+      "evidence": "pnpm parity campaign + tests/parity/<char>.test.ts",
+      "limit": "disguise (Nue) + clone not covered, see nue-disguise-clone"
+    },
+    {
+      "id": "items-16",
+      "status": "validated",
+      "area": "the 16 base items x 8 characters",
+      "evidence": "pnpm parity --matrix: 128/128 identical (2026-11-15)",
+      "open": "random item campaigns (seeds 22/57) still show rare ones: see okina-hecatia-bullet-vx and seed57-nue-nazrin",
+      "repro": "pnpm parity --matrix --frames 700",
+      "limit": "700 frames, scripted single give at f40, 1v1"
+    },
+    {
+      "id": "okina-hecatia-bullet-vx",
+      "status": "diverging",
+      "area": "Hecatia bullet velocity while Okina is in her spell",
+      "repro": "pnpm parity --items all --games 40 --frames 2000 --seed 22 : okina/hecatia f1946 B27.vx"
+    },
+    {
+      "id": "seed57-nue-nazrin",
+      "status": "diverging",
+      "area": "nue/nazrin, nazrin/nue, reimu/nue, reimu/flandre (4 reports)",
+      "repro": "pnpm parity --items all --games 40 --frames 2000 --seed 57"
+    },
+    {
+      "id": "nue-disguise-clone",
+      "status": "diverging",
+      "area": "Nue disguised + Doppelganger: legacy clone uses Nue's own shot (stand-in has no nD), the port uses the disguise's",
+      "evidence": "found by pnpm spec standin, no repro game yet"
+    },
+    {
+      "id": "elements-reactions",
+      "status": "comparison-disabled",
+      "area": "element reactions (STEAM/MELT/FREEZE/HELLFIRE...) + aura",
+      "why": "not ported; the oracle deletes legacy RX",
+      "marker": "ledger:elements-reactions"
+    },
+    {
+      "id": "themed-items-115",
+      "status": "not-ported",
+      "area": "115 themed items (fx.*), four-way echo (FQ/xFour), ITEMEL/ENTEL",
+      "see": "docs/INVENTORY.md"
+    },
+    {
+      "id": "modes-maps-teams-cpu-online",
+      "status": "not-ported",
+      "area": "game modes, maps/walls, teams, CPU AI, online, lab, i18n, menus, audio",
+      "see": "docs/INVENTORY.md"
+    },
+    {
+      "id": "render-parity",
+      "status": "not-ported",
+      "area": "all rendering; only the legacy op recorder + rasteriser exist, no port renderer to compare",
+      "see": "DESIGN §28"
+    },
+    {
+      "id": "long-horizon",
+      "status": "unverifiable",
+      "area": "behaviour after ~2400 frames, long sequences, 3+ players",
+      "why": "campaigns are short 1v1 games"
+    },
+    {
+      "id": "mutation-equivalents",
+      "status": "unverifiable",
+      "area": "2 mutants proven equivalent (graze-boundary exact float equality, inv-threshold-hit-fn dead check)",
+      "evidence": "docs/MUTATION.generated.md"
+    }
+  ]
+}

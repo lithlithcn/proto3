@@ -31,7 +31,7 @@ interface Report { commit: string; frames: number; a: string; b: string; seed: n
 /** Plays one game; returns a report on the first divergence (all differing variables of that frame) or crash, else null. */
 export function play(a: string, b: string, seed: number, frames: number, until = Infinity, items: string[] = itemList(), plan = ''): Report | null {
   const ss = session(a, b, seed, items, plan), k = ss.k, ring: Report['inputs'] = [], gives: string[] = []; let nrep = 0;
-  const mk = (frame: number, kind: Report['kind'], diffs: string[], crash?: string): Report => ({ commit: COMMIT, frames, a, b, seed, frame, kind, diffs, crash, items, plan, gives: gives.slice(-6), sig: sigOf(diffs[0] ?? crash ?? ''), inputs: ring.slice(), repro: `pnpm parity replay <this file>` });
+  const mk = (frame: number, kind: Report['kind'], diffs: string[], crash?: string): Report => ({ commit: COMMIT, frames, a, b, seed, frame, kind, diffs, crash, items, plan, gives: gives.slice(-40), sig: sigOf(diffs[0] ?? crash ?? ''), inputs: ring.slice(), repro: `pnpm parity replay <this file>` });
   for (let f = 1; f <= Math.min(frames, until); f++) {
     const g = ss.pre(f); if (g) gives.push(`f${f} ${g}`); const [i0, i1] = ss.inputs(f); ring.push({ f, p0: i0, p1: i1 }); if (ring.length > 60) ring.shift();
     try { k.step([() => i0, () => i1], f); } catch (e) { return mk(f, 'crash', [], String((e as Error).stack ?? e).split('\n').slice(0, 8).join('\n')); }
@@ -58,7 +58,13 @@ if (!isMain) { /* imported by tests: expose play() only */ } else if (argv[0] ==
     if (again) bad++; console.log(`${st} ${fn}${again ? `  -> f${again.frame} ${again.sig}: ${(again.diffs[0] ?? again.crash ?? '').slice(0, 100)}` : ''}`);
   }
   console.log(`\n${bad ? bad + ' report(s) still failing: not done' : 'all reports replay clean'} — now run a fresh campaign (pnpm parity --games 100 --items all) and pnpm check to catch regressions elsewhere`); process.exit(bad ? 1 : 0);
-} else if (argv[0] === 'keep' && argv[1]) { // regression kit: the scenario (chars, seed, items; inputs are regenerated deterministically) + how far to run it
+} else if (argv[0] === 'keep' && argv[1]) {
+  // post-mortem is MANDATORY: every fixed bug teaches the environment (DESIGN §28.x): --cause "<confirmed root cause>" [--family x] [--quirk <id> --tags a,b --port path1,path2] [--missed "why detection was late"] [--probes N manual probes used]
+  if (!argv.includes('--cause')) { console.error('keep needs --cause "<confirmed root cause>" (and ideally --family, --quirk <id> --tags a,b --port files, --missed "<why it was not caught earlier>", --probes N)'); process.exit(2); }
+  const o = (k: string): string | undefined => { const i = argv.indexOf('--' + k); return i > 0 ? argv[i + 1] : undefined; };
+  const { readFileSync: rf, writeFileSync: wf, appendFileSync: af } = await import('node:fs'), cause = o('cause')!;
+  if (o('quirk')) { const q = JSON.parse(rf('docs/quirks.json', 'utf8')) as { quirks: { id: string }[] }; if (!q.quirks.some(x => x.id === o('quirk'))) { q.quirks.push({ id: o('quirk')!, tags: (o('tags') ?? '').split(',').filter(Boolean), rule: cause, port: (o('port') ?? '').split(',').filter(Boolean), family: o('family') ?? 'misc', found: new Date().toISOString().slice(0, 10) } as never); wf('docs/quirks.json', JSON.stringify(q, null, 1) + '\n'); console.log(`quirk ${o('quirk')} added to docs/quirks.json`); } }
+  mkdirSync('metrics', { recursive: true }); af('metrics/log.jsonl', JSON.stringify({ t: new Date().toISOString(), ev: 'validated', report: argv[1]!.split('/').pop(), cause, family: o('family') ?? 'misc', missed: o('missed') ?? '', probes: +(o('probes') ?? '-1') }) + '\n'); // regression kit: the scenario (chars, seed, items; inputs are regenerated deterministically) + how far to run it
   const r = JSON.parse(readFileSync(argv[1], 'utf8')) as Report; mkdirSync('tests/regressions', { recursive: true });
   const name = `${r.sig.replace(/[^\w#-]+/g, '_')}__${r.a}-${r.b}-${r.seed}`, spec = { a: r.a, b: r.b, seed: r.seed, items: r.items, plan: r.plan, frames: Math.max(r.frame + 600, r.frames ?? 0), was: { frame: r.frame, sig: r.sig, first: r.diffs[0] ?? r.crash ?? '', commit: r.commit } };
   writeFileSync(`tests/regressions/${name}.json`, JSON.stringify(spec, null, 1)); console.log(`kept tests/regressions/${name}.json (${spec.frames} frames)`);

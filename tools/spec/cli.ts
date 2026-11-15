@@ -28,9 +28,11 @@ else if (cmd === 'map' && args[0]) {
   }
   const mv = Object.entries(c).filter(([k]) => k.startsWith('moves:default.') && k.toLowerCase().includes(q)).slice(0, 20); if (mv.length) out.push(`MOVES ${mv.map(([k, v]) => `${k.slice(14)}=${v}`).join(' ')}`);
   const tn = Object.entries(c).filter(([k]) => k.startsWith('tuning:T.') && k.toLowerCase().includes(q)); if (tn.length) out.push(`TUNING ${tn.map(([k, v]) => `${k.slice(9)}=${v}`).join(' ')}`);
+  { const { findQuirks, fmt } = await import('./quirks'); for (const k of findQuirks([args[0]!])) out.push(fmt(k)); }
   const files = sh(`git ls-files | grep -i -- "${q.replace(/[^a-z0-9_-]/g, '')}" | head -15`), tests = sh(`git grep -il -- "${q.replace(/[^a-z0-9_ -]/g, '')}" -- tests | head -12`), docs = sh(`git grep -n -i -- "${q.replace(/[^a-z0-9_ -]/g, '')}" -- docs/DESIGN.md PROJECT_MAP.md | cut -c1-140 | head -8`);
   const reg = existsSync('tests/regressions') ? readdirSync('tests/regressions').filter(f => f.toLowerCase().includes(q)) : [];
   if (files) out.push(`FILES\n  ${files.replace(/\n/g, '\n  ')}`); if (tests) out.push(`TESTS mentioning it\n  ${tests.replace(/\n/g, '\n  ')}`); if (docs) out.push(`DOCS\n  ${docs.replace(/\n/g, '\n  ')}`); if (reg.length) out.push(`FROZEN REGRESSIONS ${reg.join(', ')}`);
   console.log(out.join('\n') || `nothing matches '${args[0]}'`);
-} else if (cmd === 'standin') console.log((await import('./standin')).standin());
+} else if (cmd === 'ledger') console.log((await import('./ledger')).summary(true));
+else if (cmd === 'standin') console.log((await import('./standin')).standin());
 else console.log('usage: pnpm spec lock|check|standin   |   pnpm map <pack|system|event|content id|file|move>');

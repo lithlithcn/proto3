@@ -24,7 +24,10 @@
     "map": "tsx tools/spec/cli.ts map",
     "audit:legacy": "python3 tools/audit/extract.py && node tools/audit/dump.js build/legacy-main.js && node tools/audit/gen-inventory.js",
     "rca": "tsx tools/parity/why.ts",
-    "check:fast": "pnpm typecheck && pnpm lint && vitest run --exclude 'tests/parity/**' --exclude 'tests/regressions.test.ts'"
+    "check:fast": "pnpm typecheck && pnpm lint && vitest run --exclude 'tests/parity/**' --exclude 'tests/regressions.test.ts'",
+    "investigate": "tsx tools/parity/investigate.ts",
+    "metrics": "tsx tools/metrics.ts",
+    "affected": "tsx tools/affected.ts"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
