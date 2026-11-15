@@ -1,0 +1,84 @@
+/* pnpm render compare [a,b] [frames=900] [seed=1] — visual/HUD/audio parity, the same way the oracle campaign checks the sim.
+ * Plays a bot match on legacy + port, calls the legacy render() every frame (camera easing needs it), and at sample frames:
+ *   - splits the legacy op stream into per-draw-function blocks (drawHUD, drawP, drawHeavy, drawItem, drawView...), each with the ctx state at entry;
+ *   - re-draws the same thing with the PORT renderer from that state and diffs the op streams (identical / first differing op);
+ *   - lists every legacy draw function with NO port counterpart (instance counts) and every legacy sfx() name never produced by the port (audio is not ported).
+ * Honest by construction: "not ported" is reported as such, never as passing. Output feeds docs/parity-ledger.json `render-parity`. */
+import { createRequire } from 'node:module';
+import type { World } from '@kernel';
+import type { CombatState } from '@pack/combat/api';
+import { BF } from '@pack/combat/api';
+import { drawBullet, drawPlayer } from '@pack/render/actors';
+import { drawCard } from '@pack/render/cards';
+import { HUDS, drawHudPanel } from '@pack/render/hud';
+import { drawView } from '@pack/render/view';
+import { session } from '../parity/session';
+
+const { makeRecorder, diffOps, isMarker } = createRequire(import.meta.url)('../parity/recorder.cjs') as { makeRecorder(): Rec; diffOps(a: Op[], b: Op[], tol?: number): { i: number; a: Op | null; b: Op | null; who: string } | null; isMarker(o: Op): boolean };
+type Op = unknown[]; interface Rec { screenCtx: Record<string, unknown>; take(): Op[]; reset(): void }
+interface Block { name: string; snap: Record<string, unknown>; ops: Op[] }
+
+const arg = (i: number, d: string): string => process.argv[i] && !process.argv[i]!.startsWith('--') ? process.argv[i]! : d;
+const [a, b] = arg(3, 'reimu,marisa').split(','), FR = +arg(4, '900'), SEED = +arg(5, '1'), STEP = 150;
+const ss = session(a!, b!, SEED, []), k = ss.k, ev = (s: string): unknown => k.legacy.eval(s);
+ev("globalThis.__SFX=[];{const s0=sfx;sfx=function(n,v,r){__SFX.push(n);return s0.apply(this,arguments)}}");
+const sink = makeRecorder(), W = k.world as World, S = k.s as CombatState;
+
+/** Legacy stream -> blocks (nested blocks also appear on their own, their ops are included in every enclosing block). */
+function blocks(stream: Op[]): Block[] {
+  const out: Block[] = [], open: Block[] = [];
+  for (const o of stream) {
+    if (o[0] === '#') { const bl = { name: o[1] as string, snap: o[2] as Record<string, unknown>, ops: [] as Op[] }; out.push(bl); open.push(bl); }
+    else if (o[0] === '#/') open.pop();
+    else for (const bl of open) bl.ops.push(o);
+  }
+  return out;
+}
+/** Re-draws with the port from the legacy entry state; returns the ops. */
+function portOps(snap: Record<string, unknown>, fn: (c: CanvasRenderingContext2D) => void): Op[] {
+  const r = makeRecorder(); for (const [p, v] of Object.entries(snap)) r.screenCtx[p] = v; r.take(); fn(r.screenCtx as unknown as CanvasRenderingContext2D); return r.take();
+}
+/** Gradient ids are global counters (legacy and port differ): renumber by order of appearance inside one op list. */
+function canon(a: Op[]): Op[] {
+  const m = new Map<number, number>(), id = (v: number): number => { if (!m.has(v)) m.set(v, m.size); return m.get(v)!; };
+  const fix = (v: unknown): unknown => v && typeof v === 'object' && !Array.isArray(v) && 'g' in v ? { ...v, g: id((v as { g: number }).g) } : v;
+  return a.map(o => { const r = o.map(fix); if (typeof r[0] === 'string' && r[0].startsWith('create')) r[r.length - 1] = id(r[r.length - 1] as number); else if (r[0] === 'stop') r[1] = id(r[1] as number); return r; });
+}
+const fmt = (o: Op | null): string => o ? JSON.stringify(o).slice(0, 110) : '(none)';
+
+const tally = new Map<string, { ok: number; bad: number; first?: string }>(), unported = new Map<string, number>(), sfxSeen = new Map<string, number>();
+const mark = (n: string, ok: boolean, why: string): void => { const t = tally.get(n) ?? { ok: 0, bad: 0 }; if (ok) t.ok++; else { t.bad++; t.first ??= why; } tally.set(n, t); };
+
+for (let f = 1; f <= FR; f++) {
+  ss.pre(f); const [i0, i1] = ss.inputs(f); k.step([() => i0, () => i1], f);
+  const ops = k.legacy.render() as Op[];
+  drawView(sink.screenCtx as unknown as CanvasRenderingContext2D, W, 0, 0, +ev('W')!, +ev('H')!, 0); sink.take(); // advances the port camera exactly like the browser does
+  const hudPre = f % STEP === 0 ? structuredClone([...HUDS]) : [];
+  for (let n = 0; n < S.n; n++) drawHudPanel(sink.screenCtx as unknown as CanvasRenderingContext2D, W, S, n, 0, false, 0, 0, () => 0.5); sink.take(); // legacy HUDS animates every frame (harness clock VT = 0)
+  if (f % STEP) continue;
+  const bl = blocks(ops), WW = +ev('W')!, HH = +ev('H')!, hk = Math.min(1, WW / 1280 + 0.1), view = ev('JSON.stringify(MVIEW[0])') as string;
+  void view;
+  const cnt = new Map<string, number>(); const nth = (n: string): number => { const c = cnt.get(n) ?? 0; cnt.set(n, c + 1); return c; };
+  const heavies: number[] = []; for (let i = 0; i < S.nb; i++) if (!(S.bflags[i]! & BF.dead) && (S.bflags[i]! & BF.heavy)) heavies.push(i);
+  for (const x of bl) {
+    const n = nth(x.name), want = x.ops.filter(o => !isMarker(o));
+    let got: Op[] | null = null;
+    if (x.name === 'drawHUD' && n < S.n) got = portOps(x.snap, c => { HUDS[n] = structuredClone(hudPre[n]!); drawHudPanel(c, W, S, n, (n % 2 ? WW - 12 : 12) / hk, n % 2 === 1, (n < 2 ? 30 : HH - 100) / hk, 0, () => 0.5); });
+    else if (x.name === 'drawP' && n < S.n) got = portOps(x.snap, c => drawPlayer(c, S, n));
+    else if (x.name === 'drawHeavy' && heavies[n] !== undefined) got = portOps(x.snap, c => drawBullet(c, S, heavies[n]!));
+    else if (x.name === 'drawItem' && n < S.ncard) got = portOps(x.snap, c => drawCard(c, W, S, n));
+    if (got) { if (x.name === 'drawHUD') { const t = (a: Op[]): Op[] => { const i = a.findIndex(o => o[0] === 'translate'); return a.filter((_, j) => j !== i); }; want.splice(0, want.length, ...t(want)); got = t(got); } /* HUD shake uses Math.random: not comparable */ const d = diffOps(canon(want), canon(got), 1e-6); mark(x.name, !d, d ? `f${f} #${n} op ${d.i}: legacy ${fmt(d.a)} | port ${fmt(d.b)}` : ''); }
+    else if (x.name !== 'drawView' || n > 0) unported.set(x.name, (unported.get(x.name) ?? 0) + 1);
+  }
+  // drawView: floor/grid/edge prefix (everything the port draws before cards/bullets)
+  const dv = bl.find(x => x.name === 'drawView');
+  if (dv) { const got = portOps(dv.snap, c => drawView(c, W, 0, 0, WW, HH, 0, 'arena')), want = dv.ops.filter(o => !isMarker(o)).slice(0, got.length), d = diffOps(want, got, 1e-6); mark('drawView(arena prefix)', !d, d ? `f${f} op ${d.i}: legacy ${fmt(d.a)} | port ${fmt(d.b)}` : ''); }
+}
+for (const n of (ev('__SFX') as string[])) sfxSeen.set(n, (sfxSeen.get(n) ?? 0) + 1);
+
+console.log(`RENDER COMPARE ${a}/${b} seed ${SEED}, ${FR} frames, samples every ${STEP}\n`);
+console.log('| draw function | identical | differs | first difference |\n|---|---|---|---|');
+for (const [n, t] of [...tally].sort()) console.log(`| ${n} | ${t.ok} | ${t.bad} | ${t.first ?? ''} |`);
+console.log(`\nNOT PORTED visual (legacy draw functions with no port counterpart, instances over the samples): ${[...unported].sort((x, y) => y[1] - x[1]).map(([n, c]) => `${n}x${c}`).join(' ') || 'none'}`);
+console.log(`NOT PORTED audio (legacy sfx() names triggered; the port has no audio pack): ${[...sfxSeen].sort((x, y) => y[1] - x[1]).map(([n, c]) => `${n}x${c}`).join(' ') || 'none'}`);
+console.log('NOT COMPARED: light bullets (legacy draws cached sprites; compare by pixels), everything legacy draws outside a named draw function (floor FX, post effects), animation timing between samples.');

@@ -8,8 +8,9 @@ function makeRecorder() {
   const streams = [[]], canv = [{ w: 0, h: 0 }]; // stream 0 = the screen; others = offscreen canvases (sprite caches)
   let gid = 0; const resets = [];
   const norm = v => v && typeof v === 'object' ? (v.__g !== undefined ? { g: v.__g } : v.__cv !== undefined ? { cv: v.__cv } : Array.isArray(v) ? v.slice() : undefined) : v;
+  const snaps = [];
   function ctxFor(cid) {
-    const out = () => streams[cid], t = { ...DEF }, stack = []; resets.push(() => { Object.assign(t, DEF); stack.length = 0; });
+    const out = () => streams[cid], t = { ...DEF }, stack = []; snaps[cid] = () => ({ ...t }); resets.push(() => { Object.assign(t, DEF); stack.length = 0; });
     return new Proxy(t, {
       get(_, k) {
         if (k === 'canvas') return canv[cid].el;
@@ -33,7 +34,7 @@ function makeRecorder() {
   }
   const screen = { el: null }; screen.ctx = ctxFor(0);
   return {
-    screenCtx: screen.ctx, newCanvas, mark: (n, enter) => streams[0].push([enter ? '#' : '#/', n]),
+    screenCtx: screen.ctx, newCanvas, mark: (n, enter) => streams[0].push(enter ? ['#', n, snaps[0]()] : ['#/', n]), // enter markers carry the effective ctx state (so a block can be re-drawn from the same state)
     /** Canonical state at the start of a frame (same on both sides: the comparison must not depend on what the previous frame leaked). */
     reset() { for (const r of resets) r(); },
     /** Ops drawn on the screen since the last take(); offscreen streams are cumulative (`sprites()`). */

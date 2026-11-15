@@ -3,9 +3,11 @@ import type { World } from '@kernel';
 import { COLS } from './colors';
 
 /** Legacy drawItem: a pickup card (dashed ring until armed, rotating square when armed, one capture ring per player, CONTESTED). The Last Word card ('rainbow') cycles colour. */
-export function drawCards(c: CanvasRenderingContext2D, w: World, s: CombatState): void {
+export function drawCards(c: CanvasRenderingContext2D, w: World, s: CombatState): void { for (let k = 0; k < s.ncard; k++) drawCard(c, w, s, k); }
+
+export function drawCard(c: CanvasRenderingContext2D, w: World, s: CombatState, k: number): void {
   const f = s.gf, pool = itemPool(w);
-  for (let k = 0; k < s.ncard; k++) {
+  {
     const ult = s.ckind[k] === CARD_ULT, def = ult ? null : pool[s.ckind[k]!], ic = ult ? `hsl(${f * 6 % 360},100%,65%)` : def?.color ?? '#fff', sz = 14 + 3 * Math.sin(f * 0.15), on = s.con[k]! > 0, R = T.ITEM_R, cap = ult ? T.LW_CAP : T.ITEM_CAP;
     c.save(); c.translate(s.cx[k]!, s.cy[k]!);
     c.strokeStyle = ic; c.lineWidth = 2; c.setLineDash(on ? [] : [6, 6]); c.beginPath(); c.arc(0, 0, R, 0, TAU); c.stroke(); c.setLineDash([]);
