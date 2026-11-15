@@ -16,9 +16,10 @@ function script() {
 function createLegacy(opts = {}) {
   const { chars = ['reimu', 'marisa'], seed = 1, map = 0, humans, cpuLevel = 5, items = false, tempo = 10 } = opts;
   let VT = 0;
-  const ctxP = new Proxy({}, { get: (t, k) => k === 'measureText' ? s => ({ width: (s || '').length * 8 }) : k === 'getTransform' ? () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }) : k === 'getImageData' ? () => ({ data: new Uint8ClampedArray(4) }) : typeof k === 'string' && k.startsWith('create') ? () => ({ addColorStop() {} }) : (t[k] !== undefined ? t[k] : () => {}), set: (t, k, v) => { t[k] = v; return true } });
+  const rec = require('./recorder.cjs').makeRecorder(), ctxP = rec.screenCtx;
   const stub = () => ({ getContext: () => ctxP, style: {}, appendChild() {}, addEventListener() {}, setAttribute() {}, classList: { add() {}, remove() {} } });
-  const g = { console: { log() {}, warn() {}, error() {} }, Math: Object.create(Math), document: { getElementById: stub, createElement: stub, head: null, body: null, addEventListener() {} }, innerWidth: 1280, innerHeight: 720, navigator: { getGamepads: () => [], userAgent: 'node' }, addEventListener() {}, localStorage: { getItem: () => null, setItem() {} }, requestAnimationFrame() {}, performance: { now: () => VT }, Date: Object.assign(class extends Date {}, { now: () => 1700000000000 }), setTimeout() {}, setInterval() {}, clearInterval() {}, clearTimeout() {}, Worker: undefined, URL: Object.assign(function () {}, { createObjectURL: () => '' }), Blob: function () {}, AudioContext: undefined, Image: function () {}, Path2D: function () {} };
+  const g = { console: { log() {}, warn() {}, error() {} }, Math: Object.create(Math), document: { getElementById: stub, createElement: tag => tag === 'canvas' ? rec.newCanvas() : stub(), head: null, body: null, addEventListener() {} }, innerWidth: 1280, innerHeight: 720, navigator: { getGamepads: () => [], userAgent: 'node' }, addEventListener() {}, localStorage: { getItem: () => null, setItem() {} }, requestAnimationFrame() {}, performance: { now: () => VT }, Date: Object.assign(class extends Date {}, { now: () => 1700000000000 }), setTimeout() {}, setInterval() {}, clearInterval() {}, clearTimeout() {}, Worker: undefined, URL: Object.assign(function () {}, { createObjectURL: () => '' }), Blob: function () {}, AudioContext: undefined, Image: function () {}, Path2D: function () {} };
+  { let rs = (seed * 2654435761 + 12345) >>> 0; g.Math.random = () => (rs = (Math.imul(rs, 1664525) + 1013904223) >>> 0) / 4294967296; } // cosmetic randomness (particles, shake) must be reproducible so two renderers can be compared op by op
   g.window = g; vm.createContext(g); vm.runInContext(script(), g);
   const R = c => vm.runInContext(c, g);
   const idx = chars.map(c => R(`CHR.findIndex(c=>c.k===${JSON.stringify(c)})`));
@@ -30,7 +31,9 @@ function createLegacy(opts = {}) {
   g.__in = [];
   R(`readHuman=i=>{const v=__in[i]||{};return{x:v.x||0,y:v.y||0,b:Object.assign({},v.b)}}`);
   return {
-    g, eval: R,
+    g, eval: R, rec,
+    /** Draws one frame (the legacy `render()`, 2D path) and returns the recorded op stream. Draw functions are wrapped once so the stream carries who-drew-what markers. */
+    render() { if (!g.__wrapped) { g.__wrapped = 1; g.__mk = (n, e) => rec.mark(n, e); R(`for(const k of Object.getOwnPropertyNames(globalThis)){const f=globalThis[k];if(typeof f==='function'&&/^(draw[A-Z]|tDraw$|shB$|uiBG$)/.test(k)&&!f.__w){const w=function(...a){__mk(k,1);try{return f.apply(this,a)}finally{__mk(k,0)}};w.__w=1;globalThis[k]=w}}`); } rec.take(); rec.reset(); R('render()'); return rec.take(); },
     /** Advance one frame with inputs per player: {x,y,b:{shot,heavy,melee,dash,parry,burst,spell,focus,prev,next}} */
     step(inputs = []) { g.__in = inputs; R('step()'); },
     /** Read a JSON-able expression, e.g. get('P[0].x'). */

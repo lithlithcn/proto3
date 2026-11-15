@@ -16,6 +16,8 @@
     "sim": "tsx tools/sim/cli.ts",
     "parity": "tsx tools/parity/campaign.ts",
     "spec": "tsx tools/spec/cli.ts",
+    "render": "tsx tools/render/cli.ts",
+    "mutate": "tsx tools/parity/mutate.ts",
     "map": "tsx tools/spec/cli.ts map",
     "audit:legacy": "python3 tools/audit/extract.py && node tools/audit/dump.js build/legacy-main.js && node tools/audit/gen-inventory.js"
   },
