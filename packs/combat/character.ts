@@ -41,8 +41,15 @@ export interface CharacterDef {
   spdM?(w: World, s: CombatState, p: number): number;
   /** Runs after a heavy-type hit by this character's player actually hurt `v` (legacy `onHit`). */
   onHit?(w: World, s: CombatState, a: number, v: number, heavy: boolean): void;
-  /** Entity handlers of the character (legacy `EST` kinds), run after every character `tick` (legacy chStep). */
+  /** Entity handlers of the character (legacy `EST` kinds): called once per entity in creation order with the index range `s.eLo..s.eHi` to process (legacy chStep). */
   ents?(w: World, s: CombatState, p: number): void;
+  /** Inclusive range of entity kinds `ents` handles: dispatch is by kind, not by the owner's current kit (a disguised Nue still runs her own clouds). */
+  entKinds?: readonly [number, number];
+  /** Entities that legacy updates after the whole entity pass and the bullet modifiers (e.g. Nue's UFO): same contract as `ents`/`entKinds`. */
+  postEnts?(w: World, s: CombatState, p: number): void;
+  postKinds?: readonly [number, number];
+  /** Runs once per frame after the whole entity pass (e.g. re-tuning bullets from entity state). */
+  post?(w: World, s: CombatState, p: number): void;
   /** Rewrites the virtual input (stick/buttons) before anything reads it, e.g. Reimu's charge-to-throw orbs. Runs for living players only. */
   inp?(w: World, s: CombatState, p: number, v: VIn): void;
   /** Skill 1 (button `next`, legacy `special`) and skill 2 (`prev`, legacy `special2`); edge-triggered, not while casting a spell. */

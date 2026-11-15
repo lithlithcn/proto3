@@ -12,5 +12,5 @@ import { okinaTick } from './tick';
 /** Okina Matara — controller: doors that copy her shots and teleport her, a season that changes every 5 s, backup dancers, door ray. */
 export const okina: CharacterDef = {
   name: 'Okina', order: 5, color: '#ffd23a', spd: 0.98, din: 1, dout: 1, cd: 8,
-  shot: okinaShot, dash: okinaDash, melee: okinaMelee, heavy: okinaHeavy, inp: okinaInp, tick: okinaTick, ents: okinaEnts, skill1: okinaDoor, skill2: okinaDancers, spell: okinaSpell,
+  shot: okinaShot, dash: okinaDash, melee: okinaMelee, heavy: okinaHeavy, inp: okinaInp, tick: okinaTick, ents: okinaEnts, entKinds: [206, 208], skill1: okinaDoor, skill2: okinaDancers, spell: okinaSpell,
 };

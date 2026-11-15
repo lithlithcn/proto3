@@ -6,13 +6,13 @@ const live = (s: CombatState, o: number, q: number): boolean => q !== o && s.sta
 
 /** Okina's entities (legacy EST.obd / odr / odn), run after every character tick. */
 export function okinaEnts(w: World, s: CombatState, p: number): void {
-  for (let i = 0; i < s.nent; i++) {
+  for (let i = s.eLo; i < s.eHi; i++) {
     if (s.eo[i] !== p || s.et[i]! <= 0) continue;
     const k = s.ek[i]!;
     if (k === EK_OBD) { // big door: swallows every foreign bullet within 90 px for 70 frames, then spits n + 4 back (max 24) at the nearest foe
       if (s.ebc[i]! - s.et[i]! < 70) for (let b = 0; b < s.nb; b++) if (!(s.bflags[b]! & BF.dead) && s.bowner[b] !== p && hypot(s.bx[b]! - s.ex[i]!, s.by[b]! - s.ey[i]!) < 90) { s.bflags[b] = s.bflags[b]! | BF.dead; s.ew[i] = s.ew[i]! + 1; }
       if (s.et[i] === 1) {
-        const q = nearFoe(s, p, s.ex[i]!, s.ey[i]!), a = q >= 0 ? atan2(s.y[q]! - s.ey[i]!, s.x[q]! - s.ex[i]!) : s.ea[i]!, n = Math.min(24, s.ew[i]! + 4);
+        const q = nearFoe(s, p, s.ex[i]!, s.ey[i]!, 1500), a = q >= 0 ? atan2(s.y[q]! - s.ey[i]!, s.x[q]! - s.ex[i]!) : s.ea[i]!, n = Math.min(24, s.ew[i]! + 4);
         for (let j = 0; j < n; j++) customHeavy(s, p, s.ex[i]!, s.ey[i]!, a + (j - n / 2) * 0.06, 7, 6, { dmg: 4, kb: 4, stun: 14, arm: 0 }, 160, 0xffd23a);
       }
     } else if (k === EK_ODR) { // placed door: 50 hp, breaks on foreign bullets and foes' active melee

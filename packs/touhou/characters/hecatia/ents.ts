@@ -10,14 +10,14 @@ const PL_DMG = [6, 5, 4] as const;
 /** Hecatia's entities (legacy EST.hst / hpl / hrg), run after every character tick. */
 export function hecatiaEnts(w: World, s: CombatState, p: number): void {
   const ts = w.slice<TouhouState>('touhou');
-  for (let i = 0; i < s.nent; i++) {
+  for (let i = s.eLo; i < s.eHi; i++) {
     if (s.eo[i] !== p || s.et[i]! <= 0) continue;
     const k = s.ek[i]!;
     if (k === EK_HST) { // statue: fires its body's volley at the nearest foe within 700 px every 12 frames
       s.er[i] = s.er[i]! - 1; if (s.er[i]! > 0) continue;
       s.er[i] = 12;
       const q = nearFoe(s, p, s.ex[i]!, s.ey[i]!); if (q < 0 || hypot(s.x[q]! - s.ex[i]!, s.y[q]! - s.ey[i]!) >= 700) continue;
-      bodyShot(s, p, atan2(s.y[q]! - s.ey[i]!, s.x[q]! - s.ex[i]!), powerMul(s, p, 0) * 0.5, s.ebc[i]!, s.ex[i]!, s.ey[i]!, true);
+      bodyShot(s, p, atan2(s.y[q]! - s.ey[i]!, s.x[q]! - s.ex[i]!), powerMul(s, p, 0) * 0.5, s.ebc[i]!, s.ex[i]!, s.ey[i]!);
     } else if (k === EK_HPL) { // planet: orbits its target at 90 px; on touch Earth pulls, Moon slows, Otherworld burns
       const q = s.ew[i]!;
       if (q >= 0 && s.state[q] !== PS.dead) { s.ea[i] = s.ea[i]! + 0.05; s.ex[i] = s.ex[i]! + (s.x[q]! + cos(s.ea[i]!) * 90 - s.ex[i]!) * 0.12; s.ey[i] = s.ey[i]! + (s.y[q]! + sin(s.ea[i]!) * 90 - s.ey[i]!) * 0.12; }

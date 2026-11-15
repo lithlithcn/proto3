@@ -8,7 +8,7 @@ const live = (s: CombatState, o: number, q: number): boolean => q !== o && s.sta
 /** Flandre's entities (legacy EST.fsb / flv / ffl / fcl), run after every character tick. */
 export function flandreEnts(w: World, s: CombatState, p: number): void {
   const ts = w.slice<TouhouState>('touhou');
-  for (let i = 0; i < s.nent; i++) {
+  for (let i = s.eLo; i < s.eHi; i++) {
     if (s.eo[i] !== p || s.et[i]! <= 0) continue;
     const k = s.ek[i]!;
     if (k === EK_FSB) { // Starbow burst: hurts everyone within 30 px on its last frame

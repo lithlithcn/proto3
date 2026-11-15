@@ -10,7 +10,7 @@ export function okinaShot(c: ShotCtx): void {
   for (const d of D) src.push([s.ex[d]!, s.ey[d]!, 0]);
   const k = c.pm * (src.length > 1 ? 1.3 / src.length : 1);
   for (const [x, y, me] of src) {
-    const q = me ? -1 : nearFoe(s, p, x, y), aa = q >= 0 ? atan2(s.y[q]! - y, s.x[q]! - x) : a;
+    const q = me ? -1 : nearFoe(s, p, x, y, 1500), aa = q >= 0 ? atan2(s.y[q]! - y, s.x[q]! - x) : a;
     const mk = (o: number, sp: number, dm: number, r: number): void => {
       const i = lightBullet(s, p, aa + o, sp, dm, r, 120, SEAC[sn]); if (i < 0) return;
       s.bx[i] = x + cos(aa + o) * 10; s.by[i] = y + sin(aa + o) * 10; s.bsea[i] = SEA[sn]!;

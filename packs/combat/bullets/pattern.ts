@@ -1,6 +1,7 @@
 import { BTN, type World, atan2, clamp, cos, hypot, sin } from '@kernel';
 import { BF, MAX_B, PS, type CombatState } from '../state';
 import { bulletArrays, clearBullet } from './arrays';
+import { ISRC } from '../moves';
 
 /** Programmable bullets for spell cards (legacy sB / hB + `fn` closures). Behaviours are DATA (kind + 3 params + age), never closures: they live in typed arrays and survive snapshot/rollback. */
 export const BK = { none: 0, home: 1, launch: 2, orbit: 3, moth: 4, dollH: 5, dollK: 6, meteor: 7 } as const;
@@ -19,7 +20,7 @@ function fill(s: CombatState, i: number, p: number, x: number, y: number, a: num
   clearBullet(bulletArrays(s), i);
   s.bx[i] = x; s.by[i] = y; s.bvx[i] = cos(a) * sp; s.bvy[i] = sin(a) * sp; s.bang[i] = a; s.bowner[i] = p; s.blife[i] = o.life ?? 320; s.bcol[i] = o.col ?? 0;
   s.bsh[i] = o.sh ?? 0; s.brot[i] = o.rot ?? 0; s.bdrg[i] = o.drg ?? 0; s.bacc[i] = o.acc ?? 0; s.bvmax[i] = o.vmax ?? 0; s.bkind[i] = o.kind ?? 0; s.bp0[i] = o.p0 ?? 0; s.bp1[i] = o.p1 ?? 0; s.bp2[i] = o.p2 ?? 0; s.bgrp[i] = o.grp ?? 0;
-  if (heavy) { s.br[i] = o.r ?? 11; s.bdmg[i] = 5; s.bkb[i] = 7; s.bstun[i] = 24; s.barm[i] = 0; s.bdist[i] = 999; s.bmult[i] = 1; s.bmv[i] = -1; s.bflags[i] = BF.heavy; }
+  if (heavy) { s.br[i] = o.r ?? 11; s.bdmg[i] = 5; s.bkb[i] = 7; s.bstun[i] = 24; s.barm[i] = 0; s.bdist[i] = 999; s.bmult[i] = 1; s.bmv[i] = ISRC.sph; s.bflags[i] = BF.heavy; }
   else { s.br[i] = o.r ?? 4; s.bdmg[i] = 1; s.bmv[i] = 0; }
 }
 /** Small decorative bullet (legacy sB): refused outside the map or when the pool is full. Returns the index or -1. */
@@ -39,25 +40,27 @@ export const tgA = (s: CombatState, p: number, x: number, y: number): number => 
 
 const setV = (s: CombatState, i: number, a: number, sp: number): void => { s.bvx[i] = cos(a) * sp; s.bvy[i] = sin(a) * sp; s.bang[i] = a; };
 
-/** After the whole frame (legacy step wrapper): curve, drag, accelerate, then the behaviour kind. Only on frames where time advances. */
-export function behave(s: CombatState): void {
+/** Curve, drag, accelerate (clamped to `vmax`, default 9) of one bullet. */
+function motionOne(s: CombatState, i: number): void {
+  const rot = s.brot[i]!, drg = s.bdrg[i]!, acc = s.bacc[i]!;
+  if (rot) { const c = cos(rot), sn = sin(rot), vx = s.bvx[i]!; s.bvx[i] = vx * c - s.bvy[i]! * sn; s.bvy[i] = vx * sn + s.bvy[i]! * c; }
+  if (drg) { s.bvx[i] = s.bvx[i]! * drg; s.bvy[i] = s.bvy[i]! * drg; }
+  if (acc) {
+    const l = hypot(s.bvx[i]!, s.bvy[i]!) || 1e-3, n = clamp(l + acc, 0, s.bvmax[i]! || 9);
+    s.bvx[i] = s.bvx[i]! * n / l; s.bvy[i] = s.bvy[i]! * n / l;
+    if (l < 2e-3) setV(s, i, s.bang[i]!, n);
+  }
+}
+
+/**
+ * Legacy step wrapper (runs right after the base step, before the character hooks): per live bullet curve, drag, accelerate, then its behaviour kind and heading.
+ * Children spawned by a behaviour are visited in the same pass, like legacy's for-of over a growing array. Only on frames where time advances.
+ */
+export function motion(s: CombatState): void {
   for (let i = 0; i < s.nb; i++) {
     if (s.bflags[i]! & BF.dead) continue;
-    const rot = s.brot[i]!, drg = s.bdrg[i]!, acc = s.bacc[i]!, kind = s.bkind[i]!;
-    if (!(rot || drg || acc || kind)) continue;
-    if (s.bag[i]! < 0) { // born after this pass in legacy order (character entities): skip the clamp once, keep the +5 % rule
-      s.bag[i] = 0;
-      if (acc && hypot(s.bvx[i]!, s.bvy[i]!) < acc) { s.bvx[i] = s.bvx[i]! * 1.05; s.bvy[i] = s.bvy[i]! * 1.05; }
-      continue;
-    }
-    if (rot) { const c = cos(rot), sn = sin(rot), vx = s.bvx[i]!; s.bvx[i] = vx * c - s.bvy[i]! * sn; s.bvy[i] = vx * sn + s.bvy[i]! * c; }
-    if (drg) { s.bvx[i] = s.bvx[i]! * drg; s.bvy[i] = s.bvy[i]! * drg; }
-    if (acc) {
-      const l = hypot(s.bvx[i]!, s.bvy[i]!) || 1e-3, n = clamp(l + acc, 0, s.bvmax[i]! || 9);
-      s.bvx[i] = s.bvx[i]! * n / l; s.bvy[i] = s.bvy[i]! * n / l;
-      if (l < 2e-3) setV(s, i, s.bang[i]!, n);
-      if (hypot(s.bvx[i]!, s.bvy[i]!) < acc) { s.bvx[i] = s.bvx[i]! * 1.05; s.bvy[i] = s.bvy[i]! * 1.05; } // legacy chStep: slower than `acc` -> +5 %/frame (stacks with the clamp above)
-    }
+    motionOne(s, i);
+    const kind = s.bkind[i]!;
     if (kind) { s.bag[i] = s.bag[i]! + 1; run(s, i, kind, s.bag[i]!); }
     if (s.bvx[i] || s.bvy[i]) s.bang[i] = atan2(s.bvy[i]!, s.bvx[i]!);
   }
@@ -66,8 +69,8 @@ export function behave(s: CombatState): void {
 function run(s: CombatState, i: number, kind: number, ag: number): void {
   const p = s.bowner[i]!;
   switch (kind) {
-    case BK.home: if (ag < s.bp0[i]!) { // curve toward the target for the first bp0 frames, at most bp1 rad/frame
-      const t = tgA(s, p, s.bx[i]!, s.by[i]!), d = atan2(sin(t - s.bang[i]!), cos(t - s.bang[i]!));
+    case BK.home: if (ag < s.bp0[i]!) { // curve toward the target fixed at cast (bp2) for the first bp0 frames, at most bp1 rad/frame
+      const o = s.bp2[i]!, t = atan2(s.y[o]! - s.by[i]!, s.x[o]! - s.bx[i]!), d = atan2(sin(t - s.bang[i]!), cos(t - s.bang[i]!));
       setV(s, i, s.bang[i]! + clamp(d, -s.bp1[i]!, s.bp1[i]!), hypot(s.bvx[i]!, s.bvy[i]!));
     } break;
     case BK.launch: if (ag === s.bp0[i]!) setV(s, i, s.bp1[i]!, s.bp2[i]!); break; // at age bp0: heading bp1, speed bp2

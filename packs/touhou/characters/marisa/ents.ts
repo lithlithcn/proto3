@@ -5,7 +5,7 @@ import type { TouhouState } from '../../state';
 
 /** Potion in flight (30 frames, straight line) and the puddle it leaves (legacy EST.mpot / EST.mpud), run after every character tick. */
 export function marisaEnts(w: World, s: CombatState, p: number): void {
-  for (let i = 0; i < s.nent; i++) {
+  for (let i = s.eLo; i < s.eHi; i++) {
     if (s.eo[i] !== p || s.et[i]! <= 0) continue;
     if (s.ek[i] === EK_POT) {
       const u = 1 - s.et[i]! / s.ebc[i]!;

@@ -20,7 +20,7 @@ export const MV_NAMES: (MeleeName | HeavyName | 'grab' | '')[] = ['', 'jab', 'lu
 
 /** Hit sources for the stun-repeat reduction: one slot per distinct hit-data object of the legacy game. */
 /** Hit-source ids for the stun-repeat reduction (legacy keyed it by move object identity). 0-15 combat moves, 16-63 items, 64+ characters; keep ids unique. */
-export const ISRC = { blade: 16, bomb: 18, hole: 19, rifle: 20, spark: 21, sknife: 22 } as const;
+export const ISRC = { blade: 16, bomb: 18, hole: 19, rifle: 20, spark: 21, sknife: 22, sph: 23 } as const; // sph = the shared danmaku hit data of legacy `SPH` (every pattern heavy bullet repeats on it)
 export const SRC = { jab: 0, lunge: 1, strong: 2, dashatk: 3, tslam: 4, grab: 5, heavyN: 6, heavyF: 7, heavyB: 8, beam: 9 } as const;
 
 export const MOVES: Record<MeleeName | HeavyName | 'grab', MoveDef> = {

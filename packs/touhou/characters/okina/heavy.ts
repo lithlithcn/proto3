@@ -12,7 +12,7 @@ export const okinaHeavy = {
     t.oLz[p] = s.gf + LZ_TELE + 8 + LZ_GAP;
     fireRay(s, p, { T: LZ_TELE + 8, tele: LZ_TELE, flags: RAYF.warn, w: 8, len: 900, dmg: 8 * k, ev: 99, kb: 8, stun: 24, a });
     const D: number[] = []; entsOf(s, EK_ODR, p, D);
-    for (const d of D) { const q = nearFoe(s, p, s.ex[d]!, s.ey[d]!); if (q >= 0) fireRay(s, p, { T: LZ_TELE + 8, tele: LZ_TELE, flags: RAYF.warn, w: 7, len: 900, dmg: 6 * k, ev: 99, kb: 8, stun: 24, a: atan2(s.y[q]! - s.ey[d]!, s.x[q]! - s.ex[d]!), x: s.ex[d]!, y: s.ey[d]! }); }
+    for (const d of D) { const q = nearFoe(s, p, s.ex[d]!, s.ey[d]!, 1500); if (q >= 0) fireRay(s, p, { T: LZ_TELE + 8, tele: LZ_TELE, flags: RAYF.warn, w: 7, len: 900, dmg: 6 * k, ev: 99, kb: 8, stun: 24, a: atan2(s.y[q]! - s.ey[d]!, s.x[q]! - s.ex[d]!), x: s.ex[d]!, y: s.ey[d]! }); }
   },
   B({ s, p, a, k, m, src }: HeavyCtx): void {
     for (let i = 0; i < 12; i++) {

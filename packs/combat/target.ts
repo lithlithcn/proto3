@@ -5,8 +5,8 @@ const ally = (s: CombatState, a: number, b: number): boolean => s.teams !== 0 &&
 export const foe = (s: CombatState, a: number, b: number): boolean => a !== b && !ally(s, a, b);
 
 /** Nearest living foe of `p` to (x,y), -1 if none (legacy `nearFoe`; no target stickiness). */
-export function nearFoe(s: CombatState, p: number, x: number, y: number): number {
-  let best = -1, bd = 1e9;
+export function nearFoe(s: CombatState, p: number, x: number, y: number, max = 1e9): number {
+  let best = -1, bd = max;
   for (let q = 0; q < s.n; q++) { if (q === p || s.state[q] === PS.dead || ally(s, p, q)) continue; const d = hypot(s.x[q]! - x, s.y[q]! - y); if (d < bd) { bd = d; best = q; } }
   return best;
 }

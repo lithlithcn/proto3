@@ -45,7 +45,7 @@ export function makePair(chars: string[], seed = 1, opt: PairOpt = {}) {
       const frames = scripts.map(sc => sc(f));
       const inp = newInput(chars.length);
       frames.forEach((fi, p) => setInput(inp, p, q(fi.x), q(fi.y), (fi.btn ?? []).reduce((m, b) => m | BIT[b]!, 0)));
-      legacy.step(frames.map(fi => ({ x: q(fi.x) / 127, y: q(fi.y) / 127, b: Object.fromEntries((fi.btn ?? []).map(b => [b, true])) })));
+      legacy.step(frames.map(fi => ({ x: q(fi.x) / 127, y: q(fi.y) / 127, b: Object.fromEntries(Object.keys(BIT).map(b => [b, (fi.btn ?? []).includes(b)])) })));
       world.step(inp);
     },
     /** Assert observable equality (tolerance 1e-6 abs/rel) at the current frame. */

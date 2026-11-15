@@ -11,5 +11,5 @@ import { ayaTick } from './tick';
 /** Aya Shameimaru — speedster: fast dash recharge, Hyper Dash through tornadoes, camera photo that erases bullets and stuns, Scoop newspaper, Tailwind. */
 export const aya: CharacterDef = {
   name: 'Aya', order: 7, color: '#e04a4a', spd: 1.2, din: 1.08, dout: 1, cd: 7,
-  shot: ayaShot, dash: ayaDash, melee: ayaMelee, heavy: ayaHeavy, tick: ayaTick, ents: ayaEnts, skill1: ayaScoop, skill2: ayaTailwind, spell: ayaSpell,
+  shot: ayaShot, dash: ayaDash, melee: ayaMelee, heavy: ayaHeavy, tick: ayaTick, ents: ayaEnts, entKinds: [214, 216], skill1: ayaScoop, skill2: ayaTailwind, spell: ayaSpell,
 };

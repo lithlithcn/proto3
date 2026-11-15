@@ -5,7 +5,7 @@ import { EK_ANW, EK_ATN, EK_AWD } from './kinds';
 
 /** Aya's entities (legacy EST.atn / anw / awd), run after every character tick. */
 export function ayaEnts(w: World, s: CombatState, p: number): void {
-  for (let i = 0; i < s.nent; i++) {
+  for (let i = s.eLo; i < s.eHi; i++) {
     if (s.eo[i] !== p || s.et[i]! <= 0) continue;
     const k = s.ek[i]!;
     if (k === EK_ATN) { // tornado: drifts, drags foes in, bites, erases foreign light bullets
