@@ -29,6 +29,7 @@ export function hit(w: World, s: CombatState, v: number, a: number, dx: number, 
     if (raw < 16 && s.hp[v]! > raw * 1.6) {
       const dmg = dealDamage(w, s, v, a, raw, heavy);
       s.hp[v] = s.hp[v]! - dmg; s.flash[v] = 8; s.spirit[a] = Math.min(T.SPIRIT_MAX, s.spirit[a]! + dmg * T.HIT_GAIN);
+      if (a >= 0 && a !== v && dmg > 0) charOf(w, s, a).onHit?.(w, s, a, v, heavy); // legacy wraps hit(): onHit fires on ANY path that lowered hp, chip included
       w.emit('combat:spell-chip', { victim: v, attacker: a, dmg }); return;
     }
   }

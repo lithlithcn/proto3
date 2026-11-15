@@ -16,7 +16,7 @@ export const nazrin: CharacterDef = {
   spdM: (w, s, p) => (w.slice<TouhouState>('touhou').nSpd[p]! > s.gf ? 1.3 : 1),
   dinM: (w, _s, v) => { const t = w.slice<TouhouState>('touhou'); if (t.nSh[v]) { t.nSh[v] = 0; return 0; } return 1; }, // the shield blocks the next hit entirely
   onHit(_w, s, a, v, heavy) { // a connecting lunge steals up to 25 spirit
-    if (heavy || MV_NAMES[s.mvId[a]!] !== 'lunge') return;
+    if (heavy || MV_NAMES[s.mvLast[a]!] !== 'lunge') return;
     const st = Math.min(s.spirit[v]!, 25); if (st > 0) { s.spirit[v] = s.spirit[v]! - st; s.spirit[a] = Math.min(100, s.spirit[a]! + st); }
   },
 };
