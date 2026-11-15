@@ -13,7 +13,7 @@ interface Legacy { step(i: LegacyInput[]): void; obs(): { f: number; ts: number;
 interface LP { rifle: number; cam: number; clone: number; cHP: number; spk: number; elx: number; imm: number; mirror: number; giant: number; x: number; y: number; vx: number; vy: number; hp: number; state: string; t: number; boost: number; spirit: number; power: number; graze: number; inv: number; run: boolean; slide: number; shotCd: number; aim: number; stocks: number; kos: number; sd: number; pips: number; spit: number }
 interface LB { x: number; y: number; vx: number; vy: number; r: number; owner: number; dmg?: number; life: number; fz: number; heavy?: number; mult?: number; dist?: number; refl: number; gr?: number; home?: number; wav?: number; ph?: number; fake?: number }
 
-const BIT: Record<string, number> = { shot: BTN.shot, heavy: BTN.heavy, melee: BTN.melee, dash: BTN.dash, parry: BTN.parry, spell: BTN.spell, focus: BTN.focus, prev: BTN.prev, next: BTN.next };
+const BIT: Record<string, number> = { shot: BTN.shot, heavy: BTN.heavy, melee: BTN.melee, dash: BTN.dash, parry: BTN.parry, burst: BTN.burst, spell: BTN.spell, focus: BTN.focus, prev: BTN.prev, next: BTN.next };
 export interface FrameIn { x?: number; y?: number; btn?: string[] }
 /** Per-player input generator: frame number (1-based) → input. */
 export type Script = (f: number) => FrameIn;
