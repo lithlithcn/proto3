@@ -1,6 +1,7 @@
 import { definePack } from '@kernel';
 import { flandre } from './characters/flandre/character';
 import { hecatia } from './characters/hecatia/character';
+import { nazrin } from './characters/nazrin/character';
 import { okina } from './characters/okina/character';
 import { nue } from './characters/nue/character';
 import { marisa } from './characters/marisa/character';
@@ -46,7 +47,7 @@ export default definePack({
   requires: ['combat@^0.1.0'],
   state: touhouSchema,
   events: ['touhou:reimu-teleport', 'touhou:reimu-charge'],
-  content: { character: { flandre, hecatia, marisa, nue, okina, reimu }, status: { elx, imm }, item: { blue, bumpers, camera, clone, spark, white, world, elixir, freeze, gap, green, mirror, oni, orange, purple, yellow }, spell: { '01-fantasy-seal': s01, '02-starlight-rain': s02, '03-perfect-freeze': s03, '04-electromagnetic-induction': s04, '05-moths-to-a-flame': s05, '06-keplers-rings': s06, '07-crystal-rain': s07, '08-rose-curve': s08, '09-wheel-of-fortune': s09, '10-killing-doll': s10, '11-meteor-shower': s11 } },
+  content: { character: { flandre, hecatia, marisa, nazrin, nue, okina, reimu }, status: { elx, imm }, item: { blue, bumpers, camera, clone, spark, white, world, elixir, freeze, gap, green, mirror, oni, orange, purple, yellow }, spell: { '01-fantasy-seal': s01, '02-starlight-rain': s02, '03-perfect-freeze': s03, '04-electromagnetic-induction': s04, '05-moths-to-a-flame': s05, '06-keplers-rings': s06, '07-crystal-rain': s07, '08-rose-curve': s08, '09-wheel-of-fortune': s09, '10-killing-doll': s10, '11-meteor-shower': s11 } },
   systems: [disguise],
   hooks: [immGuard],
   init(w) { const ts = w.slice<TouhouState>('touhou'); ts.reimuDashAt.fill(-99); },

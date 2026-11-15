@@ -15,6 +15,7 @@ Single 3.27 MB HTML, 1.24 MB script. 393 top-level functions, **69 functions wra
   - Flandre ✅ (shotgun, melee, Focus crush, dash chain, Starbow / Laevatein / Cranberry Trap, Four of a Kind, Frenzy, Secret Barrage) · Hecatia ✅ (3 bodies, statues, planets/burn/slow, ring shield, Trinity, swap, Three-Body Crossfire). CPU/draw hooks + themed items pending. **Next: Nue (disguise, UFOs, unknown bullets, stand-still clouds), Okina, Nazrin, Aya.**
   - Nue ✅ (wavy shots + Focus decoys, stand-still clouds, UFO / trident / storm trap, Disguise = full kit swap, UFO swap, Undefined Darkness). **Next: Okina, Nazrin, Aya.**
   - Okina ✅ (seasons, doors + door teleport dash, big door, door ray, wavy ring, dancers Satono/Mai, Four Seasons at Once). **Next: Nazrin, Aya.**
+  - Nazrin ✅ (mice/sentinels, pendulum, detection mark, guard, lunge steal, dig bonuses, recall, Dowsing). **Next: Aya.**
 - [ ] Item cards ✅ (spawn/warn/capture/Last Word) · items ported: yellow (blade) ✅ green ✅ purple (warp) ✅ orange (bombs) ✅ mirror ✅ oni (giant) ✅ elixir ✅ gap (Black Hole) ✅ freeze ✅ bumpers ✅ white (Rifle) ✅ blue (Fairies) ✅ clone ✅ spark ✅ world ✅ camera ✅ — 115 pending (all character-themed; DECISION: each is ported together with its character, same folder, tested together); 131 items, grouped in families (see generated list), ~70 statuses `fx.*` (framework ✅ slots/tick/end hooks/KO guard; ported: elx, imm — 68 pending), ~68 world effects `CX.*`
 - [ ] 25 entity-logic kinds (EST) and 29 entity-draw kinds (EDR)
 - [ ] Maps: Large, Screen (fixed camera)

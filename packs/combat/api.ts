@@ -12,7 +12,7 @@ export { sB, hB, tgA, spRand, BK, SH, type PatOpts } from './bullets/pattern';
 export { lightBullet, heavyBullet, customHeavy, patternHeavy } from './bullets/spawn';
 export type { PCtx } from './input';
 export type { MoveDef, MeleeName, HitData } from './moves';
-export { MOVES, SRC } from './moves';
+export { MOVES, SRC, MV_NAMES } from './moves';
 export { addEnt, entsOf } from './ents';
 export { fireRay, EK_RAY, RAYF, type RayOpts } from './rays';
 export { powerMul } from './stats';
