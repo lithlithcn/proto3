@@ -3,4 +3,4 @@ node_modules/
 dist/
 demo-replay.json
 *.log
-reports/
+reports*/
