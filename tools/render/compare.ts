@@ -12,7 +12,7 @@ import { drawBullet } from '@pack/render/actors';
 import { drawPlayerL } from '@pack/render/ld/bind';
 import { drawCard } from '@pack/render/cards';
 import { HUDS, drawHudPanel } from '@pack/render/hud';
-import { drawView, renderViews, viewsOf } from '@pack/render/view';
+import { camOf, drawView, renderViews, viewsOf } from '@pack/render/view';
 import { juiceOf, syncJuice } from '@pack/render/juice/state';
 import { session } from '../parity/session';
 
@@ -43,7 +43,7 @@ function portOps(snap: Record<string, unknown>, fn: (c: CanvasRenderingContext2D
 /** Gradient ids are global counters (legacy and port differ): renumber by order of appearance inside one op list. */
 function canon(a: Op[]): Op[] {
   const m = new Map<number, number>(), id = (v: number): number => { if (!m.has(v)) m.set(v, m.size); return m.get(v)!; };
-  const fix = (v: unknown): unknown => v && typeof v === 'object' && !Array.isArray(v) && 'g' in v ? { ...v, g: id((v as { g: number }).g) } : v;
+  const fix = (v: unknown): unknown => typeof v === 'string' ? v.replace(/\d+\.\d{7,}/g, n => (+n).toFixed(6)) : v && typeof v === 'object' && !Array.isArray(v) && 'g' in v ? { ...v, g: id((v as { g: number }).g) } : v;
   return a.map(o => { const r = o.map(fix); if (typeof r[0] === 'string' && r[0].startsWith('create')) r[r.length - 1] = id(r[r.length - 1] as number); else if (r[0] === 'stop') r[1] = id(r[1] as number); return r; });
 }
 const fmt = (o: Op | null): string => o ? JSON.stringify(o).slice(0, 110) : '(none)';
@@ -75,7 +75,10 @@ for (let f = 1; f <= FR; f++) {
   const bl = blocks(ops), WW = +ev('W')!, HH = +ev('H')!, hk = Math.min(1, WW / 1280 + 0.1), view = ev('JSON.stringify(MVIEW[0])') as string;
   void view;
   const cnt = new Map<string, number>(); const nth = (n: string): number => { const c = cnt.get(n) ?? 0; cnt.set(n, c + 1); return c; };
-  const heavies: number[] = []; for (let i = 0; i < S.nb; i++) if (!(S.bflags[i]! & BF.dead) && (S.bflags[i]! & BF.heavy)) heavies.push(i);
+  // heavy bullets in legacy draw order: per view, the ones inside that view (camera + zoom of the port, which match the legacy ones)
+  const heavies: number[] = [], jz = juiceOf(W).zk;
+  for (const v of viewsOf(S, WW, HH)) { const sc = v.h / 600 * (v.q ? 1.2 : 1) * (1 + jz), cm = camOf(v.i), ww = v.w / sc, hh = v.h / sc, L = cm.x - ww / 2, Tp = cm.y - hh / 2;
+    for (let i = 0; i < S.nb; i++) if (!(S.bflags[i]! & BF.dead) && (S.bflags[i]! & BF.heavy) && S.bx[i]! > L - 30 && S.bx[i]! < L + ww + 30 && S.by[i]! > Tp - 30 && S.by[i]! < Tp + hh + 30) heavies.push(i); }
   for (const x of bl) {
     const n = nth(x.name), want = x.ops.filter(o => !isMarker(o));
     let got: Op[] | null = null;
@@ -88,7 +91,7 @@ for (let f = 1; f <= FR; f++) {
   }
   // drawView: floor/grid/edge prefix (everything the port draws before cards/bullets), one block per view
   const vs = viewsOf(S, WW, HH); let vi = 0;
-  for (const dv of bl.filter(x => x.name === 'drawView')) { const v = vs[vi++]; if (!v) break; const got = portOps(dv.snap, c => drawView(c, W, v, 'arena')), want = dv.ops.filter(o => !isMarker(o)).slice(0, got.length), d = diffOps(want, got, 1e-6); mark('drawView(arena prefix)', !d, d ? `f${f} view ${vi - 1} op ${d.i}: legacy ${fmt(d.a)} | port ${fmt(d.b)}` : ''); }
+  for (const dv of bl.filter(x => x.name === 'drawView')) { const v = vs[vi++]; if (!v) break; const got = portOps(dv.snap, c => drawView(c, W, v, 'arena')), want = dv.ops.filter(o => !isMarker(o)).slice(0, got.length), d = diffOps(canon(want), canon(got), 1e-6); mark('drawView(arena prefix)', !d, d ? `f${f} view ${vi - 1} op ${d.i}: legacy ${fmt(d.a)} | port ${fmt(d.b)}` : ''); }
 }
 for (const n of (ev('__SFX') as string[])) sfxSeen.set(n, (sfxSeen.get(n) ?? 0) + 1);
 

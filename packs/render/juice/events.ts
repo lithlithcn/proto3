@@ -1,5 +1,5 @@
 import type { HookDef } from '@kernel';
-import { PS, T, combatOf } from '@pack/combat/api';
+import { PS, T, charOf, combatOf } from '@pack/combat/api';
 import { COLS, LCOLS } from '../colors';
 import { big, burst, crack, flash, juiceOf, tickJuice, txt, type Juice } from './state';
 
@@ -9,12 +9,13 @@ import { big, burst, crack, flash, juiceOf, tickJuice, txt, type Juice } from '.
 const jq = (w: Parameters<typeof juiceOf>[0]): { ev: string; gf: number }[] => { const q = juiceOf(w).q; if (q.length > 4096) q.splice(0, 2048); return q; };
 type Ev = Record<string, number | boolean | undefined> & { gf: number };
 const H: Record<string, (j: Juice, e: never) => void> = {};
-const on = <P>(id: string, event: string, f: (j: Juice, p: P & { gf: number }) => void): HookDef<P> => { H[event] = f as never; return { id, event, phase: 'after', run(w, ev) { const s = combatOf(w), p = ev.payload as Record<string, number>; const q = p['p'] ?? p['victim']; jq(w).push({ ev: event, gf: s.gf, x: q !== undefined ? s.x[q]! : 0, y: q !== undefined ? s.y[q]! : 0, ...p, px: q !== undefined ? s.x[q]! : 0, py: q !== undefined ? s.y[q]! : 0, pa: q !== undefined ? s.aim[q]! : 0, pcpu: q !== undefined ? s.cpu[q]! : 0 } as never); } }; };
+const on = <P>(id: string, event: string, f: (j: Juice, p: P & { gf: number }) => void): HookDef<P> => { H[event] = f as never; return { id, event, phase: 'after', run(w, ev) { const s = combatOf(w), p = ev.payload as Record<string, number>; const q = p['p'] ?? p['victim'], at = p['attacker']; jq(w).push({ ev: event, gf: s.gf, x: q !== undefined ? s.x[q]! : 0, y: q !== undefined ? s.y[q]! : 0, ...p, px: q !== undefined ? s.x[q]! : 0, py: q !== undefined ? s.y[q]! : 0, pa: q !== undefined ? s.aim[q]! : 0, pcpu: q !== undefined ? s.cpu[q]! : 0, ach: at !== undefined && at >= 0 ? charOf(w, s, at).name : '' } as never); } }; };
 const col = (p: number): string => COLS[(p < 0 ? 0 : p) % 8]!;
 
-interface HitP { victim: number; attacker: number; dmg: number; combo: number; heavy: boolean; x: number; y: number; dx: number; dy: number }
+interface HitP { victim: number; attacker: number; dmg: number; combo: number; heavy: boolean; x: number; y: number; dx: number; dy: number; ach: string }
 const onHit = on<HitP>('juice-hit', 'combat:hit', (j, e) => {
   const { x, y, dmg, combo } = e, a = e.attacker, c = col(a), kn = Math.hypot(e.dx, e.dy) || 1;
+  if (e.ach === 'Okina' && a !== e.victim) j.chG[a] = Math.min(100, (j.chG[a] ?? 0) + dmg * 0.8); // legacy hit wrapper (line 4706): shotT CH0+5
   j.kx += e.dx / kn * Math.min(14, dmg); j.ky += e.dy / kn * Math.min(14, dmg); j.zk = Math.min(0.3, j.zk + dmg * 0.008);
   if (dmg >= 7) { j.WAVES.push({ x, y, t: 12, T: 12, spd: 10, th: 18, inv: 1 }); j.chroma = Math.max(j.chroma, dmg); }
   if (dmg >= 10) { j.bright = Math.max(j.bright, 0.6); j.chroma = Math.max(j.chroma, 14); j.bgF = { c, t: 12 }; j.focusL = Math.max(j.focusL, 0.5); j.zblur = Math.max(j.zblur, 0.04); }
@@ -96,6 +97,7 @@ const onFx = on<{ op: string; a: (number | string)[] }>('juice-fx', 'combat:fx',
     case 'add': { const n = a[0] as string, v = J[n]! + (a[1] as number), cap = a[2] as number; J[n] = cap ? Math.min(cap, v) : v; break; }
     case 'max': J[a[0] as string] = Math.max(J[a[0] as string]!, a[1] as number); break;
     case 'edge': j.FX.push({ x: (a[0] as number) + (j.rnd() - 0.5) * 20, y: (a[1] as number) + (j.rnd() - 0.5) * 20, vx: 0, vy: -1, t: 16, c: '#f44' }); break; // red-zone damage sparks (line 357)
+    case 'chg': j.chG[a[0] as number] = Math.min(100, (j.chG[a[0] as number] ?? 0) + (a[1] as number)); break; // Okina season gauge (presentation only in legacy)
     case 'crack': crack(j, a[0] as number, a[1] as number); break;
     case 'push': { const o: Record<string, unknown> = {}; for (let i = 1; i + 1 < a.length; i += 2) o[a[i] as string] = a[i + 1]; (j as unknown as Record<string, unknown[]>)[a[0] as string]!.push(o); break; }
   }
@@ -120,7 +122,15 @@ const onSB = on<Pp>('juice-shield-break', 'combat:shield-break', (j, e) => { // 
   for (let i = 0; i < 10; i++) j.FX.push({ x, y, vx: Math.cos(i * 6.2832 / 10) * 3, vy: Math.sin(i * 6.2832 / 10) * 3, t: 30, c: '#ffd23a' }); j.WAVES.push({ x, y, t: 16, T: 16, spd: 12, th: 30, inv: 1 });
 });
 const onBeamCancel = on<{ p: number; kx: number; ky: number }>('juice-kobeam-cancel', 'combat:kobeam-cancel', (j, e) => txt(j, e.kx, e.ky - 40, 'BEAM CANCELED', '#aaa', 16));
-export const juiceHooks: HookDef[] = [onSB, onBeamCancel, onRespawn, onKo, onChip, onCancel, onClash, onReady, onFx, onPivot, onCancelB, onCd, onKick, onGlide, onGrab, onHeavy, onBClash, onLight, onSpell, onCapture, onTick, onHit, onBreak, onPip, onGraze, onPower, onRefused, onParry];
+// KO beam visuals (legacy fireBeam, line 1911): KOFX gets the beam; a reflected beam keeps the original colour, edged with the reflector's.
+const bcol: string[] = [], bedge: (string | null)[] = [];
+const onFire = on<{ o: number; x: number; y: number; a: number; dep: number }>('juice-kobeam-fire', 'combat:kobeam-fire', (j, e) => { j.KOFX.push({ x: e.x, y: e.y, a: e.a, t: 70, c: e.dep ? bcol[e.o] ?? col(e.o) : col(e.o), edge: e.dep ? bedge[e.o] ?? null : null }); });
+const onRefl = on<{ p: number; o: number; dep: number; x: number; y: number; a: number; len: number }>('juice-kobeam-reflect', 'combat:kobeam-reflect', (j, e) => {
+  const d0 = e.dep - 1, c = d0 ? bcol[e.o] ?? col(e.o) : col(e.o);
+  j.KOFX.push({ x: e.x, y: e.y, a: e.a, t: 70, c, edge: d0 ? bedge[e.o] ?? null : null, len: e.len }); big(j, d0 ? 'REFLECTED x' + (d0 + 1) + '!' : 'BEAM PARRIED!', '#6ff', 50);
+  bcol[e.p] = c; bedge[e.p] = col(e.p);
+});
+export const juiceHooks: HookDef[] = [onFire, onRefl, onSB, onBeamCancel, onRespawn, onKo, onChip, onCancel, onClash, onReady, onFx, onPivot, onCancelB, onCd, onKick, onGlide, onGrab, onHeavy, onBClash, onLight, onSpell, onCapture, onTick, onHit, onBreak, onPip, onGraze, onPower, onRefused, onParry];
 export { on as juiceHook };
 export function runJuiceEvent(j: Juice, e: { ev: string }): void { (H[e.ev] as ((j: Juice, e: unknown) => void) | undefined)?.(j, e); }
 export type { Ev };

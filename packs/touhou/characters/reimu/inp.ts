@@ -14,7 +14,7 @@ export function reimuInp(w: World, s: CombatState, p: number, v: VIn): void {
   if (t.rC[p]! > 0) {
     if (s.state[p] !== PS.idle) { t.rC[p] = 0; return; }
     if (h) { t.rC[p] = t.rC[p]! + 1; v.ix *= 0.55; v.iy *= 0.55; v.b &= ~(BTN.heavy | BTN.shot); w.emit('touhou:reimu-charge', { p, c: t.rC[p]! }); if (t.rC[p] === 25 || t.rC[p] === 55) pushJ(w, 'RINGS', 'x', s.x[p]!, 'y', s.y[p]!, 'r', 0, 'm', t.rC[p]! > 50 ? 60 : 40, 't', 12, 'c', '#ff9aa8'); return; }
-    throwOrbs(s, p, t.rC[p]! < 25 ? 1 : t.rC[p]! < 55 ? 2 : 4); t.rC[p] = 0; s.shotCd[p] = Math.max(s.shotCd[p]!, 14); v.b &= ~BTN.heavy; return;
+    throwOrbs(w, s, p, t.rC[p]! < 25 ? 1 : t.rC[p]! < 55 ? 2 : 4); t.rC[p] = 0; s.shotCd[p] = Math.max(s.shotCd[p]!, 14); v.b &= ~BTN.heavy; return;
   }
   if (e && s.state[p] === PS.idle && s.rifle[p]! <= 0 && s.cam[p]! <= 0 && relStick(s, p, v.ix, v.iy) === 'N') { t.rC[p] = 1; v.b &= ~BTN.heavy; }
 }

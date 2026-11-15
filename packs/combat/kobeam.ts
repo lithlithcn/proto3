@@ -33,7 +33,7 @@ function fire(w: World, s: CombatState, x: number, y: number, a: number, o: numb
       const ix = w.x(q) / 127, iy = w.y(q) / 127;
       const ra = hypot(ix, iy) > 0.3 ? atan2(iy, ix) : dep ? s.aim[q]! : -PI / 2;
       s.pStart[q] = -999; addBeam(s, q, s.x[q]!, s.y[q]!, ra, REFL_T, dep + 1);
-      w.emit('combat:kobeam-reflect', { p: q, dep: dep + 1, x, y, a, len: d });
+      w.emit('combat:kobeam-reflect', { p: q, o, dep: dep + 1, x, y, a, len: d });
       return;
     }
     hit(w, s, q, o, c, sn, BEAM, SRC.beam, 1, true);

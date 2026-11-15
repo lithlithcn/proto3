@@ -20,6 +20,7 @@ export function makeQ(e: Env, p: number): Record<string, unknown> {
       case 'mv': return s.mvId[p]! > 0 && s.state[p] === PS.atk ? moveOf(w, s, p) : null;
       case 'chC': if (key() === 'flandre') return 9; break; // legacy flandre.tick pins chC=9, chM=1 every frame
       case 'chM': if (key() === 'flandre') return 1; break;
+      case 'chG': return juiceOf(w).chG[p] ?? undefined;
       case 'nOrig': return th.nOr?.[p] ? th.nOc![p] : undefined;
       case 'stocks': return s.stocks[p]; case 'charging': return !!s.charging[p]; case 'focus': return !!s.focus[p]; case 'giant': return s.giant[p];
     }
@@ -50,4 +51,19 @@ import { drawP } from './layers';
 export function drawPlayerL(c: CanvasRenderingContext2D, w: World, s: CombatState, p: number, rnd: () => number = Math.random): void {
   const e: Env = { w, s, th: w.slice<Record<string, ArrayLike<number>>>('touhou'), rnd };
   bindLegacy(c, e); drawP(P(p));
+}
+
+import { bindViewFx, drawJuiceWorld, drawVignette } from './viewfx';
+import { juiceOf } from '../juice/state';
+/** Legacy drawView effect layers over the world (FX, graze arcs, rings, KO beams, texts, lines, cracks, waves, inversion, The World tint). */
+export function drawWorldFxL(c: CanvasRenderingContext2D, w: World, s: CombatState, L: number, Tp: number, R: number, Bt: number, vw: number, vh: number): void {
+  const e: Env = { w, s, th: w.slice<Record<string, ArrayLike<number>>>('touhou'), rnd: Math.random }, j = juiceOf(w);
+  bindLegacy(c, e);
+  bindViewFx({ ctx: c, frame: s.gf, P: cur, FX: j.FX, TX: j.TX, RINGS: j.RINGS, WAVES: j.WAVES, LINES: j.LINES, KOFX: j.KOFX, CRACK: j.CRACK, GZ: j.GZ.map(g => ({ ...g, p: cur[g['p'] as number] })), invF: j.invF, TSTOP: s.tstop, TSO: s.tso, drawP, fxLow: false });
+  drawJuiceWorld(L, Tp, R, Bt, vw, vh);
+}
+/** Legacy low-HP red vignette of one view (drawn after the world transform is restored). */
+export function drawVignetteL(c: CanvasRenderingContext2D, w: World, s: CombatState, v: { x: number; w: number }, H: number, p: number): void {
+  const e: Env = { w, s, th: w.slice<Record<string, ArrayLike<number>>>('touhou'), rnd: Math.random };
+  bindLegacy(c, e); bindViewFx({ ctx: c, frame: s.gf, P: cur, drawP }); drawVignette(v, H, cur[p]);
 }
