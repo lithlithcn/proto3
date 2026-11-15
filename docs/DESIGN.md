@@ -614,3 +614,7 @@ No other runtime network dependency is allowed without an entry here.
 - 2026-11-14: maps received over the network that contain code (scripts) show a consent warning before running (R58).
 - 2026-11-14: the tutorial becomes a folder pack (`packs/tutorial/`, one file per lesson) instead of a hard-coded step list.
 - 2026-11-14: build order = skeleton (kernel, tests, CI, docs) first, then Reimu alone, then the others.
+
+## 26. Diagnostics & observability (decisions)
+Adopted: (1) report = JSON first, always stamped with the git commit (+dirty flag); (2) diagnosis levels: *standard* = invariants + `world.reports` (always cheap), *detailed* = per-frame field diffs vs the oracle (`pnpm parity`), *forensic* = per-system writer attribution (`world.sysTrace`, only on the failing frame); (3) forensic replay = deterministic re-run from (chars, seed, items, inputs) — already exact because the sim is deterministic and snapshot/hash-checked; (4) planned with the UI: invariant checker (NaN/Infinity, hp/array bounds, entity lifecycle) in dev builds, ring buffer of the last seconds + one-click JSON(+HTML) export with source-mapped stacks (browser downloads need a user gesture/permission, so export is a button + optional auto-download after consent).
+Rejected: a watcher on every variable (state is typed arrays: before/after diffs per system give the same answer at no runtime cost); correlation ids / Worker tracing (the sim is single-threaded and synchronous). Limit: a report gives evidence and the first divergence, not a guaranteed root cause.
