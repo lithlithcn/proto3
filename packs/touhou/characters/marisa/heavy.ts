@@ -8,14 +8,14 @@ const STAR = [0xffe14a, 0x7cff7a, 0x4ab3ff];
 
 /** Marisa's heavies: N = Master Spark (wide, pushes her back, clears light bullets), F = Narrow Spark (thin, hits once), B = Stardust Reverie (7 slow stars). Lasers lock her out for warning + beam + 1 s. */
 export const marisaHeavy = {
-  N({ w, s, p, a, k }: HeavyCtx): void {
-    const ts = w.slice<TouhouState>('touhou'); if (ts.mLz[p]! > s.gf) return;
-    const h = heatMul(ts, p); ts.mLz[p] = s.gf + LZ_TELE + 44 + LZ_GAP;
+  N({ w, s, p, a, k, clone }: HeavyCtx): void {
+    const ts = w.slice<TouhouState>('touhou'); if (!clone && ts.mLz[p]! > s.gf) return; // the Doppelganger's stand-in has its own (empty) laser lock (legacy)
+    const h = heatMul(ts, p); if (!clone) ts.mLz[p] = s.gf + LZ_TELE + 44 + LZ_GAP;
     fireRay(s, p, { T: LZ_TELE + 44, tele: LZ_TELE, flags: RAYF.warn | RAYF.follow | RAYF.clear, w: 14 * h, len: 1000, dmg: 1.5 * h * k, ev: 7, kb: 6, stun: 18, push: 0.35, a });
   },
-  F({ w, s, p, a, k }: HeavyCtx): void {
-    const ts = w.slice<TouhouState>('touhou'); if (ts.mLz[p]! > s.gf) return;
-    const h = heatMul(ts, p); ts.mLz[p] = s.gf + LZ_TELE + 7 + LZ_GAP;
+  F({ w, s, p, a, k, clone }: HeavyCtx): void {
+    const ts = w.slice<TouhouState>('touhou'); if (!clone && ts.mLz[p]! > s.gf) return;
+    const h = heatMul(ts, p); if (!clone) ts.mLz[p] = s.gf + LZ_TELE + 7 + LZ_GAP;
     fireRay(s, p, { T: LZ_TELE + 7, tele: LZ_TELE, flags: RAYF.warn, w: 4 * h, len: 800, dmg: 5 * h * k, ev: 99, kb: 8, stun: 22, a });
   },
   B({ w, s, p, a, k, m, src }: HeavyCtx): void {

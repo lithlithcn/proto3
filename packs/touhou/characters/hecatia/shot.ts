@@ -18,6 +18,7 @@ export function bodyShot(s: CombatState, p: number, a: number, pm: number, bd: n
 /** Hecatia's light shot; during Trinity all three bodies fire at 60 % power each. */
 export function hecatiaShot(c: ShotCtx): void {
   const { s, p, a, pm } = c, ts = c.w.slice<TouhouState>('touhou');
-  if (ts.hTr[p]! > s.gf) for (let b = 0; b < 3; b++) bodyShot(s, p, a, pm * 0.6, b, s.x[p]!, s.y[p]!);
+  if (c.clone) bodyShot(s, p, a, pm, 0, s.x[p]!, s.y[p]!); // legacy stand-in: no Trinity, body 0
+  else if (ts.hTr[p]! > s.gf) for (let b = 0; b < 3; b++) bodyShot(s, p, a, pm * 0.6, b, s.x[p]!, s.y[p]!);
   else bodyShot(s, p, a, pm, ts.hM[p]!, s.x[p]!, s.y[p]!);
 }
