@@ -48,6 +48,8 @@ export class World {
   private readonly rngIds: string[];
   private readonly rngCache = new Map<string, RngStream>();
   private readonly systems: Ordered<SystemDef>[][];
+  /** Diagnosis hook (tools/parity): called before (`false`) and after (`true`) every system run. Never set in the game. */
+  sysTrace: ((system: string, after: boolean) => void) | null = null;
   private readonly hooks = new Map<string, Ordered<HookDef>[]>();
   private readonly hookFull: string[] = [];
   private readonly sysFull: string[] = [];
@@ -144,8 +146,10 @@ export class World {
       const off = this.k['sysOff'] as Int32Array;
       for (const group of this.systems) for (const s of group) {
         if (off[s.idx]) continue;
+        if (this.sysTrace) this.sysTrace(s.full, false);
         try { s.def.run(this); }
         catch (e) { if (this.cfg.strict) throw e; off[s.idx] = 1; this.report('E_SYSTEM_FAIL', s.full, e); }
+        if (this.sysTrace) this.sysTrace(s.full, true);
       }
     };
     if (this.cfg.sanitize) withSanitizer(run); else run();

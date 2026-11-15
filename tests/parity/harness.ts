@@ -19,6 +19,12 @@ export interface FrameIn { x?: number; y?: number; btn?: string[] }
 export type Script = (f: number) => FrameIn;
 
 const q = (v: number | undefined): number => Math.max(-127, Math.min(127, Math.round((v ?? 0) * 127)));
+/** Legacy player fields deliberately NOT auto-compared (each with its reason; DESIGN §25). */
+const AUTO_SKIP = new Set([
+  'burst', // legacy `burst` is dead (removed feature, value 0.08); the port's `burst` is the live burst gauge: name collision
+  'spP', // spirit at frame start: stored by a different wrapper layer in legacy; the resulting spirit IS compared
+  'spReady', // 'SPELL READY' fx flag, refreshed only in some states in legacy; presentation only (spirit is compared)
+]);
 const STATE_NAME = Object.fromEntries(Object.entries(PS).map(([k, v]) => [v, k]));
 
 /** Item name → pool index of the ported items (pool order = legacy order), rainbow = Last Word card. */
@@ -37,6 +43,8 @@ export function makePair(chars: string[], seed = 1, opt: PairOpt = {}) {
   });
   const s = world.slice<CombatState>('combat'), KIND = kindMap(world);
   legacy.eval(`SPELLS.length=${spellPool(world).length}`); // legacy holds every character's card: keep exactly the ported ones, in the same order
+  let autoK: string[] | null = null;
+  const autoKeys = (): string[] => autoK ??= (JSON.parse(legacy.eval(`JSON.stringify(Object.entries(P[0]).filter(([k,v])=>typeof v==='number'||typeof v==='boolean').map(([k])=>k))`) as string) as string[]).filter(k => { if (AUTO_SKIP.has(k)) return false; const a = (s as unknown as Record<string, unknown>)[k]; return ArrayBuffer.isView(a) && (a as unknown as ArrayLike<number>).length >= chars.length; });
   return {
     legacy, world, s, kind: (name: string): number => KIND[name]!, itemNames: Object.keys(KIND).filter(n => n !== "rainbow"),
     /** Advance both with the same input scripts; returns nothing, use `compare()`. */
@@ -73,8 +81,12 @@ export function makePair(chars: string[], seed = 1, opt: PairOpt = {}) {
       o.K.forEach((lk, i) => { eq(s.kbO[i], lk.o, `${tag} f${o.f} K${i}.o`); near(s.kbX[i]!, lk.x, `K${i}.x`); near(s.kbY[i]!, lk.y, `K${i}.y`); near(s.kbA[i]!, lk.a, `K${i}.a`); near(s.kbT[i]!, lk.t, `K${i}.t`); eq(s.kbDep[i], lk.dep, `${tag} f${o.f} K${i}.dep`); });
       eq(s.nb, o.B.length, `${tag} f${o.f} bullet count`);
       o.B.forEach((lb, i) => { eq(s.bflags[i]! & 32 ? 1 : 0, lb.fz, `${tag} f${o.f} B${i}.frozen`); near(s.bx[i]!, lb.x, `B${i}.x`); near(s.by[i]!, lb.y, `B${i}.y`); near(s.bvx[i]!, lb.vx, `B${i}.vx`); near(s.bvy[i]!, lb.vy, `B${i}.vy`); if (lb.heavy) { near(s.bmult[i]!, lb.mult!, `B${i}.mult`); near(s.bdist[i]!, lb.dist!, `B${i}.dist`); eq(s.brefl[i], lb.refl, `${tag} f${o.f} B${i}.refl`); near(s.br[i]!, lb.r, `B${i}.r`); } else near(s.bdmg[i]!, lb.dmg!, `B${i}.dmg`); near(s.blife[i]!, lb.life, `B${i}.life`); eq(s.bowner[i], lb.owner, `B${i}.owner`); });
+      // AUTO: every numeric/boolean legacy player field that has a same-name per-player array in the port is compared too (exhaustive by name)
+      const auto = autoKeys(); if (auto.length) { const lv = JSON.parse(legacy.eval(`JSON.stringify(P.map(p=>${JSON.stringify(auto)}.map(k=>{const v=p[k];return typeof v==='boolean'?+v:(typeof v==='number'&&isFinite(v)?v:null)})))`) as string) as (number | null)[][]; const sa = s as unknown as Record<string, ArrayLike<number>>; lv.forEach((row, i) => row.forEach((v, j) => { if (v !== null) near(Number(sa[auto[j]!]![i]), v, `P${i}.${auto[j]}`); })); }
       return out;
     },
+    /** Legacy player fields not compared (no same-name port array): the coverage gap, to be mapped by hand or justified (render-only). */
+    uncovered(): string[] { const auto = new Set(autoKeys()); return (JSON.parse(legacy.eval(`JSON.stringify(Object.entries(P[0]).filter(([k,v])=>typeof v==='number'||typeof v==='boolean').map(([k])=>k))`) as string) as string[]).filter(k => !auto.has(k)); },
     /** Assert observable equality (tolerance 1e-6 abs/rel) at the current frame; throws the first difference. */
     compare(tag: string, tol = 1e-6): void { const d = this.diffs(tag, tol, 1); if (d.length) throw new Error(d[0]); },
     /** Run scripts for `frames` frames, comparing after every frame. */
