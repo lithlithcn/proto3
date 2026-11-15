@@ -22,7 +22,7 @@
 | change KO / respawn | `packs/combat/player/{ko,respawn}.ts` |
 | add or change a character | `packs/touhou/characters/<id>/` (+ `CharacterDef` in `packs/combat/character.ts`) |
 | compare with the old game | `tests/parity/` + `tools/parity/legacy.cjs` |
-| hunt parity bugs at scale (user runs it, sends `reports/`) | `pnpm parity --games 500 --frames 3600` → `reports/SUMMARY.md` + one JSON per bug (`tools/parity/campaign.ts`); `pnpm parity replay <file>` |
+| hunt parity bugs at scale (user runs it, sends `reports/SEND-ME.md`) | `pnpm parity --games 500 --frames 3600` → `reports/` (SUMMARY, SEND-ME, one JSON per bug with surgical diagnosis: `tools/parity/{campaign,diagnose}.ts`); `pnpm parity replay <file>` |
 | see how a pack looks | `packs/sandbox/pack.ts` (demo only) |
 | boot the game in the browser | `src/main.ts`, `src/packs.ts` (auto-discovers `packs/*/pack.ts`) |
 | CI / deploy | `.github/workflows/ci.yml` |
