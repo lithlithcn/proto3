@@ -5,7 +5,7 @@ import { drawView } from '@pack/render/view';
 import { builtinPacks } from './packs';
 
 /** Playable slice: Reimu (P1: WASD + JKL...) vs Marisa (P2: arrows + numpad). Menus, modes, touch and gamepad arrive with the ui/modes packs. */
-const cfg = { seed: (Math.random() * 1e9) | 0, players: 2, world: { players: [{ char: 'reimu' }, { char: 'marisa' }] } }; // sim-allow(boot-time seed)
+const cfg = { seed: (Math.random() * 1e9) | 0, players: 2, world: { players: [{ char: 'touhou:reimu' }, { char: 'touhou:marisa' }] } }; // sim-allow(boot-time seed)
 const world = new World({ packs: builtinPacks.filter(p => p.id !== 'sandbox'), ...cfg });
 const rec: number[][] = []; // every input frame of the match: the whole game is replayable from cfg + rec
 const KB = [
@@ -33,7 +33,7 @@ function frame(now: number): void {
   if (canvas.width !== innerWidth || canvas.height !== innerHeight) { canvas.width = innerWidth; canvas.height = innerHeight; }
   c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = '#000'; c.fillRect(0, 0, canvas.width, canvas.height);
   drawView(c, world, 0, 0, canvas.width, canvas.height, 0);
-  drawHud(c, world.slice<CombatState>('combat'), canvas.width);
+  drawHud(c, world, world.slice<CombatState>('combat'), canvas.width, canvas.height);
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);

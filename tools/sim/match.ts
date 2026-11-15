@@ -6,7 +6,7 @@ import { makePair } from '../../tests/parity/harness';
 
 const m = JSON.parse(readFileSync(process.argv[2]!, 'utf8')) as { cfg: { seed: number; players: number; world: { players: { char: string }[] } }; inputs: number[][] };
 const names = Object.keys(BTN) as (keyof typeof BTN)[];
-const chars = m.cfg.world.players.map(p => p.char), items = (m.cfg.world as { items?: boolean }).items === false ? [] : makePair(['reimu', 'reimu'], 1).itemNames; // the browser game has every ported item on unless the config says items:false
+const chars = m.cfg.world.players.map(p => p.char.replace(/^touhou:/, '')), items = (m.cfg.world as { items?: boolean }).items === false ? [] : makePair(['reimu', 'reimu'], 1).itemNames; // the browser game has every ported item on unless the config says items:false
 const k = makePair(chars, m.cfg.seed, items.length ? { items, maxCards: 1 } : {});
 let bad = '';
 for (let f = 1; f <= m.inputs.length && !bad; f++) {
