@@ -25,7 +25,7 @@ export function updIdle(c: PCtx): void {
     s.vx[p] = s.vx[p]! * 0.955 + c.ix * sp * 0.1; s.vy[p] = s.vy[p]! * 0.955 + c.iy * sp * 0.1;
   } else {
     const spd = hypot(s.vx[p]!, s.vy[p]!);
-    if (!focus && il > 0.3 && spd > 3 && (s.vx[p]! * c.ix + s.vy[p]! * c.iy) / (spd * il) < -0.6) { s.vx[p] = c.ix / il * spd * 0.9; s.vy[p] = c.iy / il * spd * 0.9; } // instant pivot
+    if (!focus && il > 0.3 && spd > 3 && (s.vx[p]! * c.ix + s.vy[p]! * c.iy) / (spd * il) < -0.6) { s.vx[p] = c.ix / il * spd * 0.9; s.vy[p] = c.iy / il * spd * 0.9; c.w.emit('combat:pivot', { p }); } // instant pivot
     const ac = focus ? 0.5 : s.run[p] ? 0.14 : 0.24;
     s.vx[p] = s.vx[p]! + (c.ix * sp - s.vx[p]!) * ac; s.vy[p] = s.vy[p]! + (c.iy * sp - s.vy[p]!) * ac;
   }

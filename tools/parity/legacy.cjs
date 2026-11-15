@@ -5,12 +5,14 @@
 const fs = require('fs'), vm = require('vm'), path = require('path');
 
 let cached = null;
+let OFF = 0;
 function script() {
   if (cached) return cached;
   const html = fs.readFileSync(path.join(__dirname, '../../legacy/shmup-fighter.html'), 'utf8');
-  const parts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]).filter(s => s.includes('function start'));
-  if (!parts.length) throw new Error('legacy script not found');
-  return (cached = parts[0]);
+  const m = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].find(m => m[1].includes('function start'));
+  if (!m) throw new Error('legacy script not found');
+  OFF = html.slice(0, m.index + 8).split('\n').length - 1; // stack traces then carry html line numbers (legacy:LINE)
+  return (cached = m[1]);
 }
 
 function createLegacy(opts = {}) {
@@ -20,7 +22,7 @@ function createLegacy(opts = {}) {
   const stub = () => ({ getContext: () => ctxP, style: {}, appendChild() {}, addEventListener() {}, setAttribute() {}, classList: { add() {}, remove() {} } });
   const g = { console: { log() {}, warn() {}, error() {} }, Math: Object.create(Math), document: { getElementById: stub, createElement: tag => tag === 'canvas' ? rec.newCanvas() : stub(), head: null, body: null, addEventListener() {} }, innerWidth: 1280, innerHeight: 720, navigator: { getGamepads: () => [], userAgent: 'node' }, addEventListener() {}, localStorage: { getItem: () => null, setItem() {} }, requestAnimationFrame() {}, performance: { now: () => VT }, Date: Object.assign(class extends Date {}, { now: () => 1700000000000 }), setTimeout() {}, setInterval() {}, clearInterval() {}, clearTimeout() {}, Worker: undefined, URL: Object.assign(function () {}, { createObjectURL: () => '' }), Blob: function () {}, AudioContext: undefined, Image: function () {}, Path2D: function () {} };
   { let rs = (seed * 2654435761 + 12345) >>> 0; g.Math.random = () => (rs = (Math.imul(rs, 1664525) + 1013904223) >>> 0) / 4294967296; } // cosmetic randomness (particles, shake) must be reproducible so two renderers can be compared op by op
-  g.window = g; vm.createContext(g); vm.runInContext(script(), g);
+  g.window = g; vm.createContext(g); vm.runInContext(script(), g, { filename: 'legacy', lineOffset: OFF });
   const R = c => vm.runInContext(c, g);
   const idx = chars.map(c => R(`CHR.findIndex(c=>c.k===${JSON.stringify(c)})`));
   if (idx.some(i => i < 0)) throw new Error('unknown character in ' + chars);

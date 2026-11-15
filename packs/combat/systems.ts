@@ -45,7 +45,9 @@ const charTick: SystemDef = { id: 'char-tick', phase: 'sim', after: ['item-late'
 const items: SystemDef = { id: 'items', phase: 'sim', after: ['bullets'], run(w) { const s = combatOf(w); if (!s.skip) updateCards(w, s); } };
 const itemWorld: SystemDef = { id: 'item-world', phase: 'sim', after: ['ko-beam'], run(w) { const s = combatOf(w); if (!s.skip) updateItemWorld(w, s); } };
 const status: SystemDef = { id: 'status', phase: 'sim', after: ['item-world'], run(w) { const s = combatOf(w); if (!s.skip) tickFx(w, s); } };
-const itemLate: SystemDef = { id: 'item-late', phase: 'sim', after: ['bullet-motion'], run(w) { const s = combatOf(w); if (!s.skip) { for (let p = 0; p < s.n; p++) if (s.state[p] !== PS.dead) updateClone(s, p); driftBumpers(s); updateFreezeQueue(s); updateTimeStop(w, s); } } };
+/** Legacy end of the base `step` (where `stepFx` runs, also on hit-stop frames): presentation listeners tick their effects here; every later wrapper and `chStep` happen after it. */
+const baseEnd: SystemDef = { id: 'base-end', phase: 'sim', after: ['bullet-motion', 'item-world', 'status'], run(w) { w.emit('combat:fx-tick', { gf: combatOf(w).gf }); } };
+const itemLate: SystemDef = { id: 'item-late', phase: 'sim', after: ['base-end'], run(w) { const s = combatOf(w); if (!s.skip) { for (let p = 0; p < s.n; p++) if (s.state[p] !== PS.dead) updateClone(s, p); driftBumpers(s); updateFreezeQueue(s); updateTimeStop(w, s); } } };
 /** Every legacy `step` wrapper (clone soak, bumpers, freeze queue, The World knives) runs AFTER the base step, bullet motion included -> item-late follows bullet-motion (this fixes the shared-rng draw order vs fn() callbacks). */
 /** Legacy chStep: rays, per-bullet modifiers and entity handlers of characters, after every character hook. */
 /** Legacy chStep entity loop: every entity (rays and character kinds alike) runs in creation order; entities spawned meanwhile run this same frame. */
@@ -63,4 +65,4 @@ const beams: SystemDef = { id: 'ko-beam', phase: 'sim', after: ['items'], run(w)
 const ents: SystemDef = { id: 'entities', phase: 'sim', after: ['status'], run(w) { const s = combatOf(w); if (!s.skip) updateEnts(s); } };
 const buffer: SystemDef = { id: 'input-buffer', phase: 'sim', after: ['entities'], run(w) { const s = combatOf(w); if (!s.skip) bufferInputs(w, s); } };
 const motionStep: SystemDef = { id: 'bullet-motion', phase: 'sim', after: ['input-buffer'], run(w) { const s = combatOf(w); if (!s.skip) motion(s); } };
-export const systems: SystemDef[] = [spiritBegin, gate, players, phys, bullets, items, beams, itemWorld, status, ents, buffer, itemLate, motionStep, charTick, rayStep, spiritEnd];
+export const systems: SystemDef[] = [spiritBegin, gate, players, phys, bullets, items, beams, itemWorld, status, ents, buffer, baseEnd, itemLate, motionStep, charTick, rayStep, spiritEnd];

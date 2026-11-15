@@ -5,7 +5,7 @@ import { EK_FCL } from './kinds';
 
 /** Skill 1 — Four of a Kind: three clones appear around the nearest foe, then dash at it (8 s cooldown). */
 export function flandreClones(w: World, s: CombatState, p: number): void {
-  if (s.skC1[p]! > s.gf) { w.emit('combat:skill-cooldown', { p, left: s.skC1[p]! - s.gf }); return; }
+  if (s.skC1[p]! > s.gf) { w.emit('combat:skill-cooldown', { p, left: s.skC1[p]! - s.gf, n: 'CLONES' }); return; }
   s.skC1[p] = s.gf + 480;
   const q = nearFoe(s, p, s.x[p]!, s.y[p]!); if (q < 0) return;
   const a0 = atan2(s.y[p]! - s.y[q]!, s.x[p]! - s.x[q]!);
@@ -17,6 +17,6 @@ export function flandreClones(w: World, s: CombatState, p: number): void {
 
 /** Skill 2 — Frenzy: pay 12 hp (never below 1) for 4 s of +35 % damage and +25 % speed (10 s cooldown). */
 export function flandreFrenzy(w: World, s: CombatState, p: number): void {
-  if (s.skC2[p]! > s.gf) { w.emit('combat:skill-cooldown', { p, left: s.skC2[p]! - s.gf }); return; }
+  if (s.skC2[p]! > s.gf) { w.emit('combat:skill-cooldown', { p, left: s.skC2[p]! - s.gf, n: 'FRENZY' }); return; }
   s.skC2[p] = s.gf + 600; s.hp[p] = Math.max(1, s.hp[p]! - 12); w.slice<TouhouState>('touhou').fFr[p] = s.gf + 240;
 }

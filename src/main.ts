@@ -1,7 +1,7 @@
 import { BTN, FixedLoop, World, newInput, setInput } from '@kernel';
 import type { CombatState } from '@pack/combat/api';
 import { drawHud } from '@pack/render/hud';
-import { drawView } from '@pack/render/view';
+import { renderViews } from '@pack/render/view';
 import { builtinPacks } from './packs';
 
 /** Playable slice: Reimu (P1: WASD + JKL...) vs Marisa (P2: arrows + numpad). Menus, modes, touch and gamepad arrive with the ui/modes packs. */
@@ -32,7 +32,7 @@ function frame(now: number): void {
   }
   if (canvas.width !== innerWidth || canvas.height !== innerHeight) { canvas.width = innerWidth; canvas.height = innerHeight; }
   c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = '#000'; c.fillRect(0, 0, canvas.width, canvas.height);
-  drawView(c, world, 0, 0, canvas.width, canvas.height, 0);
+  renderViews(c, world, world.slice<CombatState>('combat'), canvas.width, canvas.height);
   drawHud(c, world, world.slice<CombatState>('combat'), canvas.width, canvas.height, performance.now() / 1000);
   requestAnimationFrame(frame);
 }

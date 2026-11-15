@@ -61,7 +61,7 @@ export function updateBullets(w: World, s: CombatState): void {
     }
     if (nf && !(s.bflags[i]! & BF.dead) && hitFairy(s, i)) s.bflags[i] = s.bflags[i]! | BF.dead;
   }
-  heavyClash(s);
+  heavyClash(w, s);
   // compact in order; zero the freed tail so identical live states hash identically
   let wi = 0;
   const A = bulletArrays(s);

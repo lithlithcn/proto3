@@ -18,7 +18,7 @@ export function okinaDancers(w: World, s: CombatState, p: number): void {
     const e = addEnt(s, EK_ODN, p, 300, s.x[p]!, s.y[p]!); if (e >= 0) { s.ebc[e] = 1; s.er[e] = 30; }
     s.et[D[0]!] = Math.max(s.et[D[0]!]!, 300); t.oMai[p] = 1; return;
   }
-  if (s.skC2[p]! > s.gf) { w.emit('combat:skill-cooldown', { p, left: s.skC2[p]! - s.gf }); return; }
+  if (s.skC2[p]! > s.gf) { w.emit('combat:skill-cooldown', { p, left: s.skC2[p]! - s.gf, n: 'DANCERS' }); return; }
   for (const i of D) s.et[i] = 0;
   const e = addEnt(s, EK_ODN, p, 300, s.x[p]!, s.y[p]!); if (e >= 0) { s.ebc[e] = 0; s.er[e] = 30; }
   t.oMai[p] = 0; s.skC2[p] = s.gf + 600;

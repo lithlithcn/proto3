@@ -5,7 +5,7 @@ import { EK_POT } from './kinds';
 
 /** Skill 1 — star potion: a flask lobbed (max 260 px) at the nearest foe, bursting into a puddle that detonates on contact or after 4 s. 5 s cooldown. */
 export function marisaPotion(w: World, s: CombatState, p: number): void {
-  if (s.skC1[p]! > s.gf) { w.emit('combat:skill-cooldown', { p, left: s.skC1[p]! - s.gf }); return; }
+  if (s.skC1[p]! > s.gf) { w.emit('combat:skill-cooldown', { p, left: s.skC1[p]! - s.gf, n: 'POTION' }); return; }
   s.skC1[p] = s.gf + 300;
   let q = -1, bd = 1e9;
   for (let c = 0; c < s.n; c++) if (c !== p && s.state[c] !== PS.dead && foe(s, p, c)) { const d = hypot(s.x[c]! - s.x[p]!, s.y[c]! - s.y[p]!); if (d < bd) { bd = d; q = c; } }
@@ -18,7 +18,7 @@ export function marisaPotion(w: World, s: CombatState, p: number): void {
 
 /** Skill 2 — Non-Directional Laser: four short spinning lasers around her (2 s, 8 s cooldown). */
 export function marisaLaser(w: World, s: CombatState, p: number): void {
-  if (s.skC2[p]! > s.gf) { w.emit('combat:skill-cooldown', { p, left: s.skC2[p]! - s.gf }); return; }
+  if (s.skC2[p]! > s.gf) { w.emit('combat:skill-cooldown', { p, left: s.skC2[p]! - s.gf, n: 'LASER' }); return; }
   s.skC2[p] = s.gf + 480;
   for (let i = 0; i < 4; i++) fireRay(s, p, { T: 120, tele: 14, flags: RAYF.follow | RAYF.nodash, w: 4, len: 120, dmg: 1.5, ev: 10, kb: 3, stun: 12, a: s.aim[p]! + i * TAU / 4, spin: 0.045 });
 }

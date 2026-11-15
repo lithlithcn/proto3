@@ -39,7 +39,7 @@ export function heavyContact(w: World, s: CombatState, i: number, t: number, d: 
 }
 
 /** Heavy vs heavy clash (both vanish; a reflected one beats a fresh one), and heavy bullets sweep away enemy light bullets around them. */
-export function heavyClash(s: CombatState): void {
+export function heavyClash(w: World, s: CombatState): void {
   const H: number[] = [];
   for (let i = 0; i < s.nb; i++) if ((s.bflags[i]! & (BF.heavy | BF.dead | BF.breaker | BF.fake)) === BF.heavy) H.push(i);
   for (let a = 0; a < H.length; a++) {
@@ -53,6 +53,7 @@ export function heavyClash(s: CombatState): void {
         if (s.brefl[h]! && !s.brefl[k]!) s.bflags[k] = s.bflags[k]! | BF.dead;
         else if (s.brefl[k]! && !s.brefl[h]!) s.bflags[h] = s.bflags[h]! | BF.dead;
         else { s.bflags[h] = s.bflags[h]! | BF.dead; s.bflags[k] = s.bflags[k]! | BF.dead; }
+        w.emit('combat:bullet-clash', { x: (s.bx[h]! + s.bx[k]!) / 2, y: (s.by[h]! + s.by[k]!) / 2 });
         break;
       }
     }
@@ -60,7 +61,7 @@ export function heavyClash(s: CombatState): void {
     const rr = s.br[h]! + 4, ow = s.bowner[h]!;
     for (let j = 0; j < s.nb; j++) {
       if ((s.bflags[j]! & (BF.heavy | BF.dead)) || s.bowner[j] === ow || Math.abs(s.bx[j]! - s.bx[h]!) >= rr || Math.abs(s.by[j]! - s.by[h]!) >= rr) continue;
-      s.bflags[j] = s.bflags[j]! | BF.dead; s.spirit[ow] = Math.min(T.SPIRIT_MAX, s.spirit[ow]! + 0.3);
+      s.bflags[j] = s.bflags[j]! | BF.dead; s.spirit[ow] = Math.min(T.SPIRIT_MAX, s.spirit[ow]! + 0.3); w.emit('combat:bullet-cancel', { p: ow });
     }
   }
 }

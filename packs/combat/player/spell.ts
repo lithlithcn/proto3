@@ -24,13 +24,14 @@ export function startSpell(w: World, s: CombatState, p: number, ult: boolean): v
   }
   s.state[p] = PS.spell; s.t[p] = 0; s.inv[p] = Math.max(120, T.SPELL_CUTIN + 10); s.vx[p] = 0; s.vy[p] = 0; s.charging[p] = 0;
   s.spellHit.fill(0);
-  for (let i = 0; i < s.nb; i++) if (s.bowner[i] !== p && hypot(s.bx[i]! - s.x[p]!, s.by[i]! - s.y[p]!) < 220) s.bflags[i] = s.bflags[i]! | BF.dead;
+  const cut: number[] = []; // cancelled bullets: x, y, heavy (presentation sparks)
+  for (let i = 0; i < s.nb; i++) if (s.bowner[i] !== p && hypot(s.bx[i]! - s.x[p]!, s.by[i]! - s.y[p]!) < 220) { s.bflags[i] = s.bflags[i]! | BF.dead; cut.push(s.bx[i]!, s.by[i]!, s.bflags[i]! & BF.heavy); }
   for (let q = 0; q < s.n; q++) { // the cast shoves close foes away and interrupts their attack
     if (!foe(s, p, q) || s.state[q] === PS.dead) continue;
     const dx = s.x[q]! - s.x[p]!, dy = s.y[q]! - s.y[p]!, d = hypot(dx, dy) || 1;
     if (d < T.BURST_R + T.BODY_R) { s.vx[q] = s.vx[q]! + dx / d * 14; s.vy[q] = s.vy[q]! + dy / d * 14; if (s.state[q] === PS.atk) { s.mvId[q] = 0; s.state[q] = PS.idle; } }
   }
-  w.emit('combat:spell', { p, ult, spell: s.spI[p]! });
+  w.emit('combat:spell', { p, ult, spell: s.spI[p]!, cut });
 }
 
 export function endSpell(w: World, s: CombatState, p: number, timeout: boolean): void {

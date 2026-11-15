@@ -48,5 +48,5 @@ export function hit(w: World, s: CombatState, v: number, a: number, dx: number, 
   if (s.hp[v]! <= 0) s.koPend[v] = 1;
   s.hitstop = Math.max(s.hitstop, T.HITSTOP + Math.round(dmg * 0.35));
   if (a >= 0 && a !== v && dmg > 0) charOf(w, s, a).onHit?.(w, s, a, v, heavy);
-  w.emit('combat:hit', { victim: v, attacker: a, dmg, combo: s.combo[v]!, heavy, x: s.x[v]!, y: s.y[v]! });
+  w.emit('combat:hit', { victim: v, attacker: a, dmg, combo: s.combo[v]!, heavy, x: s.x[v]!, y: s.y[v]!, dx, dy });
 }

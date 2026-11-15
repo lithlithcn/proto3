@@ -12,8 +12,8 @@ export function marisaInp(w: World, s: CombatState, p: number, v: VIn): void {
   if (e && s.state[p] === PS.dash && !(t.mLz[p]! > s.gf)) {
     const sp = hypot(s.vx[p]!, s.vy[p]!) || 1, ux = s.vx[p]! / sp, uy = s.vy[p]! / sp;
     fireRay(s, p, { T: 28, tele: 0, flags: RAYF.follow | RAYF.clear, w: 13, len: 360, dmg: 2, ev: 7, kb: 5, stun: 16, a: atan2(-uy, -ux) });
-    s.vx[p] = s.vx[p]! + ux * 7; s.vy[p] = s.vy[p]! + uy * 7; s.t[p] = s.t[p]! + 10; t.mBS[p] = s.gf + s.t[p]!; t.mLz[p] = s.gf + 90;
+    s.vx[p] = s.vx[p]! + ux * 7; s.vy[p] = s.vy[p]! + uy * 7; s.t[p] = s.t[p]! + 10; t.mBS[p] = s.gf + s.t[p]!; t.mLz[p] = s.gf + 90; w.emit('touhou:marisa-star', { p });
     v.b &= ~BTN.heavy; return;
   }
-  if (h && t.mLz[p]! > s.gf && s.state[p] === PS.idle && relStick(s, p, v.ix, v.iy) !== 'B') v.b &= ~BTN.heavy;
+  if (h && t.mLz[p]! > s.gf && s.state[p] === PS.idle && relStick(s, p, v.ix, v.iy) !== 'B') { if (e) w.emit('combat:skill-cooldown', { p, left: t.mLz[p]! - s.gf, n: 'LASER' }); v.b &= ~BTN.heavy; }
 }

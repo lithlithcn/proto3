@@ -18,7 +18,7 @@
     "sim": "tsx tools/sim/cli.ts",
     "parity": "tsx tools/parity/campaign.ts",
     "spec": "tsx tools/spec/cli.ts",
-    "render": "tsx tools/render/cli.ts",
+    "render": "PARITY_RENDER=1 tsx tools/render/cli.ts",
     "mutate": "tsx tools/parity/mutate.ts",
     "gate": "tsx tools/gate.ts",
     "map": "tsx tools/spec/cli.ts map",
