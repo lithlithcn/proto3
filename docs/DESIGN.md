@@ -667,3 +667,9 @@ Measured on the item-divergence batch: ~half the time went to hand-written probe
 - `pnpm spec standin` — static scan: per character, the `p.<field>` reads of shot/heavy that the legacy Doppelganger stand-in (`cloneOf`: only x,y,id,aim,buff,power,focus,mvName,shotT) lacks, and whether the port handles `clone`. This whole family caused 10 divergences; now reviewed in one command.
 - `pnpm check:fast` — 8 s instead of 116 s (skips the parity/fuzz/regression suites); the full `pnpm check` / `pnpm gate` run once per lot, not per edit.
 Rule: a divergence is first read with `pnpm rca`; only if it stays unclear add a probe, and then extend rca with it.
+
+### 28.y Investigation environment (paused-project foundations)
+- `pnpm rca <report>`: port + legacy writers, born bullets, timers. `pnpm investigate <report>`: rca + ddmin of gives + hypotheses (not created / wrong spot / culled) + quirk lookup (`docs/quirks.json`).
+- `docs/parity-ledger.json` (`pnpm spec ledger`): every area is validated / diverging / not-ported / comparison-disabled / unverifiable. GATE PASS means configured checks pass, never "port complete"; never improve coverage by disabling a comparison without a ledger entry.
+- `pnpm parity keep <report> --cause …` forces a post-mortem (cause, family, quirk, why missed, probes); `pnpm metrics` reports real timings (manual work before the tool existed is not counted as a gain).
+- `pnpm affected [--run]`: smallest check set for the current diff; widens when unsure.
