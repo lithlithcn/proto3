@@ -199,6 +199,19 @@
    ],
    "family": "spawn-bounds",
    "found": "2026-11-15"
+  },
+  {
+   "id": "clone-soak-after-motion",
+   "tags": [
+    "clone",
+    "order"
+   ],
+   "rule": "Doppelganger soak ran before bullet motion in the port; legacy runs it after motion+acc clamp and before chStep bullet mods, so a soaked bullet never gets acc +5% (and is tested at its post-motion position)",
+   "port": [
+    "packs/combat/systems.ts"
+   ],
+   "family": "update-order",
+   "found": "2026-11-15"
   }
  ]
 }

@@ -45,7 +45,7 @@ const charTick: SystemDef = { id: 'char-tick', phase: 'sim', after: ['bullet-mot
 const items: SystemDef = { id: 'items', phase: 'sim', after: ['bullets'], run(w) { const s = combatOf(w); if (!s.skip) updateCards(w, s); } };
 const itemWorld: SystemDef = { id: 'item-world', phase: 'sim', after: ['ko-beam'], run(w) { const s = combatOf(w); if (!s.skip) updateItemWorld(w, s); } };
 const status: SystemDef = { id: 'status', phase: 'sim', after: ['item-world'], run(w) { const s = combatOf(w); if (!s.skip) tickFx(w, s); } };
-const itemLate: SystemDef = { id: 'item-late', phase: 'sim', after: ['input-buffer'], run(w) { const s = combatOf(w); if (!s.skip) { for (let p = 0; p < s.n; p++) if (s.state[p] !== PS.dead) updateClone(s, p); driftBumpers(s); updateFreezeQueue(s); updateTimeStop(w, s); } } };
+const itemLate: SystemDef = { id: 'item-late', phase: 'sim', after: ['input-buffer'], run(w) { const s = combatOf(w); if (!s.skip) { driftBumpers(s); updateFreezeQueue(s); updateTimeStop(w, s); } } };
 /** Legacy chStep: rays, per-bullet modifiers and entity handlers of characters, after every character hook. */
 /** Legacy chStep entity loop: every entity (rays and character kinds alike) runs in creation order; entities spawned meanwhile run this same frame. */
 const chars = (w: World): CharacterDef[] => characters(w).map(c => c[1]);
@@ -61,5 +61,5 @@ const rayStep: SystemDef = { id: 'ray-step', phase: 'sim', after: ['char-tick'],
 const beams: SystemDef = { id: 'ko-beam', phase: 'sim', after: ['items'], run(w) { const s = combatOf(w); if (!s.skip) updateBeams(w, s); } };
 const ents: SystemDef = { id: 'entities', phase: 'sim', after: ['status'], run(w) { const s = combatOf(w); if (!s.skip) updateEnts(s); } };
 const buffer: SystemDef = { id: 'input-buffer', phase: 'sim', after: ['entities'], run(w) { const s = combatOf(w); if (!s.skip) bufferInputs(w, s); } };
-const motionStep: SystemDef = { id: 'bullet-motion', phase: 'sim', after: ['item-late'], run(w) { const s = combatOf(w); if (!s.skip) motion(s); } };
+const motionStep: SystemDef = { id: 'bullet-motion', phase: 'sim', after: ['item-late'], run(w) { const s = combatOf(w); if (s.skip) return; motion(s); for (let p = 0; p < s.n; p++) if (s.state[p] !== PS.dead) updateClone(s, p); } }; // legacy: the Doppelganger soak runs AFTER bullet motion (and the acc clamp), before chStep's bullet mods -> a soaked bullet never gets the +5 % of `acc`
 export const systems: SystemDef[] = [spiritBegin, gate, players, phys, bullets, items, beams, itemWorld, status, ents, buffer, itemLate, motionStep, charTick, rayStep, spiritEnd];

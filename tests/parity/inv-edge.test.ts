@@ -33,5 +33,5 @@ describe('parity: invulnerability window edges (vs legacy)', () => {
       }
     }
     expect(landed, 'the laser must land in some trials').toBeGreaterThan(0);
-  });
+  }, 60_000); // 71 full legacy+port games: ~5 s, the default 5 s timeout was flaky
 });

@@ -25,12 +25,6 @@
       "limit": "700 frames, scripted single give at f40, 1v1"
     },
     {
-      "id": "okina-hecatia-bullet-vx",
-      "status": "diverging",
-      "area": "Hecatia bullet velocity while Okina is in her spell",
-      "repro": "pnpm parity --items all --games 40 --frames 2000 --seed 22 : okina/hecatia f1946 B27.vx"
-    },
-    {
       "id": "seed57-nue-nazrin",
       "status": "diverging",
       "area": "nue/nazrin, nazrin/nue, reimu/nue, reimu/flandre (4 reports)",

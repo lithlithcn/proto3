@@ -1,0 +1,31 @@
+{
+ "a": "okina",
+ "b": "hecatia",
+ "seed": 2200071,
+ "items": [
+  "yellow",
+  "white",
+  "green",
+  "purple",
+  "blue",
+  "orange",
+  "mirror",
+  "gap",
+  "clone",
+  "spark",
+  "freeze",
+  "world",
+  "oni",
+  "elixir",
+  "camera",
+  "bumpers"
+ ],
+ "plan": "",
+ "frames": 2546,
+ "was": {
+  "frame": 1946,
+  "sig": "B#.vx @hecatia",
+  "first": "okina/hecatia f1906 B27.vx: proto3=9.14282508001422 legacy=8.7074524571564",
+  "commit": "e3d2ba1"
+ }
+}
