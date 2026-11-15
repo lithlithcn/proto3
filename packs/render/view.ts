@@ -1,7 +1,8 @@
 import { PS, type CombatState } from '@pack/combat/api';
 import type { World } from '@kernel';
 import { drawArena } from './arena';
-import { drawBullet, drawPlayer } from './actors';
+import { drawBullet } from './actors';
+import { drawPlayerL } from './ld/bind';
 import { drawCards } from './cards';
 import { newCam, stepCam, type Cam } from './camera';
 
@@ -22,7 +23,7 @@ export function drawView(c: CanvasRenderingContext2D, w: World, vx: number, vy: 
   const inV = (i: number): boolean => s.bx[i]! > L - 30 && s.bx[i]! < L + ww + 30 && s.by[i]! > Tp - 30 && s.by[i]! < Tp + hh + 30;
   for (let i = 0; i < s.nb; i++) if (!(s.bflags[i]! & 2) && !(s.bflags[i]! & 1) && inV(i)) drawBullet(c, s, i); // light bullets
   for (let i = 0; i < s.nb; i++) if (!(s.bflags[i]! & 2) && (s.bflags[i]! & 1) && inV(i)) drawBullet(c, s, i); // heavy bullets on top
-  for (let q = 0; q < s.n; q++) drawPlayer(c, s, q);
+  for (let q = 0; q < s.n; q++) drawPlayerL(c, w, s, q);
   c.restore();
   void PS;
 }

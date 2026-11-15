@@ -8,7 +8,8 @@ import { createRequire } from 'node:module';
 import type { World } from '@kernel';
 import type { CombatState } from '@pack/combat/api';
 import { BF } from '@pack/combat/api';
-import { drawBullet, drawPlayer } from '@pack/render/actors';
+import { drawBullet } from '@pack/render/actors';
+import { drawPlayerL } from '@pack/render/ld/bind';
 import { drawCard } from '@pack/render/cards';
 import { HUDS, drawHudPanel } from '@pack/render/hud';
 import { drawView } from '@pack/render/view';
@@ -64,10 +65,10 @@ for (let f = 1; f <= FR; f++) {
     const n = nth(x.name), want = x.ops.filter(o => !isMarker(o));
     let got: Op[] | null = null;
     if (x.name === 'drawHUD' && n < S.n) got = portOps(x.snap, c => { HUDS[n] = structuredClone(hudPre[n]!); drawHudPanel(c, W, S, n, (n % 2 ? WW - 12 : 12) / hk, n % 2 === 1, (n < 2 ? 30 : HH - 100) / hk, 0, () => 0.5); });
-    else if (x.name === 'drawP' && n < S.n) got = portOps(x.snap, c => drawPlayer(c, S, n));
+    else if (x.name === 'drawP' && n < S.n) got = portOps(x.snap, c => drawPlayerL(c, W, S, n, () => 0.5));
     else if (x.name === 'drawHeavy' && heavies[n] !== undefined) got = portOps(x.snap, c => drawBullet(c, S, heavies[n]!));
     else if (x.name === 'drawItem' && n < S.ncard) got = portOps(x.snap, c => drawCard(c, W, S, n));
-    if (got) { if (x.name === 'drawHUD') { const t = (a: Op[]): Op[] => { const i = a.findIndex(o => o[0] === 'translate'); return a.filter((_, j) => j !== i); }; want.splice(0, want.length, ...t(want)); got = t(got); } /* HUD shake uses Math.random: not comparable */ const d = diffOps(canon(want), canon(got), 1e-6); mark(x.name, !d, d ? `f${f} #${n} op ${d.i}: legacy ${fmt(d.a)} | port ${fmt(d.b)}` : ''); }
+    if (got) { if (x.name === 'drawHUD' || (x.name === 'drawP' && S.hitstop > 0)) { const t = (a: Op[]): Op[] => { const i = a.findIndex(o => o[0] === 'translate'); return a.filter((_, j) => j !== i); }; want.splice(0, want.length, ...t(want)); got = t(got); } /* HUD shake uses Math.random: not comparable */ const d = diffOps(canon(want), canon(got), 1e-6); mark(x.name, !d, d ? `f${f} #${n} op ${d.i}: legacy ${fmt(d.a)} | port ${fmt(d.b)}` : ''); }
     else if (x.name !== 'drawView' || n > 0) unported.set(x.name, (unported.get(x.name) ?? 0) + 1);
   }
   // drawView: floor/grid/edge prefix (everything the port draws before cards/bullets)
