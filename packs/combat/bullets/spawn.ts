@@ -1,4 +1,4 @@
-import { cos, sin } from '@kernel';
+import { BTN, cos, sin, type World } from '@kernel';
 import { BF, MAX_B, PS, type CombatState } from '../state';
 import { TAU } from '../tuning';
 import type { MoveDef } from '../moves';
@@ -53,13 +53,14 @@ function spawnHeavy(s: CombatState, p: number, src: number, m: MoveDef, a: numbe
   s.bdmg[i] = m.dmg; s.bkb[i] = m.kb; s.bstun[i] = m.stun; s.barm[i] = m.arm!; s.bspl[i] = 0;
   return i;
 }
-/** Heavy bullet emitted by a spell pattern (legacy addB heavy): spawns on the caster, normal arming distance, hit data from move `m`. */
-export function patternHeavy(s: CombatState, p: number, a: number, spd: number, m: MoveDef, src: number, life: number, col: number, home: number, breaker: boolean): number {
+/** Heavy bullet emitted by a spell pattern (legacy addB heavy): spawns on the caster, normal arming distance, hit data from move `m`.
+ *  Becomes a breaker when the caster holds Parry during the spell (legacy `breaker:p.state==='spell'&&p.in.b.parry`). */
+export function patternHeavy(w: World, s: CombatState, p: number, a: number, spd: number, m: MoveDef, src: number, life: number, col: number, home: number): number {
   if (s.nb >= MAX_B) return -1;
   const i = s.nb++;
   clearBullet(bulletArrays(s), i); stamp(s, i);
   s.bx[i] = s.x[p]!; s.by[i] = s.y[p]!; s.bvx[i] = cos(a) * spd; s.bvy[i] = sin(a) * spd; s.br[i] = m.r!; s.bdmg[i] = m.dmg; s.blife[i] = life; s.bhome[i] = home; s.bdist[i] = 0; s.bmult[i] = 1;
-  s.bowner[i] = p; s.bflags[i] = BF.heavy | (breaker ? BF.breaker : 0); s.bcol[i] = col; s.brefl[i] = 0; s.bmv[i] = src; s.bkb[i] = m.kb; s.bstun[i] = m.stun; s.barm[i] = m.arm!; s.bspl[i] = 0;
+  s.bowner[i] = p; s.bflags[i] = BF.heavy | (s.state[p] === PS.spell && (w.buttons(p) & BTN.parry) ? BF.breaker : 0); s.bcol[i] = col; s.brefl[i] = 0; s.bmv[i] = src; s.bkb[i] = m.kb; s.bstun[i] = m.stun; s.barm[i] = m.arm!; s.bspl[i] = 0;
   return i;
 }
 /** Breaker ball (parry + heavy): armed at once, slow, only affects a parrying foe. */

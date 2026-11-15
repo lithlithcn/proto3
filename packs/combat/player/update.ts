@@ -22,6 +22,12 @@ import { spellInput, startSpell, updSpell } from './spell';
  * restarting an attack, clears the press buffer (the same press is re-stamped by `bufferInputs` at the end of the step).
  */
 export function updatePlayer(w: World, s: CombatState, p: number): void {
+  // legacy: the hit-stun spell cancel is an OUTER wrapper, so it runs before the buffer wrapper samples the state: it never empties the press buffer
+  { // spell cancel out of hit-stun: rising edge of the spell button with a full gauge (legacy wrapper; R72)
+    const down = (w.buttons(p) & BTN.spell) !== 0;
+    if (down && !s.spHv[p] && s.state[p] === PS.hitstun && s.spirit[p]! >= T.SPELL_COST) { s.state[p] = PS.idle; startSpell(w, s, p, false); }
+    s.spHv[p] = down ? 1 : 0;
+  }
   const st0 = s.state[p]!, t0 = s.t[p]!;
   step(w, s, p);
   if ((s.state[p] !== st0 && s.state[p] !== PS.idle) || (s.state[p] === PS.atk && s.t[p]! < t0)) clearBuf(s, p);
@@ -29,11 +35,6 @@ export function updatePlayer(w: World, s: CombatState, p: number): void {
 
 /** The state machine itself (legacy `updP`, ported incrementally). The order of statements is the legacy order and is parity-tested. */
 function step(w: World, s: CombatState, p: number): void {
-  { // spell cancel out of hit-stun: rising edge of the spell button with a full gauge (legacy wrapper; R72)
-    const down = (w.buttons(p) & BTN.spell) !== 0;
-    if (down && !s.spHv[p] && s.state[p] === PS.hitstun && s.spirit[p]! >= T.SPELL_COST) { s.state[p] = PS.idle; startSpell(w, s, p, false); }
-    s.spHv[p] = down ? 1 : 0;
-  }
   const c = begin(w, s, p);
   const st = s.state[p];
   if (held(c, BTN.parry) && (st === PS.idle || st === PS.parry || st === PS.parrylag || st === PS.dashlag)) { // parry + melee = grab (only catches a parrying foe); parry + heavy = breaker (heavy batch)

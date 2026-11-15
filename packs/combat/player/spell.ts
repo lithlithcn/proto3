@@ -56,12 +56,15 @@ export function updSpell(c: PCtx): void {
 /** Spell-related input, run before the state dispatch (legacy updP lines for `pr('spell')`). Returns true when the frame is consumed. */
 export function spellInput(c: PCtx, pressed: boolean): boolean {
   const { w, s, p } = c, st = s.state[p]!;
-  if (!pressed || !castable(st)) return false;
-  if (s.ult[p]) { s.ult[p] = 0; startSpell(w, s, p, true); return true; }
-  if (s.spirit[p]! >= T.SPELL_COST) {
-    if (st === PS.dash && T.DASH_T - s.t[p]! < 10) s.boost[p] = Math.min(T.DASH_CHARGES, s.boost[p]! + T.DASH_COST);
-    startSpell(w, s, p, false); return true;
+  if (!pressed) return false;
+  if (castable(st)) {
+    if (s.ult[p]) { s.ult[p] = 0; startSpell(w, s, p, true); return true; }
+    if (s.spirit[p]! >= T.SPELL_COST) {
+      if (st === PS.dash && T.DASH_T - s.t[p]! < 10) s.boost[p] = Math.min(T.DASH_CHARGES, s.boost[p]! + T.DASH_COST);
+      startSpell(w, s, p, false); return true;
+    }
   }
-  if (s.spRef[p]! < s.gf) { s.spRef[p] = s.gf + 45; w.emit('combat:spell-refused', { p, spirit: s.spirit[p]! }); }
+  // legacy: the "refused" feedback is NOT gated by the player's state (only by spirit, ult and the 45-frame cooldown)
+  if (s.spirit[p]! < T.SPELL_COST && !s.ult[p] && s.spRef[p]! < s.gf) { s.spRef[p] = s.gf + 45; w.emit('combat:spell-refused', { p, spirit: s.spirit[p]! }); }
   return false;
 }

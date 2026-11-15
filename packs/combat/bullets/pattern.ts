@@ -18,7 +18,7 @@ export function spRand(s: CombatState): number {
 
 function fill(s: CombatState, i: number, p: number, x: number, y: number, a: number, sp: number, o: PatOpts, heavy: boolean): void {
   clearBullet(bulletArrays(s), i); stamp(s, i);
-  s.bx[i] = x; s.by[i] = y; s.bvx[i] = cos(a) * sp; s.bvy[i] = sin(a) * sp; s.bang[i] = a; s.bowner[i] = p; s.blife[i] = o.life ?? 320; s.bcol[i] = o.col ?? 0;
+  s.bx[i] = x; s.by[i] = y; s.bvx[i] = cos(a) * sp; s.bvy[i] = sin(a) * sp; s.bang[i] = a; s.bowner[i] = p; s.bcast[i] = p; s.blife[i] = o.life ?? 320; s.bcol[i] = o.col ?? 0;
   s.bsh[i] = o.sh ?? 0; s.brot[i] = o.rot ?? 0; s.bdrg[i] = o.drg ?? 0; s.bacc[i] = o.acc ?? 0; s.bvmax[i] = o.vmax ?? 0; s.bkind[i] = o.kind ?? 0; s.bp0[i] = o.p0 ?? 0; s.bp1[i] = o.p1 ?? 0; s.bp2[i] = o.p2 ?? 0; s.bgrp[i] = o.grp ?? 0;
   if (heavy) { s.br[i] = o.r ?? 11; s.bdmg[i] = 5; s.bkb[i] = 7; s.bstun[i] = 24; s.barm[i] = 0; s.bdist[i] = 999; s.bmult[i] = 1; s.bmv[i] = ISRC.sph; s.bflags[i] = BF.heavy; }
   else { s.br[i] = o.r ?? 4; s.bdmg[i] = 1; s.bmv[i] = 0; }
@@ -67,7 +67,7 @@ export function motion(s: CombatState): void {
 }
 
 function run(s: CombatState, i: number, kind: number, ag: number): void {
-  const p = s.bowner[i]!;
+  const p = s.bcast[i]!; // the caster at spawn: legacy behaviours are closures over it, so a parry-reflected bullet keeps following its ORIGINAL caster (DESIGN §25)
   switch (kind) {
     case BK.home: if (ag < s.bp0[i]!) { // curve toward the target fixed at cast (bp2) for the first bp0 frames, at most bp1 rad/frame
       const o = s.bp2[i]!, t = atan2(s.y[o]! - s.by[i]!, s.x[o]! - s.bx[i]!), d = atan2(sin(t - s.bang[i]!), cos(t - s.bang[i]!));

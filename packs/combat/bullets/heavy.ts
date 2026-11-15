@@ -41,7 +41,7 @@ export function heavyContact(w: World, s: CombatState, i: number, t: number, d: 
 /** Heavy vs heavy clash (both vanish; a reflected one beats a fresh one), and heavy bullets sweep away enemy light bullets around them. */
 export function heavyClash(s: CombatState): void {
   const H: number[] = [];
-  for (let i = 0; i < s.nb; i++) if ((s.bflags[i]! & (BF.heavy | BF.dead | BF.breaker)) === BF.heavy) H.push(i);
+  for (let i = 0; i < s.nb; i++) if ((s.bflags[i]! & (BF.heavy | BF.dead | BF.breaker | BF.fake)) === BF.heavy) H.push(i);
   for (let a = 0; a < H.length; a++) {
     const h = H[a]!;
     if (s.bflags[h]! & BF.dead) continue;
