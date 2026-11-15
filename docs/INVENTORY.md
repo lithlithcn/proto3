@@ -23,6 +23,7 @@ Single 3.27 MB HTML, 1.24 MB script. 393 top-level functions, **69 functions wra
 - [ ] Maps: Large, Screen (fixed camera)
 - [ ] Map Maker (6 tabs): GRID (walls/teleporters, size 8–1000 cells, permanent item, bg), LAYERS (image/GIF/sprite-sheet, parallax, scroll, scale, opacity, tile, blend, frames), MUSIC (custom audio), RULES (events: at start / every N s / at N s / on each KO → item, ring, rain, wind, pull, shake, text, sound, layer, heal), SCRIPT (user JavaScript each frame; API: frame,P,T,mem,rng,item,ring,rain,bullet,text,sound,shake,wind,pull,layer,heal), FILE (export/import `.sfmap.json`, duplicate)
 - [ ] Network maps (`NETMAP`) shared by the host
+- [ ] Elements & reactions (legacy `ITEMEL`/`ENTEL`/`auraOf`/`xReact`/`rx(a,b,…)` ~1760-1810: STEAM, MELT, FREEZE, HELLFIRE, OVERLOAD, ANNIHILATION…): NOT ported — the oracle deletes legacy `RX` (tools/parity/session.ts) until it is. Repro of the gap: `hecatia/okina` seed 2200069 (HELLFIRE f1148 → `xBoom` 6 dmg), `reimu/hecatia` seed 2200090 (MELT/FREEZE).
 - [ ] CPU AI: levels 1–9+, styles zoner/mid/rush, per-level reaction, parry late-timing, action list (jab, lunge, strong, dashin, heavyF, glide, grab, breaker, heavyN), uses seeded rng
 - [ ] Modes/screens: title, hub (fight/online/train/rules/items/maps/opt/help), css, csel, game, binds, menu, items, sub, maker, info, online
 - [ ] Rules rows, Options rows, Profiles, Records, Teams, Sound
