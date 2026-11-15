@@ -1,6 +1,6 @@
 import { atan2, cos, hypot, sin } from '@kernel';
 import type { PCtx } from '../input';
-import { bulletArrays, clearBullet } from '../bullets/arrays';
+import { bulletArrays, clearBullet, stamp } from '../bullets/arrays';
 import { ISRC } from '../moves';
 import { BF, MAX_B, PS, type CombatState } from '../state';
 
@@ -22,7 +22,7 @@ function fireRifle(s: CombatState, p: number): void {
   const a = s.aim[p]!, c = cos(a), n = sin(a);
   if (s.nb < MAX_B) {
     const i = s.nb++;
-    clearBullet(bulletArrays(s), i);
+    clearBullet(bulletArrays(s), i); stamp(s, i);
     s.bx[i] = s.x[p]! + c * 22; s.by[i] = s.y[p]! + n * 22; s.bvx[i] = c * RIFLE.spd; s.bvy[i] = n * RIFLE.spd; s.br[i] = RIFLE.r; s.bdmg[i] = RIFLE.dmg; s.blife[i] = RIFLE.life; s.bmult[i] = 1;
     s.bowner[i] = p; s.bflags[i] = BF.heavy | BF.pierce | BF.rifle; s.bmv[i] = ISRC.rifle; s.bkb[i] = RIFLE.kb; s.bstun[i] = RIFLE.stun; s.barm[i] = RIFLE.arm;
   }

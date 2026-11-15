@@ -31,20 +31,22 @@ function firstBadBullet(k: K): number {
 const kindCounts = (ks: number[]): Record<number, number> => { const m: Record<number, number> = {}; for (const x of ks) m[x] = (m[x] ?? 0) + 1; return m; };
 
 /** Provenance accumulator: who wrote the watched element over the whole window, which system gave birth to bullets/entities, and (last frame only) every array each system touched. */
-interface Prov { writes: string[]; births: string[]; summary: string[] }
+interface Prov { writes: string[]; births: string[]; summary: string[]; target?: string }
+const bw = new Map<number, string[]>(); // bullet id -> writes over the window (ids are stable; array indices are not)
 function traced(k: K, step: () => void, f: number, final: boolean, want: { arr: string | null; idx: number | null }, acc: Prov): void {
   const s = k.s as unknown as Record<string, unknown>, arrs = Object.keys(s).filter(n => ArrayBuffer.isView(s[n]) && !(s[n] instanceof DataView)) as string[];
   let before: Record<string, ArrayLike<number>> = {}, nb0 = 0, ne0 = 0;
   const snap = (): Record<string, ArrayLike<number>> => Object.fromEntries(arrs.map(n => [n, (s[n] as unknown as { slice(): ArrayLike<number> }).slice()]));
   (k.world as unknown as { sysTrace: ((n: string, a: boolean) => void) | null }).sysTrace = (name, after) => {
     if (!after) { before = snap(); nb0 = k.s.nb; ne0 = k.s.nent; return; }
-    if (k.s.nb < nb0) acc.births.push(`f${f} ${name}: bullets ${nb0} -> ${k.s.nb} (despawn; first removed candidates by owner: ${Array.from({ length: nb0 }, (_, i) => i).filter(i => (before['bflags']![i]! & 2) || before['blife']![i]! <= 1).slice(0, 4).map(i => `#${i} owner ${before['bowner']![i]} src ${before['bmv']![i]} life ${before['blife']![i]}`).join('; ') || 'none flagged'})`);
-    for (let i = nb0; i < k.s.nb; i++) acc.births.push(`f${f} ${name}: bullet#${i} owner ${k.s.bowner[i]} move/src ${k.s.bmv[i]} kind ${k.s.bkind[i]} r ${k.s.br[i]} at (${k.s.bx[i]!.toFixed(1)},${k.s.by[i]!.toFixed(1)}) v (${k.s.bvx[i]!.toFixed(3)},${k.s.bvy[i]!.toFixed(3)}) life ${k.s.blife[i]}`);
-    for (let i = ne0; i < k.s.nent; i++) acc.births.push(`f${f} ${name}: entity#${i} kind ${k.s.ek[i]} owner ${k.s.eo[i]} at (${k.s.ex[i]!.toFixed(1)},${k.s.ey[i]!.toFixed(1)})`);
+    if (k.s.nb < nb0) { const now = new Set(Array.from({ length: k.s.nb }, (_, i) => k.s.bid[i]!)), gone = Array.from({ length: nb0 }, (_, i) => i).filter(i => !now.has(before['bid']![i]!)); acc.births.push(`f${f} ${name}: bullets ${nb0} -> ${k.s.nb}; removed ${gone.length}: ${gone.slice(0, 6).map(i => `id${before['bid']![i]} owner ${before['bowner']![i]} src ${before['bmv']![i]} born f${before['bborn']![i]} life ${before['blife']![i]}`).join('; ')}`); }
+    for (let i = nb0; i < k.s.nb; i++) acc.births.push(`f${f} ${name}: bullet id${k.s.bid[i]} (slot ${i}) owner ${k.s.bowner[i]} move/src ${k.s.bmv[i]} kind ${k.s.bkind[i]} r ${k.s.br[i]} at (${k.s.bx[i]!.toFixed(1)},${k.s.by[i]!.toFixed(1)}) v (${k.s.bvx[i]!.toFixed(3)},${k.s.bvy[i]!.toFixed(3)}) life ${k.s.blife[i]}`);
+    for (let i = ne0; i < k.s.nent; i++) acc.births.push(`f${f} ${name}: entity id${k.s.eid[i]} (slot ${i}) kind ${k.s.ek[i]} owner ${k.s.eo[i]} at (${k.s.ex[i]!.toFixed(1)},${k.s.ey[i]!.toFixed(1)})`);
     const sums: string[] = [];
     for (const n of arrs) {
       const a = before[n]!, b = s[n] as ArrayLike<number>; let c = 0;
-      for (let i = 0; i < b.length; i++) if (a[i] !== b[i]) { c++; if (want.arr === n && (want.idx === null || want.idx === i)) acc.writes.push(`f${f} ${name}: ${n}[${i}] ${Number(a[i]).toPrecision(9)} -> ${Number(b[i]).toPrecision(9)}`); }
+      const idm = want.arr === n && n.startsWith('b') && want.idx !== null && before['bid'] !== undefined;
+      for (let i = 0; i < b.length; i++) if (a[i] !== b[i]) { c++; if (idm) { const id = before['bid']![i]!; if (id && id === (s['bid'] as ArrayLike<number>)[i]) { const l = bw.get(id) ?? []; l.push(`f${f} ${name}: ${n} ${Number(a[i]).toPrecision(9)} -> ${Number(b[i]).toPrecision(9)}`); bw.set(id, l); } } else if (want.arr === n && (want.idx === null || want.idx === i)) acc.writes.push(`f${f} ${name}: ${n}[${i}] ${Number(a[i]).toPrecision(9)} -> ${Number(b[i]).toPrecision(9)}`); }
       if (final && c && want.arr !== n) sums.push(`${n}x${c}`);
     }
     if (final && sums.length) acc.summary.push(`${name} wrote: ${sums.slice(0, 14).join(' ')}${sums.length > 14 ? ' …' : ''}`);
@@ -54,10 +56,11 @@ function traced(k: K, step: () => void, f: number, final: boolean, want: { arr: 
 
 export interface Diagnosis { cls: string; suspect: string; onset: string; trace: object[]; at: object; provenance?: Prov; report: { facts: string[]; confirmed: string[]; probable: string[]; hypotheses: string[]; missing: string[] } }
 
-export function diagnose(a: string, b: string, seed: number, frame: number, firstDiff: string, items: string[] = [], watch?: string, window = 12): Diagnosis {
+export function diagnose(a: string, b: string, seed: number, frame: number, firstDiff: string, items: string[] = [], watch?: string, window = 60): Diagnosis {
   const chars = [a, b], ss = session(a, b, seed, items), k = ss.k, ev: string[] = [], trace: object[] = [];
   const w0 = k.world as unknown as { emit: (t: string, p: unknown) => unknown }, e0 = w0.emit.bind(w0); w0.emit = (t: string, p: unknown) => { ev.push(t + ' ' + JSON.stringify(p).slice(0, 90)); return e0(t, p); };
   let drift0 = '', driftVar = ''; const prov: Prov = { writes: [], births: [], summary: [] };
+  bw.clear();
   const wm = /(?:^|\s)([PBE])(\d+)\.(\w+)/.exec(firstDiff), want = { arr: watch ?? (wm ? (wm[1] === 'P' ? wm[3]! : wm[1]!.toLowerCase() + wm[3]!) : null), idx: wm && wm[1] !== 'E' ? +wm[2]! : null };
   for (let f = 1; f <= frame; f++) {
     ev.length = 0; const g = ss.pre(f); if (g) ev.push('GIVE ' + g); const [i0, i1] = ss.inputs(f);
@@ -66,6 +69,7 @@ export function diagnose(a: string, b: string, seed: number, frame: number, firs
     if (d.length && !drift0) { drift0 = `f${f}`; driftVar = d[0]!.trim(); }
     if (f > frame - window) trace.push({ f, drift: d.map(x => x.trim().slice(0, 100)), events: ev.slice(0, 8), players: players(k, chars) });
   }
+  if (want.arr?.startsWith('b') && want.idx !== null && want.idx < k.s.nb) { const id = k.s.bid[want.idx]!; prov.writes = bw.get(id) ?? []; prov.target = `bullet id${id} (slot ${want.idx}) born f${k.s.bborn[want.idx]} (age ${frame - k.s.bborn[want.idx]!} frames) owner ${chars[k.s.bowner[want.idx]!]} src ${k.s.bmv[want.idx]} kind ${k.s.bkind[want.idx]}`; }
   const bad = firstBadBullet(k), lbs = k.legacy.obs().B as LB[], pl = k.legacy.obs().P;
   const at: Record<string, unknown> = { diffsAtFrame: k.diffs('', 1e-6, 12).map(x => x.trim()) };
   if (bad >= 0) { at['firstBadBullet'] = bad; at['bullets'] = [bad - 1, bad, bad + 1, bad + 2].filter(i => i >= 0).map(i => bullet(k, i, chars, lbs[i])); const o = (k.s.bowner[bad] ?? lbs[bad]?.owner) as number | undefined; if (o !== undefined) at['ownerMove'] = `${chars[o]}:${String(k.legacy.eval(`P[${o}].mvName||''`))} state ${pl[o]?.state}`; }
@@ -79,7 +83,7 @@ export function diagnose(a: string, b: string, seed: number, frame: number, firs
   const cls = firstDiff === 'anomaly' ? 'invariant violation (port still equals legacy: engine rule or shared legacy quirk)' : /count/.test(firstDiff) ? 'spawn/despawn mismatch' : nums.length && Math.max(...nums) < 1e-9 ? 'float-noise (ulp flip? R97/R109 family)' : /state|stocks|kind/.test(firstDiff) ? 'state-machine mismatch' : drift0 && drift0 !== `f${frame}` ? 'gradual drift (formula/order slightly off)' : 'sudden jump (missing or extra effect)';
   const gradual = /gradual/.test(cls), nCh = prov.writes.length;
   const report = {
-    facts: [`first differing variable at f${frame}: ${firstDiff.trim()}`, `class: ${cls}`, `${nCh} write(s) to the watched element in the last ${window} frames (see provenance.writes)`, `${prov.births.length} bullet/entity birth(s) in that window (see provenance.births)`],
+    facts: [`first differing variable at f${frame}: ${firstDiff.trim()}`, `class: ${cls}`, `${prov.target ? 'object identity: ' + prov.target + '; ' : ''}${nCh} write(s) to the watched element in the last ${window} frames (see provenance.writes)`, `${prov.births.length} bullet/entity birth(s) in that window (see provenance.births)`],
     confirmed: [`earliest frame where the port differs from legacy beyond 1e-6: f${frame} (campaign checks every frame)`, ...(drift0 ? [`sub-1e-6 drift first visible at ${drift0}: ${driftVar}`] : [])],
     probable: [`responsible character: ${suspect} (owner of the first differing object)`, ...(prov.writes.length ? [`last writer of the element: ${prov.writes[prov.writes.length - 1]}`] : [])],
     hypotheses: [gradual ? 'a formula or update order is slightly off, accumulating over frames' : /sudden/.test(cls) ? 'an effect/branch exists on one side only (check births + writers at the failing frame)' : /spawn/.test(cls) ? 'a spawn/despawn condition or order differs (compare births with legacy bullet list at the first bad index)' : /float/.test(cls) ? 'ulp-level flip: confirm by a decision at exactly an angle/threshold boundary' : 'unclassified'],

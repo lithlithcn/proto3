@@ -2,13 +2,13 @@ import { cos, sin } from '@kernel';
 import { BF, MAX_B, PS, type CombatState } from '../state';
 import { TAU } from '../tuning';
 import type { MoveDef } from '../moves';
-import { bulletArrays, clearBullet, copyBullet } from './arrays';
+import { bulletArrays, clearBullet, stamp, copyBullet } from './arrays';
 
 /** Single spawn path for light bullets; enforces MAX_B (legacy `lb`). Returns the index or -1. Colour is 0xRRGGBB, 0 = owner colour. */
 export function lightBullet(s: CombatState, owner: number, a: number, speed: number, dmg: number, r: number, life: number, col = 0): number {
   const i = s.nb;
   if (i >= MAX_B) return -1;
-  clearBullet(bulletArrays(s), i);
+  clearBullet(bulletArrays(s), i); stamp(s, i);
   const c = cos(a), sn = sin(a);
   s.bx[i] = s.x[owner]! + c * 18; s.by[i] = s.y[owner]! + sn * 18;
   s.bvx[i] = c * speed; s.bvy[i] = sn * speed;
@@ -46,7 +46,7 @@ function spawnHeavy(s: CombatState, p: number, src: number, m: MoveDef, a: numbe
     removeBullet(s, k);
   }
   const i = s.nb++;
-  clearBullet(bulletArrays(s), i);
+  clearBullet(bulletArrays(s), i); stamp(s, i);
   s.bx[i] = s.x[p]! + c * 20 - n * off; s.by[i] = s.y[p]! + n * 20 + c * off; s.bvx[i] = c * sp; s.bvy[i] = n * sp;
   s.br[i] = o.r || m.r!; s.bdmg[i] = 0; s.blife[i] = o.life || m.life || 200; s.bhome[i] = o.home || 0; s.bdist[i] = 0; s.bmult[i] = pm * (o.k || 1);
   s.bowner[i] = p; s.bflags[i] = BF.heavy; s.bcol[i] = o.col ?? 0; s.brefl[i] = 0; s.bmv[i] = src;
@@ -57,7 +57,7 @@ function spawnHeavy(s: CombatState, p: number, src: number, m: MoveDef, a: numbe
 export function patternHeavy(s: CombatState, p: number, a: number, spd: number, m: MoveDef, src: number, life: number, col: number, home: number, breaker: boolean): number {
   if (s.nb >= MAX_B) return -1;
   const i = s.nb++;
-  clearBullet(bulletArrays(s), i);
+  clearBullet(bulletArrays(s), i); stamp(s, i);
   s.bx[i] = s.x[p]!; s.by[i] = s.y[p]!; s.bvx[i] = cos(a) * spd; s.bvy[i] = sin(a) * spd; s.br[i] = m.r!; s.bdmg[i] = m.dmg; s.blife[i] = life; s.bhome[i] = home; s.bdist[i] = 0; s.bmult[i] = 1;
   s.bowner[i] = p; s.bflags[i] = BF.heavy | (breaker ? BF.breaker : 0); s.bcol[i] = col; s.brefl[i] = 0; s.bmv[i] = src; s.bkb[i] = m.kb; s.bstun[i] = m.stun; s.barm[i] = m.arm!; s.bspl[i] = 0;
   return i;
@@ -71,7 +71,7 @@ export function breakerBullet(s: CombatState, p: number): void {
 export function customHeavy(s: CombatState, owner: number, x: number, y: number, a: number, v: number, r: number, h: { dmg: number; kb: number; stun: number; arm: number }, life: number, col = 0): number {
   if (s.nb >= MAX_B) return -1;
   const i = s.nb++;
-  clearBullet(bulletArrays(s), i);
+  clearBullet(bulletArrays(s), i); stamp(s, i);
   s.bx[i] = x; s.by[i] = y; s.bvx[i] = cos(a) * v; s.bvy[i] = sin(a) * v; s.br[i] = r; s.bdmg[i] = h.dmg; s.blife[i] = life; s.bhome[i] = 0; s.bdist[i] = 999; s.bmult[i] = 1;
   s.bowner[i] = owner; s.bflags[i] = BF.heavy; s.bcol[i] = col; s.brefl[i] = 0; s.bmv[i] = -1; s.bkb[i] = h.kb; s.bstun[i] = h.stun; s.barm[i] = h.arm; s.bspl[i] = 0;
   return i;

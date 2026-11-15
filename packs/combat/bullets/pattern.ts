@@ -1,6 +1,6 @@
 import { BTN, type World, atan2, clamp, cos, hypot, sin } from '@kernel';
 import { BF, MAX_B, PS, type CombatState } from '../state';
-import { bulletArrays, clearBullet } from './arrays';
+import { bulletArrays, clearBullet, stamp } from './arrays';
 import { ISRC } from '../moves';
 
 /** Programmable bullets for spell cards (legacy sB / hB + `fn` closures). Behaviours are DATA (kind + 3 params + age), never closures: they live in typed arrays and survive snapshot/rollback. */
@@ -17,7 +17,7 @@ export function spRand(s: CombatState): number {
 }
 
 function fill(s: CombatState, i: number, p: number, x: number, y: number, a: number, sp: number, o: PatOpts, heavy: boolean): void {
-  clearBullet(bulletArrays(s), i);
+  clearBullet(bulletArrays(s), i); stamp(s, i);
   s.bx[i] = x; s.by[i] = y; s.bvx[i] = cos(a) * sp; s.bvy[i] = sin(a) * sp; s.bang[i] = a; s.bowner[i] = p; s.blife[i] = o.life ?? 320; s.bcol[i] = o.col ?? 0;
   s.bsh[i] = o.sh ?? 0; s.brot[i] = o.rot ?? 0; s.bdrg[i] = o.drg ?? 0; s.bacc[i] = o.acc ?? 0; s.bvmax[i] = o.vmax ?? 0; s.bkind[i] = o.kind ?? 0; s.bp0[i] = o.p0 ?? 0; s.bp1[i] = o.p1 ?? 0; s.bp2[i] = o.p2 ?? 0; s.bgrp[i] = o.grp ?? 0;
   if (heavy) { s.br[i] = o.r ?? 11; s.bdmg[i] = 5; s.bkb[i] = 7; s.bstun[i] = 24; s.barm[i] = 0; s.bdist[i] = 999; s.bmult[i] = 1; s.bmv[i] = ISRC.sph; s.bflags[i] = BF.heavy; }
