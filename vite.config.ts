@@ -7,5 +7,5 @@ export default defineConfig({
   base: process.env.PAGES_BASE ?? '/proto3/',
   resolve: { alias: { '@kernel': r('./src/kernel/index.ts'), '@pack': r('./packs') } },
   build: { target: 'es2022', sourcemap: true },
-  test: { include: ['tests/**/*.test.ts', 'packs/**/*.test.ts'] },
+  test: { include: ['tests/**/*.test.ts', 'packs/**/*.test.ts'], maxWorkers: 2 },
 });
