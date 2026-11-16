@@ -18,3 +18,9 @@ export const addJ = (w: World, name: string, v: number, cap = 0): void => jfx(w,
 export const maxJ = (w: World, name: string, v: number): void => jfx(w, 'max', name, v);
 /** Pushes `{ x, y, ...kv }` on a list (RINGS/WAVES/LINES/FX/KOFX): `kv` alternates key, value. */
 export const pushJ = (w: World, list: string, ...kv: JfxArg[]): void => jfx(w, 'push', list, ...kv);
+/** Legacy sfx(name, vol, rate) at its exact site (the audio player applies SFXG gain, ALIAS and the time-stop reverb). */
+export const sfx = (w: World, n: string, v = 1, r = 1): void => jfx(w, 'sfx', n, v, r);
+/** Legacy `sfx(base + (1 + Math.random() * k | 0), v)` (random variant, cosmetic). `from` = first index. */
+export const sfxR = (w: World, base: string, k: number, v = 1, from = 1): void => jfx(w, 'sfxr', base, k, v, from);
+/** Legacy sfxDmg(victim): damage00 pitched by missing HP, at most once per 3 frames. */
+export const sfxDmg = (w: World, hp: number): void => jfx(w, 'sfxdmg', hp);

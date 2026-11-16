@@ -6,8 +6,9 @@ import { chDraw, chDraw2, chDraw3, chDraw4, chDraw5 } from './themed';
 const TAU = 6.2832, T = { MAP_W: 2000, MAP_H: 1350, BODY_R: 16, BEAM_PARRY: 12 }, RB = ['#ff4a4a', '#ffa63a', '#ffe83a', '#5cff7a', '#4ab3ff', '#c06cff'];
 const FLC = ['#ff4a4a', '#ffa33a', '#ffe83a', '#5cff7a', '#4ab3ff', '#7a5cff', '#ff5cf0'], HEC = ['#4ab3ff', '#ffe88a', '#ff4a6a'], SEAC = ['#ffb0d6', '#ff7a3a', '#ffb04a', '#bfe8ff'];
 let ctx, frame, P, ENT, KOB, HOLES, BUMPS, PHOTO, ZONES, ORBS, FAIRIES, CLOUDS = [], JUDG = [], SLASH = [], IM, CX = {}, bodyR, magicCircle, fxLow = false, perfLow = false;
-let B = [], TEST = null; const TRX = {}, FC = [], hz = () => 0, mtnDraw = () => {}, zigzag = () => {}; // themed-item helpers (lot 3)
+let B = [], TEST = null; const TRX = {}, FC = [], mtnDraw = () => {}, zigzag = () => {}; // themed-item helpers (lot 3)
 const rainbowCol = () => `hsl(${frame * 6 % 360},100%,65%)`;
+const hz=(i,k)=>{const x=Math.sin(i*127.1+k*311.7)*43758.5453;return x-Math.floor(x)}; // legacy 2539
 export const bindWorld = (v) => { ({ ctx, frame, P, B, ENT, KOB, HOLES, BUMPS, PHOTO, ZONES, ORBS, FAIRIES, IM, bodyR, magicCircle } = v); };
 const EDR = {};
 function rYY(x,y,r,a,al){ctx.globalAlpha=al;const c=Math.cos(a)*r/2,s=Math.sin(a)*r/2;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(x,y,r,0,TAU);ctx.fill();ctx.fillStyle='#e8243a';ctx.beginPath();ctx.arc(x,y,r,a,a+Math.PI);ctx.fill();

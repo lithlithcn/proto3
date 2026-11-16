@@ -1,5 +1,5 @@
 import { type World, atan2, cos, hypot, sin } from '@kernel';
-import { BF, PS, TAU, bodyR, chHitQ, customHeavy, foe, nearFoe, type CombatState, jBurst, addJ } from '@pack/combat/api';
+import { BF, PS, TAU, bodyR, chHitQ, customHeavy, foe, nearFoe, type CombatState, jBurst, addJ, sfx } from '@pack/combat/api';
 import type { TouhouState } from '../../state';
 import { EK_NCOIN, EK_NMS, EK_NPD, EK_NPG, EK_NRC } from './kinds';
 
@@ -35,7 +35,7 @@ export function nazrinEnts(w: World, s: CombatState, p: number): void {
       for (let m = 0; m < s.nent; m++) { // a mouse sentinel touched by the swing is batted at the nearest foe (legacy EST.npd wrapper)
         if (s.ek[m] !== EK_NMS || s.eo[m] !== p || s.et[m]! <= 0 || hypot(s.ex[m]! - s.ex[i]!, s.ey[m]! - s.ey[i]!) >= (big ? 30 : 18)) continue;
         s.et[m] = 0; const q = nearFoe(s, p, s.ex[m]!, s.ey[m]!), near = q >= 0 && hypot(s.x[q]! - s.ex[m]!, s.y[q]! - s.ey[m]!) < 900;
-        customHeavy(s, p, s.ex[m]!, s.ey[m]!, near ? atan2(s.y[q]! - s.ey[m]!, s.x[q]! - s.ex[m]!) : s.ea[i]!, 9, 6, { dmg: 6, kb: 7, stun: 20, arm: 0 }, 80, 0xc8c8d8);
+        customHeavy(s, p, s.ex[m]!, s.ey[m]!, near ? atan2(s.y[q]! - s.ey[m]!, s.x[q]! - s.ex[m]!) : s.ea[i]!, 9, 6, { dmg: 6, kb: 7, stun: 20, arm: 0 }, 80, 0xc8c8d8); sfx(w, 'se_cat00', 0.5);
       }
     } else if (k === EK_NPG) { // guard pendulum
       const a = s.gf * 0.08 + s.ebc[i]! * TAU / 3; s.ex[i] = s.x[p]! + cos(a) * 50; s.ey[i] = s.y[p]! + sin(a) * 50;
@@ -48,7 +48,7 @@ export function nazrinEnts(w: World, s: CombatState, p: number): void {
     } else if (k === EK_NCOIN) { // bomb coin: arcs to the foe, explodes on its last frame
       const u = 1 - s.et[i]! / s.ebc[i]!; s.ex[i] = s.er[i]! + (s.ea[i]! - s.er[i]!) * u; s.ey[i] = s.eh[i]! + (s.ew[i]! - s.eh[i]!) * u;
       if (s.et[i] === 1) for (let q = 0; q < s.n; q++) if (live(s, p, q)) { const dx = s.x[q]! - s.ex[i]!, dy = s.y[q]! - s.ey[i]!, d = hypot(dx, dy) || 1; if (d < 70 + bodyR(s, q)) chHitQ(w, s, p, q, dx / d, dy / d, 10, 13, 34); }
-      if (s.et[i] === 1) { jBurst(w, s.ex[i]!, s.ey[i]!, '#ffd23a', 22); addJ(w, 'shake', 6, 28); }
+      if (s.et[i] === 1) { jBurst(w, s.ex[i]!, s.ey[i]!, '#ffd23a', 22); addJ(w, 'shake', 6, 28); sfx(w, 'se_enep01', 0.7); }
     }
   }
 }

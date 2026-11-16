@@ -1,3 +1,4 @@
+import { jfx } from '../jfx';
 import { type World, atan2, cos, hypot, sin } from '@kernel';
 import { graze } from '../player/graze';
 import { hit } from '../player/hit';
@@ -34,7 +35,7 @@ export function heavyContact(w: World, s: CombatState, i: number, t: number, d: 
     const n = s.brefl[i]!;
     if (f & BF.oneshot) s.hp[t] = 0;
     if (n >= 7) { s.hp[t] = 0; s.kbx[t] = s.bvx[i]!; s.kby[t] = s.bvy[i]!; ko(w, s, t, 'MAX POWER K.O.!'); }
-    else hit(w, s, t, owner, s.bvx[i]!, s.bvy[i]!, { dmg: s.bdmg[i]!, kb: s.bkb[i]! * (1 + 0.35 * n), stun: s.bstun[i]! * (1 + 0.1 * n) }, n ? -1 : s.bmv[i]!, s.bmult[i]!, true);
+    else hit(w, s, t, owner, s.bvx[i]!, s.bvy[i]!, { dmg: s.bdmg[i]!, kb: s.bkb[i]! * (1 + 0.35 * n), stun: s.bstun[i]! * (1 + 0.1 * n), spd: f & BF.mute ? 0 : 1 }, n ? -1 : s.bmv[i]!, s.bmult[i]!, true);
   } else if (!(f & BF.grazed) && armed && d < r + T.GRAZE_R) { s.bflags[i] = f | BF.grazed; graze(w, s, t, s.bx[i]!, s.by[i]!, 2); }
 }
 
@@ -49,11 +50,11 @@ export function heavyClash(w: World, s: CombatState): void {
       const k = H[b]!;
       if ((s.bflags[k]! & BF.dead) || s.bowner[k] === s.bowner[h]) continue;
       if (hypot(s.bx[h]! - s.bx[k]!, s.by[h]! - s.by[k]!) < s.br[h]! + s.br[k]!) {
-        if ((s.bflags[h]! | s.bflags[k]!) & BF.pierce) { const v = s.bflags[h]! & BF.pierce ? k : h; s.bflags[v] = s.bflags[v]! | BF.dead; if (s.bflags[h]! & BF.dead) break; continue; } // the rifle pierces
+        if ((s.bflags[h]! | s.bflags[k]!) & BF.pierce) { const v = s.bflags[h]! & BF.pierce ? k : h; s.bflags[v] = s.bflags[v]! | BF.dead; jfx(w, 'brk'); if (s.bflags[h]! & BF.dead) break; continue; } // the rifle pierces
         if (s.brefl[h]! && !s.brefl[k]!) s.bflags[k] = s.bflags[k]! | BF.dead;
         else if (s.brefl[k]! && !s.brefl[h]!) s.bflags[h] = s.bflags[h]! | BF.dead;
         else { s.bflags[h] = s.bflags[h]! | BF.dead; s.bflags[k] = s.bflags[k]! | BF.dead; }
-        w.emit('combat:bullet-clash', { x: (s.bx[h]! + s.bx[k]!) / 2, y: (s.by[h]! + s.by[k]!) / 2 });
+        jfx(w, 'brk'); w.emit('combat:bullet-clash', { x: (s.bx[h]! + s.bx[k]!) / 2, y: (s.by[h]! + s.by[k]!) / 2 });
         break;
       }
     }

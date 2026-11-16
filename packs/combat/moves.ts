@@ -2,7 +2,7 @@
  * Melee / hit data (legacy `MOVES`). Balance numbers live here, not in systems. Characters override entries via `CharacterDef.melee`.
  * `kb` < 0 pulls the victim in. `stun` is the base hit-stun in frames.
  */
-export interface HitData { dmg: number; kb: number; stun: number }
+export interface HitData { dmg: number; kb: number; stun: number; /** set by heavy-bullet hits (legacy `m.spd`): presentation only (damage sound) */ spd?: number }
 export interface MoveDef extends HitData {
   start: number; act: number; rec: number; range: number; arc: number;
   /** Forward lunge speed at `start`. */ move?: number;

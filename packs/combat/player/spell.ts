@@ -1,3 +1,4 @@
+import { jfx, sfx } from '../jfx';
 import { hypot, type World } from '@kernel';
 import { spellPool } from '../api';
 import { spRand } from '../bullets/pattern';
@@ -25,7 +26,7 @@ export function startSpell(w: World, s: CombatState, p: number, ult: boolean): v
   s.state[p] = PS.spell; s.t[p] = 0; s.inv[p] = Math.max(120, T.SPELL_CUTIN + 10); s.vx[p] = 0; s.vy[p] = 0; s.charging[p] = 0;
   s.spellHit.fill(0);
   const cut: number[] = []; // cancelled bullets: x, y, heavy (presentation sparks)
-  for (let i = 0; i < s.nb; i++) if (s.bowner[i] !== p && hypot(s.bx[i]! - s.x[p]!, s.by[i]! - s.y[p]!) < 220) { s.bflags[i] = s.bflags[i]! | BF.dead; cut.push(s.bx[i]!, s.by[i]!, s.bflags[i]! & BF.heavy); }
+  for (let i = 0; i < s.nb; i++) if (s.bowner[i] !== p && hypot(s.bx[i]! - s.x[p]!, s.by[i]! - s.y[p]!) < 220) { s.bflags[i] = s.bflags[i]! | BF.dead; cut.push(s.bx[i]!, s.by[i]!, s.bflags[i]! & BF.heavy); if (s.bflags[i]! & BF.heavy) jfx(w, 'brk'); }
   for (let q = 0; q < s.n; q++) { // the cast shoves close foes away and interrupts their attack
     if (!foe(s, p, q) || s.state[q] === PS.dead) continue;
     const dx = s.x[q]! - s.x[p]!, dy = s.y[q]! - s.y[p]!, d = hypot(dx, dy) || 1;
@@ -51,6 +52,8 @@ export function updSpell(c: PCtx): void {
   s.vx[p] = s.vx[p]! + (c.ix * T.FOCUS_SPEED - s.vx[p]!) * 0.35; s.vy[p] = s.vy[p]! + (c.iy * T.FOCUS_SPEED - s.vy[p]!) * 0.35;
   const k = s.t[p]! - T.SPELL_CUTIN - 1, pool = spellPool(w), d = s.ultS[p] ? undefined : pool[s.spI[p]!];
   d?.fn({ w, s, p, o: s.tgt[p]!, k });
+  if (k > 0 && k % (d?.loop ?? 60) === 0) jfx(w, 'kira'); // presentation: the pattern restarts (rate-limited sound), last-3-seconds countdown
+  { const rem = T.SPELL_CUTIN + (s.ultS[p] ? T.ULT_T : T.SPELL_T) - s.t[p]!; if (rem <= 180 && rem % 60 === 0) sfx(w, 'timeout', 0.6); }
   if (s.t[p]! >= T.SPELL_CUTIN + (s.ultS[p] ? T.ULT_T : T.SPELL_T)) endSpell(w, s, p, true);
 }
 

@@ -4,11 +4,13 @@ import { drawHud } from '@pack/render/hud';
 import { camStart, renderViews } from '@pack/render/view';
 import { drawScreenL, drawScreenTopL, screenFilterL } from '@pack/render/ld/bind';
 import { builtinPacks } from './packs';
+import { juiceOf } from '@pack/render/juice/state';
+import { initAudio, playSounds } from '@pack/audio/player';
 
 /** Playable slice: Reimu (P1: WASD + JKL...) vs Marisa (P2: arrows + numpad). Menus, modes, touch and gamepad arrive with the ui/modes packs. */
 const cfg = { seed: (Math.random() * 1e9) | 0, players: 2, world: { players: [{ char: 'touhou:reimu' }, { char: 'touhou:marisa' }] } }; // sim-allow(boot-time seed)
 const world = new World({ packs: builtinPacks.filter(p => p.id !== 'sandbox'), ...cfg });
-camStart(world);
+camStart(world); initAudio(import.meta.env.BASE_URL);
 const rec: number[][] = []; // every input frame of the match: the whole game is replayable from cfg + rec
 const KB = [
   { up: 'KeyW', down: 'KeyS', left: 'KeyA', right: 'KeyD', shot: 'KeyJ', heavy: 'KeyK', melee: 'KeyL', dash: 'Space', parry: 'KeyI', burst: 'KeyU', spell: 'KeyO', focus: 'ShiftLeft', prev: 'KeyE', next: 'KeyR' },
@@ -38,6 +40,7 @@ function frame(now: number): void {
   renderViews(c, world, S, W, H); drawScreenL(c, world, S, W, H);
   drawHud(c, world, S, W, H, performance.now() / 1000); drawScreenTopL(c, world, S, W, H);
   const fl = screenFilterL(c, world, S, W, H); if (canvas.style.filter !== fl) canvas.style.filter = fl;
+  const j = juiceOf(world); playSounds(j.SND.splice(0), j.stop.splice(0), S.tstop > 0, j.endk); // juice was synced by renderViews
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);

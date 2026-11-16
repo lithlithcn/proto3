@@ -1,5 +1,5 @@
 import { type World, atan2, cos, hypot, sin } from '@kernel';
-import { PS, addEnt, bodyR, chHitQ, foe, type CombatState, jBurst } from '@pack/combat/api';
+import { PS, addEnt, bodyR, chHitQ, foe, type CombatState, jBurst, sfx } from '@pack/combat/api';
 import type { TouhouState } from '../../state';
 import { EK_FCL, EK_FFL, EK_FLV, EK_FSB } from './kinds';
 
@@ -14,7 +14,7 @@ export function flandreEnts(w: World, s: CombatState, p: number): void {
     if (k === EK_FSB) { // Starbow burst: hurts everyone within 30 px on its last frame
       if (s.et[i] !== 1) continue;
       for (let q = 0; q < s.n; q++) if (live(s, p, q)) { const dx = s.x[q]! - s.ex[i]!, dy = s.y[q]! - s.ey[i]!, d = hypot(dx, dy) || 1; if (d < 30 + bodyR(s, q)) chHitQ(w, s, p, q, dx / d, dy / d, s.ed[i]!, 6, 22); }
-      jBurst(w, s.ex[i]!, s.ey[i]!, ['#ff4a4a', '#ffa33a', '#ffe83a', '#5cff7a', '#4ab3ff', '#7a5cff', '#ff5cf0'][s.ea[i]!]!, 12);
+      jBurst(w, s.ex[i]!, s.ey[i]!, ['#ff4a4a', '#ffa33a', '#ffe83a', '#5cff7a', '#4ab3ff', '#7a5cff', '#ff5cf0'][s.ea[i]!]!, 12); sfx(w, 'tan01', 0.4);
     } else if (k === EK_FLV) { // Laevatein: coasts for 30 frames, then homes back to Flandre and vanishes when it reaches her
       const age = s.ebc[i]! - s.et[i]!; s.ew[i] = s.ew[i]! + 0.45;
       if (age < 30) { s.evx[i] = s.evx[i]! * 0.965; s.evy[i] = s.evy[i]! * 0.965; }
@@ -30,7 +30,7 @@ export function flandreEnts(w: World, s: CombatState, p: number): void {
       for (let q = 0; q < s.n; q++) if (live(s, p, q) && ts.fHc[q]! <= s.gf && hypot(s.x[q]! - s.ex[i]!, s.y[q]! - s.ey[i]!) < 12 + bodyR(s, q)) { ts.fHc[q] = s.gf + 30; chHitQ(w, s, p, q, 0, 0, 2, 1, 10); }
     } else if (k === EK_FCL) { // clone: waits 30 frames, locks on, dashes at 13 px/f and hurts the first foe it touches
       const age = s.ebc[i]! - s.et[i]!, t = s.ew[i]!;
-      if (age === 30 && t >= 0) { const a = atan2(s.y[t]! - s.ey[i]!, s.x[t]! - s.ex[i]!); s.evx[i] = cos(a) * 13; s.evy[i] = sin(a) * 13; }
+      if (age === 30 && t >= 0) { const a = atan2(s.y[t]! - s.ey[i]!, s.x[t]! - s.ex[i]!); s.evx[i] = cos(a) * 13; s.evy[i] = sin(a) * 13; sfx(w, 'roll', 0.4); }
       if (age > 30) {
         s.ex[i] = s.ex[i]! + s.evx[i]!; s.ey[i] = s.ey[i]! + s.evy[i]!;
         if (!s.efl[i]) for (let z = 0; z < s.n; z++) if (live(s, p, z) && hypot(s.x[z]! - s.ex[i]!, s.y[z]! - s.ey[i]!) < 18 + bodyR(s, z)) { s.efl[i] = 1; chHitQ(w, s, p, z, s.evx[i]!, s.evy[i]!, 7, 9, 26); jBurst(w, s.x[z]!, s.y[z]!, '#ff3030', 10); }

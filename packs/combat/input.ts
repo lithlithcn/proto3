@@ -1,3 +1,4 @@
+import { jfx, sfx, txt } from './jfx';
 import { BTN, type World } from '@kernel';
 import { charOf } from './api';
 import type { VIn } from './character';
@@ -32,9 +33,12 @@ export function begin(w: World, s: CombatState, p: number): PCtx {
     const held = (b & BTN.heavy) !== 0, was = s.hHeld[p] !== 0, hb = p * NBTN + HEAVY_BIT;
     s.hHeld[p] = held ? 1 : 0;
     if (held && !was && !(b & BTN.parry) && s.rifle[p]! <= 0) { s.hch[p] = s.gf; b &= ~BTN.heavy; s.bufF[hb] = 0; }
-    else if (held && s.hch[p]! > 0) { b &= ~BTN.heavy; s.bufF[hb] = 0; }
+    else if (held && s.hch[p]! > 0) {
+      b &= ~BTN.heavy; s.bufF[hb] = 0; const k = s.gf - s.hch[p]!; // presentation: charge sound + LV texts (legacy line 2414)
+      if (k === 8) jfx(w, 'sfxk', 'chS' + p, 'charge', 0.5); else if (k === 60) txt(w, s.x[p]!, s.y[p]! - 38, 'LV 2', '#ffd23a', 13); else if (k === 120) { sfx(w, 'aimreal', 1.7); txt(w, s.x[p]!, s.y[p]! - 38, 'LV 3', '#ff7ce0', 15); }
+    }
     else if (!held && s.hch[p]! > 0) {
-      const k = s.gf - s.hch[p]!; s.hch[p] = 0;
+      const k = s.gf - s.hch[p]!; s.hch[p] = 0; if (k < 120) jfx(w, 'sfxstop', 'chS' + p);
       s.hLv[p] = k >= 120 && s.spirit[p]! >= 15 ? 3 : k >= 60 ? 2 : 1;
       if (s.hLv[p] === 3) s.spirit[p] = s.spirit[p]! - 15;
       b |= BTN.heavy; prev &= ~BTN.heavy; s.bufF[hb] = s.gf;

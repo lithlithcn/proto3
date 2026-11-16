@@ -1,5 +1,5 @@
 import { type World, atan2, hypot } from '@kernel';
-import { BF, PS, TAU, bodyR, chHitQ, customHeavy, foe, moveOf, nearFoe, type CombatState, jBurst, jTxt } from '@pack/combat/api';
+import { BF, PS, TAU, bodyR, chHitQ, customHeavy, foe, moveOf, nearFoe, type CombatState, jBurst, jTxt, sfx } from '@pack/combat/api';
 import { EK_OBD, EK_ODN, EK_ODR } from './kinds';
 
 const live = (s: CombatState, o: number, q: number): boolean => q !== o && s.state[q] !== PS.dead && s.inv[q]! <= 0 && foe(s, o, q);
@@ -14,6 +14,7 @@ export function okinaEnts(w: World, s: CombatState, p: number): void {
       if (s.et[i] === 1) {
         const q = nearFoe(s, p, s.ex[i]!, s.ey[i]!, 1500), a = q >= 0 ? atan2(s.y[q]! - s.ey[i]!, s.x[q]! - s.ex[i]!) : s.ea[i]!, n = Math.min(24, s.ew[i]! + 4);
         for (let j = 0; j < n; j++) customHeavy(s, p, s.ex[i]!, s.ey[i]!, a + (j - n / 2) * 0.06, 7, 6, { dmg: 4, kb: 4, stun: 14, arm: 0 }, 160, 0xffd23a);
+        sfx(w, 'shoot3', 0.7);
       }
     } else if (k === EK_ODR) { // placed door: 50 hp, breaks on foreign bullets and foes' active melee
       for (let b = 0; b < s.nb; b++) {

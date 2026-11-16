@@ -42,3 +42,16 @@ Written by `pnpm parity keep ... --cause ... [--attempts "tried X: failed"]`; re
 - Fix in: `packs/combat/player/update.ts`
 - Not detected earlier because: `spReady` only drives presentation; the sim oracle never compared it. The per-frame juice oracle (render compare) is what caught it.
 - Regression: render compare juice section (no sim report).
+
+## Sounds: heavy-bullet damage sound on silent hit data, rifle pierce, Killing Doll slice (audio port)
+- Symptom: `pnpm render compare` SOUNDS → extra `damage00` (reimu,marisa f113; flandre,hecatia f699), missing `se_enep00` (nue,okina f1400), `slice` one frame late then lost after the spell (nazrin,aya).
+- Cause: the port passed `spd: 1` for every heavy-bullet hit (legacy `if(m.spd)sfxDmg` is false for `SPH`, `xBall`, rifle); the rifle pierce branch skipped `brk()`; the slice was put on the spell clock instead of the first doll's own turn.
+- Fix in: `packs/combat/bullets/heavy.ts` (`BF.mute`), `packs/combat/bullets/pattern.ts` (`BK.dollH`), `packs/touhou/spells/10-killing-doll.ts`
+- Not detected earlier because: sounds had no oracle; SOUNDS section of render compare found all three.
+- Regression: render compare SOUNDS section (presentation only, no sim report).
+
+## ld draw files: undeclared legacy globals (`hz`, `CVINV`, `GLR`)
+- Symptom: browser page error `hz is not defined` on the first frame reaching that draw; `world.ts` had a stub `hz = () => 0` (wrong noise).
+- Cause: `@ts-nocheck` verbatim files hide unresolved names until runtime.
+- Fix in: `packs/render/ld/viewfx.ts`, `packs/render/ld/world.ts`, `packs/render/ld/view.ts`
+- Not detected earlier because: render compare only reaches the frames its seed plays. New detector: `tests/ld-names.test.ts` (type-checks the ld files for unresolved names only).

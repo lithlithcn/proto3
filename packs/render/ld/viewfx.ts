@@ -2,6 +2,9 @@
 import { COLS, LCOLS } from '../colors';
 const TAU = 6.2832, T = { HP: 100, GRAZE_R: 27 };
 let ctx, frame, P, FX, TX, RINGS, WAVES, LINES, KOFX, CRACK, GZ, invF, TSTOP, TSO, drawP, fxLow = false, fxOff = false, perfLow = false, YTBG = 0, CVINV = 0;
+const hz=(i,k)=>{const x=Math.sin(i*127.1+k*311.7)*43758.5453;return x-Math.floor(x)}; // legacy 2539
+const GLR = null, glRing = null, glDot = null; // legacy WebGL particle path, dead code there (`if(0)`)
+export const ctxViewFx = (c, f) => { ctx = c; frame = f; }; // world items draw magic circles without the full view bind
 export const bindViewFx = (v) => { ({ ctx, frame, P, FX, TX, RINGS, WAVES, LINES, KOFX, CRACK, GZ, invF, TSTOP, TSO, drawP, fxLow } = v); };
 function hexHue(c){const m=/^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/i.exec(c||'');if(!m)return 300;const r=parseInt(m[1],16)/255,g=parseInt(m[2],16)/255,b=parseInt(m[3],16)/255,M=Math.max(r,g,b),n=Math.min(r,g,b),d=M-n;if(!d)return 0;let h=M===r?((g-b)/d)%6:M===g?(b-r)/d+2:(r-g)/d+4;return(h*60+360)%360}
 function koBeam(k,w,len,f){const lo=fxLow||perfLow,hu=k.hu!==undefined?k.hu:(k.hu=hexHue(k.c)),hs=(d,l)=>`hsl(${(hu+d+360)%360},100%,${l}%)`,al=Math.min(1,f*3);if(w<1)return;

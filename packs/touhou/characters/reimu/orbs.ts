@@ -1,5 +1,5 @@
 import type { World } from '@kernel';
-import { addEnt, entsOf, addJ } from '@pack/combat/api';
+import { addEnt, entsOf, addJ, sfx } from '@pack/combat/api';
 import { cos, sin } from '@kernel';
 import type { CombatState } from '@pack/combat/api';
 import { EK_ORB } from './kinds';
@@ -15,5 +15,5 @@ export function throwOrbs(w: World, s: CombatState, p: number, n: number): void 
   }
   const k = entsOf(s, EK_ORB, p, L);
   for (let i = 0; i < k - 4; i++) s.et[L[i]!] = 0;
-  addJ(w, 'shake', 2, 28);
+  addJ(w, 'shake', 2, 28); sfx(w, 'tan00', 0.6);
 }

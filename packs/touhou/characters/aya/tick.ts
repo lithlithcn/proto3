@@ -1,5 +1,5 @@
 import { type World, cos, hypot, sin } from '@kernel';
-import { BF, PS, T, chHitQ, entsOf, foe, pushJ, jTxt, addJ, jFlash } from '@pack/combat/api';
+import { BF, PS, T, chHitQ, entsOf, foe, pushJ, jTxt, addJ, jFlash, sfx } from '@pack/combat/api';
 import type { CombatState } from '@pack/combat/api';
 import type { TouhouState } from '../../state';
 import { EK_ATN } from './kinds';
@@ -16,7 +16,7 @@ export function ayaTick(w: World, s: CombatState, p: number): void {
     for (const e of L) if (hypot(s.ex[e]! - s.x[p]!, s.ey[e]! - s.y[p]!) < 60) {
       const v = hypot(s.vx[p]!, s.vy[p]!) || 1;
       s.vx[p] = s.vx[p]! / v * 24; s.vy[p] = s.vy[p]! / v * 24; s.t[p] = Math.max(s.t[p]!, 16); s.inv[p] = Math.max(s.inv[p]!, 12); s.et[e] = 0; t.aHy[p] = s.gf;
-      w.emit('touhou:aya-hyper', { p }); pushJ(w, 'RINGS', 'x', s.x[p]!, 'y', s.y[p]!, 'r', 0, 'm', 70, 't', 14, 'c', '#bfffe0'); jTxt(w, s.x[p]!, s.y[p]! - 34, 'HYPER DASH', '#bfffe0', 14); addJ(w, 'shake', 6, 28); break;
+      w.emit('touhou:aya-hyper', { p }); pushJ(w, 'RINGS', 'x', s.x[p]!, 'y', s.y[p]!, 'r', 0, 'm', 70, 't', 14, 'c', '#bfffe0'); jTxt(w, s.x[p]!, s.y[p]! - 34, 'HYPER DASH', '#bfffe0', 14); sfx(w, 'windblow', 0.9); addJ(w, 'shake', 6, 28); break;
     }
   }
   if (s.focus[p] && s.state[p] !== PS.spell && s.gf >= t.aCd[p]!) t.aF[p] = Math.min(140, (t.aF[p]! || 30) + 2);
@@ -33,7 +33,7 @@ export function ayaTick(w: World, s: CombatState, p: number): void {
       if (Math.abs(u - D) < S && Math.abs(v) < S * 0.75 && chHitQ(w, s, p, q, c, n, 3, 0, 60)) { s.vx[q] = 0; s.vy[q] = 0; jTxt(w, s.x[q]!, s.y[q]! - 34, 'STUN!', '#fff', 15); }
     }
     w.emit('touhou:aya-photo', { p, x: s.x[p]! + c * D, y: s.y[p]! + n * D, a: s.aim[p]!, S, bullets: hit });
-    pushJ(w, 'PE', 'k', 'aph', 'o', p, 't', 12, 'x', s.x[p]! + c * D, 'y', s.y[p]! + n * D, 'a', s.aim[p]!, 'S', S); jFlash(w, 0.15, '#fff'); if (hit) jTxt(w, s.x[p]!, s.y[p]! - 36, 'PHOTO x' + hit, '#fff', 13);
+    pushJ(w, 'PE', 'k', 'aph', 'o', p, 't', 12, 'x', s.x[p]! + c * D, 'y', s.y[p]! + n * D, 'a', s.aim[p]!, 'S', S); jFlash(w, 0.15, '#fff'); sfx(w, 'photo', 1); if (hit) jTxt(w, s.x[p]!, s.y[p]! - 36, 'PHOTO x' + hit, '#fff', 13);
     t.aF[p] = 0; t.aCd[p] = s.gf + 90;
   }
   if (t.aG[p]! > s.gf) {

@@ -1,5 +1,5 @@
 import { type World, atan2, cos, hypot, sin } from '@kernel';
-import { BF, PS, T, TAU, customHeavy, entsOf, foe, hit, jBurst, jTxt, moveOf, parryFx, pushJ, spark, type CombatState } from '@pack/combat/api';
+import { BF, PS, T, TAU, customHeavy, entsOf, foe, hit, jBurst, jTxt, moveOf, parryFx, pushJ, spark, type CombatState, sfx } from '@pack/combat/api';
 import type { TouhouState } from '../../state';
 import { EK_BAR, EK_ORB } from './kinds';
 
@@ -26,9 +26,9 @@ export function reimuTick(w: World, s: CombatState, p: number): void {
     if (!focus || out || !nOs || s.state[p] === PS.spell) {
       for (let k = 0; k < nOs; k++) { const e = OS[k]!; s.evx[e] = cos(t.rA[p]!) * 6.5; s.evy[e] = sin(t.rA[p]!) * 6.5; s.eg[e] = 0; s.et[e] = Math.max(s.et[e]!, 240); s.ehc.fill(0, e * 32, e * 32 + 32); }
       t.rG[p] = 0; t.rGC[p] = s.gf + 60; if (out) t.rGW[p] = 1;
-      if (nOs) pushJ(w, 'RINGS', 'x', s.x[p]!, 'y', s.y[p]!, 'r', 0, 'm', 50, 't', 12, 'c', '#fff');
+      if (nOs) sfx(w, 'tan00', 0.6); if (nOs) pushJ(w, 'RINGS', 'x', s.x[p]!, 'y', s.y[p]!, 'r', 0, 'm', 50, 't', 12, 'c', '#fff');
     }
-  } else if (focus && !t.rGW[p] && s.gf >= t.rGC[p]! && nOs && s.state[p] !== PS.spell) { t.rG[p] = 1; t.rGT[p] = s.gf; t.rA[p] = s.aim[p]!; }
+  } else if (focus && !t.rGW[p] && s.gf >= t.rGC[p]! && nOs && s.state[p] !== PS.spell) { t.rG[p] = 1; t.rGT[p] = s.gf; t.rA[p] = s.aim[p]!; sfx(w, 'se_kira00', 0.4); }
   const ghost = t.rG[p] !== 0;
   for (let k = 0; k < nOs; k++) {
     const e = OS[k]!;
@@ -47,7 +47,7 @@ export function reimuTick(w: World, s: CombatState, p: number): void {
       let q = -1, bd = 900;
       for (let c = 0; c < s.n; c++) if (c !== p && s.state[c] !== PS.dead && foe(s, p, c)) { const d = hypot(s.x[c]! - s.ex[e]!, s.y[c]! - s.ey[e]!); if (d < bd) { bd = d; q = c; } }
       const sp = Math.min(10, hypot(s.evx[e]!, s.evy[e]!) * 1.4), a2 = q >= 0 ? atan2(s.y[q]! - s.ey[e]!, s.x[q]! - s.ex[e]!) : atan2(s.evy[e]!, s.evx[e]!) + Math.PI;
-      s.evx[e] = cos(a2) * sp; s.evy[e] = sin(a2) * sp; s.ebc[e] = s.gf + 20; pushJ(w, 'RINGS', 'x', s.ex[e]!, 'y', s.ey[e]!, 'r', 0, 'm', 40, 't', 12, 'c', '#9fe0ff');
+      s.evx[e] = cos(a2) * sp; s.evy[e] = sin(a2) * sp; s.ebc[e] = s.gf + 20; pushJ(w, 'RINGS', 'x', s.ex[e]!, 'y', s.ey[e]!, 'r', 0, 'm', 40, 't', 12, 'c', '#9fe0ff'); sfx(w, 'shoot3', 0.4);
     }
     if (hypot(s.evx[e]!, s.evy[e]!) > 4.6) { s.evx[e] = s.evx[e]! * 0.995; s.evy[e] = s.evy[e]! * 0.995; }
     for (let b = 0; b < s.nb; b++) { // orbs erase foe light bullets
@@ -73,7 +73,7 @@ export function reimuTick(w: World, s: CombatState, p: number): void {
       const m = moveOf(w, s, q);
       if (!m || m.spd || s.t[q]! < m.start || s.ehc[z * 32 + q]! > s.gf || !inBar(s, z, s.x[q]!, s.y[q]!, T.BODY_R + m.range * 0.8)) continue;
       s.ehc[z * 32 + q] = s.gf + 90; s.efl[z] = s.gf;
-      hit(w, s, q, p, 0, 0, { dmg: 2, kb: 0, stun: 75 }, -1, 1, true); s.mvId[q] = 0; jTxt(w, s.x[q]!, s.y[q]! - 34, 'STUN!', '#7cc8ff', 16); jBurst(w, s.x[q]!, s.y[q]!, '#7cc8ff', 16);
+      hit(w, s, q, p, 0, 0, { dmg: 2, kb: 0, stun: 75 }, -1, 1, true); s.mvId[q] = 0; jTxt(w, s.x[q]!, s.y[q]! - 34, 'STUN!', '#7cc8ff', 16); sfx(w, 'shield-break', 0.7); jBurst(w, s.x[q]!, s.y[q]!, '#7cc8ff', 16);
     }
   }
 }

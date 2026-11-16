@@ -1,5 +1,5 @@
 import { type World, cos, sin } from '@kernel';
-import { BF, type CombatState, addEnt, entsOf, nearFoe, spRand, jBurst, jTxt } from '@pack/combat/api';
+import { BF, type CombatState, addEnt, entsOf, nearFoe, spRand, jBurst, jTxt, sfx } from '@pack/combat/api';
 import type { TouhouState } from '../../state';
 import { EK_NCOIN, EK_NMS } from './kinds';
 
@@ -13,7 +13,7 @@ export function nazrinTick(w: World, s: CombatState, p: number): void {
     const L: number[] = []; entsOf(s, EK_NMS, p, L); for (let i = 0; i < L.length - 6; i++) s.et[L[i]!] = 0;
   }
   if (t.nDig[p] && t.nDig[p]! <= s.gf) {
-    t.nDig[p] = 0; const r = spRand(s) * 4 | 0; jBurst(w, s.x[p]!, s.y[p]!, '#c8a060', 14);
+    t.nDig[p] = 0; const r = spRand(s) * 4 | 0; jBurst(w, s.x[p]!, s.y[p]!, '#c8a060', 14); sfx(w, 'se_kira00', 0.7);
     const X = s.x[p]!, Y = s.y[p]! - 36;
     if (r === 0) { t.nSpd[p] = s.gf + 300; jTxt(w, X, Y, 'SPEED!', '#7cff7a', 15); } else if (r === 1) { t.nSh[p] = 1; jTxt(w, X, Y, 'SHIELD!', '#7ae0ff', 15); } else if (r === 2) { t.nDbl[p] = s.gf + 480; jTxt(w, X, Y, 'DOUBLE MICE!', '#ccc', 15); }
     else {

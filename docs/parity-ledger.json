@@ -46,14 +46,24 @@
     {
       "id": "modes-maps-teams-cpu-online",
       "status": "not-ported",
-      "area": "game modes, maps/walls, teams, CPU AI, online, lab, i18n, menus, audio",
+      "area": "game modes, maps/walls, teams, CPU AI, online, lab, i18n, menus",
       "see": "docs/INVENTORY.md"
     },
     {
       "id": "render-parity",
-      "status": "not-ported",
-      "area": "rendering: only floor/grid/edge, light+heavy bullets, player body/melee wedge and a temporary HUD exist (playable slice); WebGL layer, post-FX, per-character draws, items, full HUD, menus not ported; no op-level comparison yet",
-      "see": "DESIGN §28"
+      "status": "diverging",
+      "area": "rendering: legacy draw code copied verbatim (packs/render/ld) behind a view-model; drawHUD/drawP/drawHeavy/drawWorldItems op-identical on 4 pairs x 1500 frames, whole drawView identical on 2 of 4 pairs (residual: FX/RINGS push order inside one frame, TX cap timing f171 reimu/marisa); themed items, menus, maps, WebGL layer not ported",
+      "evidence": "pnpm render compare <a,b> 1500 (op diff per draw function + juice state + sounds)",
+      "limit": "manual oracle, not in pnpm gate yet; 4 character pairs, 1 seed",
+      "see": "docs/game/mechanics/render.md"
+    },
+    {
+      "id": "audio-sfx",
+      "status": "diverging",
+      "area": "sound effects: every legacy sfx() site of combat, 8 characters and 10 spells emitted through the juice list and played by packs/audio/player.ts (legacy gains, 45 ms per-sound cooldown, time-stop reverb, keyed charge sound, ENDK swell); music, menu/UI sounds, themed-item and map sounds not ported",
+      "evidence": "pnpm render compare <a,b> 1500 SOUNDS: 1500/1500 frames identical on reimu,marisa / flandre,hecatia / nue,okina / nazrin,aya",
+      "limit": "name|volume|rate per frame only (not the Web Audio graph); ENDK and team groups untested; manual oracle, not in pnpm gate",
+      "see": "docs/game/mechanics/audio.md"
     },
     {
       "id": "long-horizon",

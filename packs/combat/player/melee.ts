@@ -1,3 +1,4 @@
+import { sfx, sfxR } from '../jfx';
 import { BTN, type World, atan2, cos, hypot, sin } from '@kernel';
 import { type PCtx, held, pr } from '../input';
 import { MV, MV_NAMES, SRC, type MeleeName, type MoveDef } from '../moves';
@@ -71,7 +72,7 @@ function strike(w: World, s: CombatState, p: number, o: number, m: MoveDef): voi
     return;
   }
   const mult = (1 + s.charge[p]! / (m.charge || 1) * 0.7) * (s.giant[p]! > 0 ? 1.5 : 1);
-  s.mHit[p] = 1;
+  sfxR(w, 'hit', 3, 0.8); sfx(w, name === 'strong' ? 'strongslice' : name === 'lunge' ? 'slice' : 'weakslice', 0.35); s.mHit[p] = 1;
   // stun-repeat counters are keyed by the hit-data OBJECT in legacy: a character's own override of a move is a different object from the shared default (ids 64+, DESIGN §25)
   const own = characters(w)[s.mvCh[p]!]![1].melee?.[name as MeleeName] !== undefined, src = own ? 64 + s.mvCh[p]! * 8 + SRC_IDX.indexOf(name) : SRC_OF[name]!;
   hit(w, s, o, p, dx, dy, m, src, mult, name !== 'jab', true);

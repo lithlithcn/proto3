@@ -93,7 +93,7 @@ export function drawPlayerL(c: CanvasRenderingContext2D, w: World, s: CombatStat
   bindLegacy(c, e); drawP(P(p));
 }
 
-import { bindViewFx, drawJuiceWorld, drawVignette } from './viewfx';
+import { bindViewFx, ctxViewFx, drawJuiceWorld, drawVignette } from './viewfx';
 import { juiceOf } from '../juice/state';
 /** Legacy drawView effect layers over the world (FX, graze arcs, rings, KO beams, texts, lines, cracks, waves, inversion, The World tint). */
 export function drawWorldFxL(c: CanvasRenderingContext2D, w: World, s: CombatState, L: number, Tp: number, R: number, Bt: number, vw: number, vh: number): void {
@@ -122,7 +122,7 @@ function drawWorldItemsBind(c: CanvasRenderingContext2D, w: World, s: CombatStat
   const of = (k: string): Record<string, unknown>[] => ENT.filter(x => x['k'] === k);
   const KOB = Array.from({ length: s.nkb }, (_, i) => ({ o: s.kbO[i], x: s.kbX[i], y: s.kbY[i], a: s.kbA[i], t: s.kbT[i], T: s.kbTT[i] })).filter(k => (k.t ?? 0) >= 0);
   const ORBS = of('heal'), FAIRIES = of('fairy').map(f => ({ ...f, o: s.eg[f['_i'] as number] })), HOLES = of('hole').map(h => Object.assign(h, { a: (360 - (h['t'] as number)) * 0.1 })), BUMPS = of('bump').map(u => Object.assign(u, { hit: s.eh[u['_i'] as number] ?? 0 })), ZONES = of('bomb');
-  bindThemed({ ctx: c, frame: s.gf, P: cur, ENT, B: bulletsView(s), bodyR: (q: { id: number }) => bodyR(s, q.id) });
+  ctxViewFx(c, s.gf); bindThemed({ ctx: c, frame: s.gf, P: cur, ENT, B: bulletsView(s), bodyR: (q: { id: number }) => bodyR(s, q.id) });
   bindIfx({ ctx: c, frame: s.gf, P: cur, ENT: ENT.filter(x => !['heal', 'bomb', 'hole', 'bump', 'fairy'].includes(x['k'] as string)), ORBS, FAIRIES, HOLES, BUMPS, ZONES, PHOTO: [], WARP: s.warp, VIEW: 0, bodyR: (q: { id: number }) => bodyR(s, q.id) });
   bindWorld({ ctx: c, frame: s.gf, P: cur, B: [], ENT: ENT.filter(x => !['heal', 'bomb', 'hole', 'bump', 'fairy'].includes(x['k'] as string)), KOB,
     HOLES, BUMPS, PHOTO: [], ZONES, ORBS, FAIRIES, IM: { rifle: { start: 40 } }, bodyR: (q: { id: number }) => bodyR(s, q.id), magicCircle: magicCircleL });

@@ -1,4 +1,4 @@
-import { burst, pushJ } from '../jfx';
+import { burst, pushJ, sfx } from '../jfx';
 import { BTN, type World, atan2, clamp, cos, hypot, sin } from '@kernel';
 import { BF, MAX_B, PS, type CombatState } from '../state';
 import { bulletArrays, clearBullet, stamp } from './arrays';
@@ -21,7 +21,7 @@ function fill(s: CombatState, i: number, p: number, x: number, y: number, a: num
   clearBullet(bulletArrays(s), i); stamp(s, i);
   s.bx[i] = x; s.by[i] = y; s.bvx[i] = cos(a) * sp; s.bvy[i] = sin(a) * sp; s.bang[i] = a; s.bowner[i] = p; s.bcast[i] = p; s.blife[i] = o.life ?? 320; s.bcol[i] = o.col ?? 0;
   s.bsh[i] = o.sh ?? 0; s.brot[i] = o.rot ?? 0; s.bdrg[i] = o.drg ?? 0; s.bacc[i] = o.acc ?? 0; s.bvmax[i] = o.vmax ?? 0; s.bkind[i] = o.kind ?? 0; s.bp0[i] = o.p0 ?? 0; s.bp1[i] = o.p1 ?? 0; s.bp2[i] = o.p2 ?? 0; s.bgrp[i] = o.grp ?? 0;
-  if (heavy) { s.br[i] = o.r ?? 11; s.bdmg[i] = 5; s.bkb[i] = 7; s.bstun[i] = 24; s.barm[i] = 0; s.bdist[i] = 999; s.bmult[i] = 1; s.bmv[i] = ISRC.sph; s.bflags[i] = BF.heavy; }
+  if (heavy) { s.br[i] = o.r ?? 11; s.bdmg[i] = 5; s.bkb[i] = 7; s.bstun[i] = 24; s.barm[i] = 0; s.bdist[i] = 999; s.bmult[i] = 1; s.bmv[i] = ISRC.sph; s.bflags[i] = BF.heavy | BF.mute; }
   else { s.br[i] = o.r ?? 4; s.bdmg[i] = 1; s.bmv[i] = 0; }
 }
 /** Small decorative bullet (legacy sB): refused outside the map or when the pool is full. Returns the index or -1. */
@@ -94,7 +94,7 @@ function run(s: CombatState, i: number, kind: number, ag: number, w?: World): vo
         if (d < 24) { s.bflags[i] = s.bflags[i]! | BF.dead; if (w) burst(w, s.bx[i]!, s.by[i]!, '#ff9a6a', 6); for (let j = 0; j < 3; j++) sB(s, p, s.bx[i]!, s.by[i]!, s.bang[i]! + 3.141592653589793 + (j - 1) * 0.8, 0.4, { sh: SH.flea, r: 2.5, col: 0xff9a6a, acc: 0.03, vmax: 2.4, life: 300 }); }
       }
     } break;
-    case BK.dollH: if (ag === 34) { s.bdrg[i] = 0; setV(s, i, tgA(s, p, s.bx[i]!, s.by[i]!) + (spRand(s) - 0.5) * 0.1, 0); s.bacc[i] = 0.12; s.bvmax[i] = 5.2; s.bcol[i] = 0xff5a7a; hl(w, s, i); } break;
+    case BK.dollH: if (ag === 34) { s.bdrg[i] = 0; setV(s, i, tgA(s, p, s.bx[i]!, s.by[i]!) + (spRand(s) - 0.5) * 0.1, 0); s.bacc[i] = 0.12; s.bvmax[i] = 5.2; s.bcol[i] = 0xff5a7a; hl(w, s, i); if (w && s.bp0[i]) sfx(w, 'slice', 0.4); } break; // p0 marks the volley's first doll (legacy i===0)
     case BK.dollK: if (ag === 34) { s.bdrg[i] = 0; setV(s, i, s.bang[i]! + 1.5707963267948966, 0); s.bacc[i] = 0.1; s.bvmax[i] = 4; } break;
     case BK.meteor: if (ag === 70) { s.bdrg[i] = 0; s.bacc[i] = 0.035; s.bvmax[i] = 3.4; hl(w, s, i); } break;
   }

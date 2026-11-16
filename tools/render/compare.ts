@@ -24,7 +24,7 @@ interface Block { name: string; snap: Record<string, unknown>; ops: Op[] }
 const arg = (i: number, d: string): string => process.argv[i] && !process.argv[i]!.startsWith('--') ? process.argv[i]! : d;
 const [a, b] = arg(3, 'reimu,marisa').split(','), FR = +arg(4, '900'), SEED = +arg(5, '1'), STEP = 150;
 const ss = session(a!, b!, SEED, []), k = ss.k, ev = (s: string): unknown => k.legacy.eval(s);
-ev("globalThis.__SFX=[];globalThis.__SFL=[];{const s0=sfx;sfx=function(n,v,r){__SFX.push(n);const L=[...new Error().stack.matchAll(/legacy:(\\d+)/g)].map(m=>m[1]);__SFL.push(n+'@'+(L[1]||'?'));return s0.apply(this,arguments)}}");
+ev("globalThis.__SFX=[];globalThis.__SFL=[];{const s0=sfx;sfx=function(n,v,r){__SFX.push(n);(globalThis.__SFV||=[]).push(n+'|'+(+(v===undefined?1:v)).toFixed(3)+'|'+(+(r===undefined?1:r)).toFixed(3));const L=[...new Error().stack.matchAll(/legacy:(\\d+)/g)].map(m=>m[1]);__SFL.push(n+'@'+(L.find(x=>!['217','26','2275','219','220','221','222'].includes(x))||'?'));return s0.apply(this,arguments)}}");
 const sink = makeRecorder(), W = k.world as World, S = k.s as CombatState;
 
 /** Legacy stream -> blocks (nested blocks also appear on their own, their ops are included in every enclosing block). */
@@ -53,13 +53,22 @@ const JV = ['shake', 'zk', 'kx', 'ky', 'chroma', 'bright', 'focusL', 'zblur', 'f
 const juiceBad = new Map<string, string>(); let juiceN = 0;
 // legacy push sites: every list push records the html line that produced it (shown next to the first divergence)
 const WRAP = `for (const n of ${JSON.stringify(['FX', 'TX', 'RINGS', 'WAVES', 'LINES', 'KOFX', 'BIG', 'CRACK', 'GZ'])}) { const a = eval(n); if (!a.__w) { a.__w = 1; a.push = function (...x) { const L = [...new Error().stack.matchAll(/legacy:(\\d+)/g)].map(m => m[1]).filter(x => !['210', '223', '326', '327', '328', '2118'].includes(x)), l = L.length ? [0, L[0]] : null; (globalThis.__JW ||= []).push(n + '@' + (l ? l[1] : '?')); return Array.prototype.push.apply(this, x); }; } }`;
+const sndBad: string[] = []; let sndN = 0, sndOk = 0;
+function soundCheck(f: number): void {
+  const j = juiceOf(W), L = (JSON.parse(ev('JSON.stringify(globalThis.__SFV||[])') as string) as string[]).sort(); ev('globalThis.__SFV=[]');
+  const SL = JSON.parse(ev('JSON.stringify(__SFL)') as string) as string[]; ev('__SFL=[]');
+  const P = j.SND.splice(0).map(x => `${x.n}|${x.v.toFixed(3)}|${x.r.toFixed(3)}`).sort(); sndN++;
+  const sf = process.env['SNDF']?.split('-').map(Number); if (sf && f >= sf[0]! && f <= sf[1]!) console.log(`snd f${f}: legacy [${L.join(', ')}] | port [${P.join(', ')}]`); // SNDF=a-b dumps a frame window
+  if (JSON.stringify(L) === JSON.stringify(P)) { sndOk++; return; }
+  if (sndBad.length < 40) sndBad.push(`f${f}: legacy [${L.join(', ')}] | port [${P.join(', ')}]   sites ${SL.join(' ')}`);
+}
 function juiceCheck(f: number): void {
   const j = juiceOf(W), pev = j.q.filter(e => e.ev !== 'combat:fx-tick').map(e => e.ev.replace('combat:', '') + ((e as unknown as { op?: string }).op ? ':' + (e as unknown as { op: string }).op : '') + ((e as unknown as { p?: number }).p !== undefined ? '(' + (e as unknown as { p: number }).p + ')' : '')).join(' ') || '-'; let fxPush = 0; const op = j.FX.push; j.FX.push = (...x) => { fxPush += x.length; return op.apply(j.FX, x); }; syncJuice(j, S); j.FX.push = op; juiceN++;
   const L = ev('JSON.stringify([' + JV.join(',') + ',' + JL.map(n => n + '.length').join(',') + ',bgF.t,borderF.t])') as string, l = JSON.parse(L) as number[]; l[JV.length] = -1; // FX: pushes this frame (filled below), lifetimes are random
   const lfx = (JSON.parse(ev('JSON.stringify(globalThis.__JW||[])') as string) as string[]).filter(x => x.startsWith('FX@')).length;
   const P = [...JV.map(n => j[n]), ...JL.map(n => n === 'FX' ? fxPush : j[n].length), j.bgF.t, j.borderF.t], N = [...JV, ...JL.map(n => n === 'FX' ? 'FX pushes' : n + '.length'), 'bgF.t', 'borderF.t'];
   l[JV.length] = lfx;
-  const sites = (ev('JSON.stringify(globalThis.__JW||[])') as string), sf = (ev('JSON.stringify(__SFL)') as string); ev('globalThis.__JW=[];__SFL=[]');
+  const sites = (ev('JSON.stringify(globalThis.__JW||[])') as string), sf = (ev('JSON.stringify(__SFL)') as string); ev('globalThis.__JW=[]');
   N.forEach((n, i) => { const a = l[i]!, b = P[i] as number; if (Math.abs(a - b) > 1e-6 && !juiceBad.has(n)) juiceBad.set(n, `f${f}: legacy ${a} | port ${b}${n === 'TX.length' ? `   legacy TX: ${ev('JSON.stringify(TX.map(t=>t.s))')} port TX: ${JSON.stringify(j.TX.map(t => t['s']))}` : ''}   legacy pushes this frame: ${[...new Set(JSON.parse(sites) as string[])].filter(x => x.startsWith(n.split(/[. ]/)[0]!)).join(' ') || '-'}   port events: ${pev}   sfx this frame: ${(JSON.parse(sf) as string[]).join(' ') || '-'}`); });
 }
 RENDER_CLOCK.now = () => 0; // legacy harness: performance.now() = VT = 0
@@ -72,7 +81,7 @@ const mark = (n: string, ok: boolean, why: string): void => { const t = tally.ge
 for (let f = 1; f <= FR; f++) {
   ev(WRAP); ss.pre(f); const [i0, i1] = ss.inputs(f); k.step([() => i0, () => i1], f);
   const ops = k.legacy.render() as Op[];
-  juiceCheck(f); // before the port draw (which drains the juice journal)
+  juiceCheck(f); soundCheck(f); // before the port draw (which drains the juice journal)
   const camPre = camSnap();
   renderViews(sink.screenCtx as unknown as CanvasRenderingContext2D, W, S, +ev('W')!, +ev('H')!); sink.take(); // advances the port camera exactly like the browser does
   const hudPre = f % STEP === 0 ? structuredClone([...HUDS]) : [];
@@ -110,6 +119,8 @@ for (const n of (ev('__SFX') as string[])) sfxSeen.set(n, (sfxSeen.get(n) ?? 0) 
 console.log(`RENDER COMPARE ${a}/${b} seed ${SEED}, ${FR} frames, samples every ${STEP}\n`);
 console.log('| draw function | identical | differs | first difference |\n|---|---|---|---|');
 for (const [n, t] of [...tally].sort()) console.log(`| ${n} | ${t.ok} | ${t.bad} | ${t.first ?? ''} |`);
+console.log(`\nSOUNDS (per frame: name|vol|rate before the per-sound gain): ${sndOk}/${sndN} frames identical`);
+for (const b of sndBad) console.log('  ' + b);
 console.log(`\nJUICE STATE (per frame, ${juiceN} frames; first divergence per variable): ${juiceBad.size ? '' : 'all identical'}`);
 for (const [n, w] of juiceBad) console.log(`  ${n} ${w}`);
 console.log(`\nNOT PORTED visual (legacy draw functions with no port counterpart, instances over the samples): ${[...unported].sort((x, y) => y[1] - x[1]).map(([n, c]) => `${n}x${c}`).join(' ') || 'none'}`);

@@ -24,7 +24,7 @@ function fireRifle(s: CombatState, p: number): void {
     const i = s.nb++;
     clearBullet(bulletArrays(s), i); stamp(s, i);
     s.bx[i] = s.x[p]! + c * 22; s.by[i] = s.y[p]! + n * 22; s.bvx[i] = c * RIFLE.spd; s.bvy[i] = n * RIFLE.spd; s.br[i] = RIFLE.r; s.bdmg[i] = RIFLE.dmg; s.blife[i] = RIFLE.life; s.bmult[i] = 1;
-    s.bowner[i] = p; s.bflags[i] = BF.heavy | BF.pierce | BF.rifle; s.bmv[i] = ISRC.rifle; s.bkb[i] = RIFLE.kb; s.bstun[i] = RIFLE.stun; s.barm[i] = RIFLE.arm;
+    s.bowner[i] = p; s.bflags[i] = BF.heavy | BF.pierce | BF.rifle | BF.mute; s.bmv[i] = ISRC.rifle; s.bkb[i] = RIFLE.kb; s.bstun[i] = RIFLE.stun; s.barm[i] = RIFLE.arm;
   }
   s.vx[p] = s.vx[p]! - c * 8; s.vy[p] = s.vy[p]! - n * 8;
 }

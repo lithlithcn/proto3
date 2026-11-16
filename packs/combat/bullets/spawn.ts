@@ -49,7 +49,7 @@ function spawnHeavy(s: CombatState, p: number, src: number, m: MoveDef, a: numbe
   clearBullet(bulletArrays(s), i); stamp(s, i);
   s.bx[i] = s.x[p]! + c * 20 - n * off; s.by[i] = s.y[p]! + n * 20 + c * off; s.bvx[i] = c * sp; s.bvy[i] = n * sp;
   s.br[i] = o.r || m.r!; s.bdmg[i] = 0; s.blife[i] = o.life || m.life || 200; s.bhome[i] = o.home || 0; s.bdist[i] = 0; s.bmult[i] = pm * (o.k || 1);
-  s.bowner[i] = p; s.bflags[i] = BF.heavy; s.bcol[i] = o.col ?? 0; s.brefl[i] = 0; s.bmv[i] = src;
+  s.bowner[i] = p; s.bflags[i] = BF.heavy | (m.spd ? 0 : BF.mute); s.bcol[i] = o.col ?? 0; s.brefl[i] = 0; s.bmv[i] = src;
   s.bdmg[i] = m.dmg; s.bkb[i] = m.kb; s.bstun[i] = m.stun; s.barm[i] = m.arm!; s.bspl[i] = 0;
   return i;
 }
@@ -60,7 +60,7 @@ export function patternHeavy(w: World, s: CombatState, p: number, a: number, spd
   const i = s.nb++;
   clearBullet(bulletArrays(s), i); stamp(s, i);
   s.bx[i] = s.x[p]!; s.by[i] = s.y[p]!; s.bvx[i] = cos(a) * spd; s.bvy[i] = sin(a) * spd; s.br[i] = m.r!; s.bdmg[i] = m.dmg; s.blife[i] = life; s.bhome[i] = home; s.bdist[i] = 0; s.bmult[i] = 1;
-  s.bowner[i] = p; s.bflags[i] = BF.heavy | (s.state[p] === PS.spell && (w.buttons(p) & BTN.parry) ? BF.breaker : 0); s.bcol[i] = col; s.brefl[i] = 0; s.bmv[i] = src; s.bkb[i] = m.kb; s.bstun[i] = m.stun; s.barm[i] = m.arm!; s.bspl[i] = 0;
+  s.bowner[i] = p; s.bflags[i] = BF.heavy | (m.spd ? 0 : BF.mute) | (s.state[p] === PS.spell && (w.buttons(p) & BTN.parry) ? BF.breaker : 0); s.bcol[i] = col; s.brefl[i] = 0; s.bmv[i] = src; s.bkb[i] = m.kb; s.bstun[i] = m.stun; s.barm[i] = m.arm!; s.bspl[i] = 0;
   return i;
 }
 /** Breaker ball (parry + heavy): armed at once, slow, only affects a parrying foe. */
@@ -74,6 +74,6 @@ export function customHeavy(s: CombatState, owner: number, x: number, y: number,
   const i = s.nb++;
   clearBullet(bulletArrays(s), i); stamp(s, i);
   s.bx[i] = x; s.by[i] = y; s.bvx[i] = cos(a) * v; s.bvy[i] = sin(a) * v; s.br[i] = r; s.bdmg[i] = h.dmg; s.blife[i] = life; s.bhome[i] = 0; s.bdist[i] = 999; s.bmult[i] = 1;
-  s.bowner[i] = owner; s.bflags[i] = BF.heavy; s.bcol[i] = col; s.brefl[i] = 0; s.bmv[i] = -1; s.bkb[i] = h.kb; s.bstun[i] = h.stun; s.barm[i] = h.arm; s.bspl[i] = 0;
+  s.bowner[i] = owner; s.bflags[i] = BF.heavy | BF.mute; s.bcol[i] = col; s.brefl[i] = 0; s.bmv[i] = -1; s.bkb[i] = h.kb; s.bstun[i] = h.stun; s.barm[i] = h.arm; s.bspl[i] = 0;
   return i;
 }

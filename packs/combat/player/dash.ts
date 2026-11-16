@@ -1,3 +1,4 @@
+import { sfx } from '../jfx';
 import { atan2, clamp, cos, hypot, sin, PI } from '@kernel';
 import { TAU } from '../tuning';
 import { T } from '../tuning';
@@ -15,7 +16,7 @@ export function glide(c: PCtx): void {
   if (l > 0.3) { x = c.ix / l; y = c.iy / l; }
   else if (cs > 1) { x = s.vx[p]! / cs; y = s.vy[p]! / cs; }
   else { x = -cos(s.aim[p]!); y = -sin(s.aim[p]!); }
-  s.state[p] = PS.idle; s.slide[p] = T.SLIDE_T; s.run[p] = 0; s.vx[p] = x * sp; s.vy[p] = y * sp;
+  sfx(c.w, 'roll2', 0.6); s.state[p] = PS.idle; s.slide[p] = T.SLIDE_T; s.run[p] = 0; s.vx[p] = x * sp; s.vy[p] = y * sp;
   c.w.emit('combat:glide', { p, x: s.x[p]!, y: s.y[p]!, dx: x, dy: y });
 }
 
@@ -25,7 +26,7 @@ export function startDash(c: PCtx): void {
   let x = c.ix, y = c.iy;
   if (hypot(x, y) < 0.3) { x = -cos(s.aim[p]!); y = -sin(s.aim[p]!); }
   const l = hypot(x, y), v = T.DASH_V;
-  s.state[p] = PS.dash; s.t[p] = T.DASH_T; s.vx[p] = x / l * v; s.vy[p] = y / l * v;
+  sfx(c.w, 'roll', 0.6); s.state[p] = PS.dash; s.t[p] = T.DASH_T; s.vx[p] = x / l * v; s.vy[p] = y / l * v;
   s.slide[p] = 0; s.run[p] = 0; s.kicked[p] = 0; s.noSteer[p] = 0; s.dashCd[p] = T.DASH_REGEN_DELAY;
   s.boost[p] = s.boost[p]! - T.DASH_COST;
   c.w.emit('combat:dash', { p, x: s.x[p]!, y: s.y[p]! });

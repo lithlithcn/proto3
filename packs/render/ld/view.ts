@@ -6,7 +6,8 @@ import { koBeamL as koBeam, drawCrackL as drawCrack, hexHueL as hexHue } from '.
 const TAU = 6.2832;
 let ctx, frame, P, B, ENT, CX = {}, cams, MVIEW, T, BGH = [], TIMER = 0, STOCKS = [0], stI = 0, performance = { now: () => 0 }, CARDS = [], ITEMS = [], item = null, hitstop = 0, fxLow = false, perfLow = false, debug = false, GLR = null, WARP = 0, TEAMS = 0, NET = null, fixedMap = 0, TCH = { on: false }, ACC = { shk: 1, ui: 1 };
 let bodyR, coreR, FX, TX, RINGS, WAVES, LINES, KOFX, CRACK, GZ, invF, TSTOP, TSO, shake, kx, ky, zk, bgF, NERV, slow, LS;
-let VIEW = 0; const CS = 40, CMAP = null, WG = null, TPS = [], OC = null, CTX0 = null, GFX = [], YTBG = 0, fxOff = false, NETNAMES = null, TEAMA = [];
+let VIEW = 0, CVINV = 0; // CVINV: canvas invert, only with the YouTube background (YTBG, not ported)
+ const CS = 40, CMAP = null, WG = null, TPS = [], OC = null, CTX0 = null, GFX = [], YTBG = 0, fxOff = false, NETNAMES = null, TEAMA = [];
 const shN = (t, k) => Math.sin(t * 1.7 + k) * 0.5 + Math.sin(t * 2.9 + k * 3) * 0.3 + Math.sin(t * 5.3 + k * 7) * 0.2, kV = () => (0.35 + 0.065 * NERV) * ACC.shk, clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const TN = ['FIRE', 'WATER', 'WOOD', 'METAL', 'EARTH'], TC = ['#ff5030', '#3a7fff', '#5cff7a', '#e0e6f0', '#c8a050'];
 const NCOL = [0, '#ffffff', '#ff5a5a', '#ffa63a', '#ffe83a', '#7cff6a', '#3affd0', '#5ab0ff', '#a07cff', '#ff7ce0', 'rainbow'];

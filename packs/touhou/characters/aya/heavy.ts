@@ -1,11 +1,11 @@
 import { cos, hypot, sin } from '@kernel';
-import { BF, type HeavyCtx, PS, addEnt, chHitQ, entsOf, foe, heavyBullet, pushJ } from '@pack/combat/api';
+import { BF, type HeavyCtx, PS, addEnt, chHitQ, entsOf, foe, heavyBullet, pushJ, sfx } from '@pack/combat/api';
 import { EK_ATN } from './kinds';
 
 /** Aya's heavies: N = slow tornado (max 2, pulls foes, erases light bullets, can be dashed through for a Hyper Dash), F = piercing wind blade, B = gust that shoves foes and bends foreign bullets away. */
 export const ayaHeavy = {
-  N({ s, p, a, k }: HeavyCtx): void {
-    const e = addEnt(s, EK_ATN, p, 180, s.x[p]! + cos(a) * 40, s.y[p]! + sin(a) * 40);
+  N({ w, s, p, a, k }: HeavyCtx): void {
+    sfx(w, 'windblow', 0.8); const e = addEnt(s, EK_ATN, p, 180, s.x[p]! + cos(a) * 40, s.y[p]! + sin(a) * 40);
     if (e >= 0) { s.evx[e] = cos(a) * 2; s.evy[e] = sin(a) * 2; s.ed[e] = 3 * k; }
     const L: number[] = []; entsOf(s, EK_ATN, p, L); for (let i = 0; i < L.length - 2; i++) s.et[L[i]!] = 0;
   },
@@ -24,6 +24,6 @@ export const ayaHeavy = {
       const dx = s.bx[b]! - s.x[p]!, dy = s.by[b]! - s.y[p]!, d = hypot(dx, dy) || 1;
       if (d < 180) { const sp = hypot(s.bvx[b]!, s.bvy[b]!); s.bvx[b] = dx / d * sp; s.bvy[b] = dy / d * sp; }
     }
-    pushJ(w, 'WAVES', 'x', s.x[p]!, 'y', s.y[p]!, 't', 18, 'T', 18, 'spd', 14, 'th', 22, 'inv', 0, 'c', '#bfffe0');
+    pushJ(w, 'WAVES', 'x', s.x[p]!, 'y', s.y[p]!, 't', 18, 'T', 18, 'spd', 14, 'th', 22, 'inv', 0, 'c', '#bfffe0'); sfx(w, 'roll', 0.8);
   },
 } as const;

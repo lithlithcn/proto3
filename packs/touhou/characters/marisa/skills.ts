@@ -1,5 +1,5 @@
 import { type World, cos, hypot, sin } from '@kernel';
-import { RAYF, addEnt, fireRay, foe, type CombatState, PS } from '@pack/combat/api';
+import { RAYF, addEnt, fireRay, foe, type CombatState, PS, sfx } from '@pack/combat/api';
 import { TAU } from '@pack/combat/api';
 import { EK_POT } from './kinds';
 
@@ -12,7 +12,7 @@ export function marisaPotion(w: World, s: CombatState, p: number): void {
   let tx = q >= 0 ? s.x[q]! : s.x[p]! + cos(s.aim[p]!) * 220, ty = q >= 0 ? s.y[q]! : s.y[p]! + sin(s.aim[p]!) * 220;
   const d = hypot(tx - s.x[p]!, ty - s.y[p]!);
   if (d > 260) { tx = s.x[p]! + (tx - s.x[p]!) / d * 260; ty = s.y[p]! + (ty - s.y[p]!) / d * 260; }
-  const i = addEnt(s, EK_POT, p, 30, s.x[p]!, s.y[p]!);
+  const i = addEnt(s, EK_POT, p, 30, s.x[p]!, s.y[p]!); sfx(w, 'shoot3', 0.6);
   if (i >= 0) { s.ebc[i] = 30; s.er[i] = s.x[p]!; s.eh[i] = s.y[p]!; s.ea[i] = tx; s.ew[i] = ty; }
 }
 
@@ -20,5 +20,5 @@ export function marisaPotion(w: World, s: CombatState, p: number): void {
 export function marisaLaser(w: World, s: CombatState, p: number): void {
   if (s.skC2[p]! > s.gf) { w.emit('combat:skill-cooldown', { p, left: s.skC2[p]! - s.gf, n: 'LASER' }); return; }
   s.skC2[p] = s.gf + 480;
-  for (let i = 0; i < 4; i++) fireRay(s, p, { T: 120, tele: 14, flags: RAYF.follow | RAYF.nodash, w: 4, len: 120, dmg: 1.5, ev: 10, kb: 3, stun: 12, c: 0x7cff7a, a: s.aim[p]! + i * TAU / 4, spin: 0.045 });
+  for (let i = 0; i < 4; i++) fireRay(s, p, { T: 120, tele: 14, flags: RAYF.follow | RAYF.nodash, w: 4, len: 120, dmg: 1.5, ev: 10, kb: 3, stun: 12, c: 0x7cff7a, a: s.aim[p]! + i * TAU / 4, spin: 0.045 }); sfx(w, 'se_lazer00', 0.6);
 }
