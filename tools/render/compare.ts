@@ -9,10 +9,10 @@ import type { World } from '@kernel';
 import type { CombatState } from '@pack/combat/api';
 import { BF } from '@pack/combat/api';
 import { drawBullet } from '@pack/render/actors';
-import { drawPlayerL, drawWorldItemsL } from '@pack/render/ld/bind';
+import { RENDER_CLOCK, drawPlayerL, drawWorldItemsL } from '@pack/render/ld/bind';
 import { drawCard } from '@pack/render/cards';
 import { HUDS, drawHudPanel } from '@pack/render/hud';
-import { camOf, drawView, renderViews, viewsOf } from '@pack/render/view';
+import { camLoad, camOf, camSnap, camStart, drawView, renderViews, viewsOf } from '@pack/render/view';
 import { juiceOf, syncJuice } from '@pack/render/juice/state';
 import { IFXOPT } from '@pack/render/ld/ifx';
 import { session } from '../parity/session';
@@ -44,8 +44,8 @@ function portOps(snap: Record<string, unknown>, fn: (c: CanvasRenderingContext2D
 /** Gradient ids are global counters (legacy and port differ): renumber by order of appearance inside one op list. */
 function canon(a: Op[]): Op[] {
   const m = new Map<number, number>(), id = (v: number): number => { if (!m.has(v)) m.set(v, m.size); return m.get(v)!; };
-  const fix = (v: unknown): unknown => typeof v === 'string' ? v.replace(/\d+\.\d{7,}/g, n => (+n).toFixed(6)) : v && typeof v === 'object' && !Array.isArray(v) && 'g' in v ? { ...v, g: id((v as { g: number }).g) } : v;
-  return a.map(o => { const r = o.map(fix); if (typeof r[0] === 'string' && r[0].startsWith('create')) r[r.length - 1] = id(r[r.length - 1] as number); else if (r[0] === 'stop') r[1] = id(r[1] as number); return r; });
+  const fix = (v: unknown): unknown => typeof v === 'string' ? v.replace(/\d+\.\d{5,}/g, n => (+n).toFixed(4)) : v && typeof v === 'object' && !Array.isArray(v) && 'g' in v ? { ...v, g: id((v as { g: number }).g) } : v;
+  return a.map(o => { const r = o.map(fix); if (r[0] === 'drawImage') r[1] = 'sprite'; if (r[0] === 'rotate') r[1] = +((((r[1] as number) % 6.283185) + 6.283185) % 6.283185).toFixed(3); /* same angle, legacy TAU=6.2832 vs 2π */ /* sprite caches are keyed per recorder: compare the blit, not the id */ if (typeof r[0] === 'string' && r[0].startsWith('create')) r[r.length - 1] = id(r[r.length - 1] as number); else if (r[0] === 'stop') r[1] = id(r[1] as number); return r; });
 }
 const fmt = (o: Op | null): string => o ? JSON.stringify(o).slice(0, 110) : '(none)';
 
@@ -62,8 +62,10 @@ function juiceCheck(f: number): void {
   const sites = (ev('JSON.stringify(globalThis.__JW||[])') as string), sf = (ev('JSON.stringify(__SFL)') as string); ev('globalThis.__JW=[];__SFL=[]');
   N.forEach((n, i) => { const a = l[i]!, b = P[i] as number; if (Math.abs(a - b) > 1e-6 && !juiceBad.has(n)) juiceBad.set(n, `f${f}: legacy ${a} | port ${b}${n === 'TX.length' ? `   legacy TX: ${ev('JSON.stringify(TX.map(t=>t.s))')} port TX: ${JSON.stringify(j.TX.map(t => t['s']))}` : ''}   legacy pushes this frame: ${[...new Set(JSON.parse(sites) as string[])].filter(x => x.startsWith(n.split(/[. ]/)[0]!)).join(' ') || '-'}   port events: ${pev}   sfx this frame: ${(JSON.parse(sf) as string[]).join(' ') || '-'}`); });
 }
-// item particles (IFX) are random on both sides: switched off for the comparison
-ev('ifxUnder=()=>{};ifxOver=()=>{}'); IFXOPT.off = true;
+RENDER_CLOCK.now = () => 0; // legacy harness: performance.now() = VT = 0
+camStart(W);
+// cosmetic randomness pinned to 0.5 on both sides (legacy sim never draws from Math.random): particles, shakes, jitters become comparable
+ev('Math.random=()=>0.5'); Math.random = () => 0.5; // the port sim never calls it (sanitizer)
 const tally = new Map<string, { ok: number; bad: number; first?: string }>(), unported = new Map<string, number>(), sfxSeen = new Map<string, number>();
 const mark = (n: string, ok: boolean, why: string): void => { const t = tally.get(n) ?? { ok: 0, bad: 0 }; if (ok) t.ok++; else { t.bad++; t.first ??= why; } tally.set(n, t); };
 
@@ -71,6 +73,7 @@ for (let f = 1; f <= FR; f++) {
   ev(WRAP); ss.pre(f); const [i0, i1] = ss.inputs(f); k.step([() => i0, () => i1], f);
   const ops = k.legacy.render() as Op[];
   juiceCheck(f); // before the port draw (which drains the juice journal)
+  const camPre = camSnap();
   renderViews(sink.screenCtx as unknown as CanvasRenderingContext2D, W, S, +ev('W')!, +ev('H')!); sink.take(); // advances the port camera exactly like the browser does
   const hudPre = f % STEP === 0 ? structuredClone([...HUDS]) : [];
   for (let n = 0; n < S.n; n++) drawHudPanel(sink.screenCtx as unknown as CanvasRenderingContext2D, W, S, n, 0, false, 0, 0, () => 0.5); sink.take(); // legacy HUDS animates every frame (harness clock VT = 0)
@@ -95,9 +98,12 @@ for (let f = 1; f <= FR; f++) {
       mark(x.name, !d, d ? `f${f} #${n} op ${d.i}: legacy ${fmt(d.a)} | port ${fmt(d.b)}` : ''); }
     else if (x.name !== 'drawView' || n > 0) unported.set(x.name, (unported.get(x.name) ?? 0) + 1);
   }
-  // drawView: floor/grid/edge prefix (everything the port draws before cards/bullets), one block per view
-  const vs = viewsOf(S, WW, HH); let vi = 0;
-  for (const dv of bl.filter(x => x.name === 'drawView')) { const v = vs[vi++]; if (!v) break; const got = portOps(dv.snap, c => drawView(c, W, v, 'arena')), want = dv.ops.filter(o => !isMarker(o)).slice(0, got.length), d = diffOps(canon(want), canon(got), 1e-6); mark('drawView(arena prefix)', !d, d ? `f${f} view ${vi - 1} op ${d.i}: legacy ${fmt(d.a)} | port ${fmt(d.b)}` : ''); }
+  // drawView: the whole legacy block (camera, floor, cards, bullets, players, items, effects, tags, indicators), one per view; cameras replayed from their pre-frame state
+  const vs = viewsOf(S, WW, HH), camPost = camSnap(); let vi = 0;
+  for (const dv of bl.filter(x => x.name === 'drawView')) { const v = vs[vi++]; if (!v) break; camLoad(camPre); const got = portOps(dv.snap, c => drawView(c, W, v)), want = dv.ops.filter(o => !isMarker(o)), d = diffOps(canon(want), canon(got), 1e-5); /* floats derived through the camera/zoom chain drift ~1e-6 */
+    if (d && process.env['DIFFCTX'] === 'drawView' && !(globalThis as { __dv?: 1 }).__dv) { (globalThis as { __dv?: 1 }).__dv = 1; const Wn = (a: Op[]): string => a.slice(Math.max(0, d.i - 8), d.i + 4).map((o, k) => `   ${Math.max(0, d.i - 8) + k}: ${fmt(o)}`).join('\n'); console.log(`DIFFCTX drawView f${f}\n legacy:\n${Wn(canon(want))}\n port:\n${Wn(canon(got))}`); }
+    mark('drawView', !d, d ? `f${f} view ${vi - 1} op ${d.i}/${want.length}: legacy ${fmt(d.a)} | port ${fmt(d.b)}` : ''); }
+  camLoad(camPost);
 }
 for (const n of (ev('__SFX') as string[])) sfxSeen.set(n, (sfxSeen.get(n) ?? 0) + 1);
 
@@ -108,4 +114,4 @@ console.log(`\nJUICE STATE (per frame, ${juiceN} frames; first divergence per va
 for (const [n, w] of juiceBad) console.log(`  ${n} ${w}`);
 console.log(`\nNOT PORTED visual (legacy draw functions with no port counterpart, instances over the samples): ${[...unported].sort((x, y) => y[1] - x[1]).map(([n, c]) => `${n}x${c}`).join(' ') || 'none'}`);
 console.log(`NOT PORTED audio (legacy sfx() names triggered; the port has no audio pack): ${[...sfxSeen].sort((x, y) => y[1] - x[1]).map(([n, c]) => `${n}x${c}`).join(' ') || 'none'}`);
-console.log('NOT COMPARED: item particles (IFX, random), light bullets (legacy draws cached sprites; compare by pixels), everything legacy draws outside a named draw function (floor FX, post effects), animation timing between samples.');
+console.log('NOT COMPARED: light bullets (legacy draws cached sprites; compare by pixels), everything legacy draws outside a named draw function (floor FX, post effects), animation timing between samples.');

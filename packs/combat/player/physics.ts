@@ -1,3 +1,4 @@
+import { burst, jfx } from '../jfx';
 import { type World, hypot } from '@kernel';
 import { kP } from '../stats';
 import { T } from '../tuning';
@@ -41,11 +42,16 @@ export function physics(w: World, s: CombatState, p: number): void {
   const k = kP(s), R = T.BODY_R;
   s.x[p] = s.x[p]! + s.vx[p]! * k; s.y[p] = s.y[p]! + s.vy[p]! * k;
   if (s.warp > 0) { // Warp item: leave one side, come back on the other; no walls, no red zone
+    const ox = s.x[p]!, oy = s.y[p]!;
     if (s.x[p]! < 0) s.x[p] = s.x[p]! + s.mapW; else if (s.x[p]! > s.mapW) s.x[p] = s.x[p]! - s.mapW;
     if (s.y[p]! < 0) s.y[p] = s.y[p]! + s.mapH; else if (s.y[p]! > s.mapH) s.y[p] = s.y[p]! - s.mapH;
-    return;
+    if (ox !== s.x[p] || oy !== s.y[p]) { burst(w, ox, oy, '#b45cff', 10); burst(w, s.x[p]!, s.y[p]!, '#b45cff', 10); jfx(w, 'camsnap', p); }
+  } else {
+    if (s.x[p]! < R) { s.x[p] = R; wall(w, s, p, 0); } else if (s.x[p]! > s.mapW - R) { s.x[p] = s.mapW - R; wall(w, s, p, 0); }
+    if (s.state[p] === PS.dead) return;
+    if (s.y[p]! < R) { s.y[p] = R; wall(w, s, p, 1); } else if (s.y[p]! > s.mapH - R) { s.y[p] = s.mapH - R; wall(w, s, p, 1); }
   }
-  if (s.x[p]! < R) { s.x[p] = R; wall(w, s, p, 0); } else if (s.x[p]! > s.mapW - R) { s.x[p] = s.mapW - R; wall(w, s, p, 0); }
-  if (s.state[p] === PS.dead) return;
-  if (s.y[p]! < R) { s.y[p] = R; wall(w, s, p, 1); } else if (s.y[p]! > s.mapH - R) { s.y[p] = s.mapH - R; wall(w, s, p, 1); }
+  // presentation (legacy lines 494-495): dash afterimages, ejection trail
+  if (s.state[p] === PS.dash) jfx(w, 'trail', s.x[p]!, s.y[p]!, p);
+  if (s.state[p] === PS.hitstun && s.vx[p]! * s.vx[p]! + s.vy[p]! * s.vy[p]! > 49 && s.gf % 2) jfx(w, 'trail', s.x[p]!, s.y[p]!, -1);
 }

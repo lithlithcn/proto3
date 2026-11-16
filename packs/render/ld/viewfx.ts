@@ -50,3 +50,4 @@ export function drawVignette(v, H, p) {
   g.addColorStop(0,'rgba(255,0,0,0)');g.addColorStop(1,`rgba(255,0,0,${a})`);ctx.fillStyle=g;ctx.fillRect(v.x,0,v.w,H)}
 }
 export const magicCircleL = magicCircle;
+export const koBeamL = koBeam, drawCrackL = drawCrack, hexHueL = hexHue;

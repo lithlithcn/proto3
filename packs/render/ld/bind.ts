@@ -1,5 +1,5 @@
 import { MAX_FX, MAXP, MAX_ENT, PS, MV_NAMES, moveOf, bodyR, coreR, charOf, statusPool, BF, type CombatState } from '@pack/combat/api';
-import type { World } from '@kernel';
+import { sortBy, type World } from '@kernel';
 import { COLS } from '../colors';
 import { bindChars, CHDRAW } from './chars';
 import { bindLayers } from './layers';
@@ -44,6 +44,8 @@ export function makeQ(e: Env, p: number): Record<string, unknown> {
       case 'chC': if (key() === 'flandre') return 9; break; // legacy flandre.tick pins chC=9, chM=1 every frame
       case 'chM': if (key() === 'flandre') return 1; break;
       case 'chG': return juiceOf(w).chG[p] ?? undefined;
+      case 'burst': return s.skip || (s.tstop > 0 && p !== s.tso) || s.state[p] === PS.dead ? 0 : 0.08; // legacy burst is a dead feature (reset every step, then one regen tick); its mini-HUD bar shows that
+      case 'tgt': return s.tgt[p]! >= 0 ? cur[s.tgt[p]!] : undefined;
       case 'nOrig': return th.nOr?.[p] ? th.nOc![p] : undefined;
       case 'stocks': return s.stocks[p]; case 'charging': return !!s.charging[p]; case 'focus': return !!s.focus[p]; case 'giant': return s.giant[p];
     }
@@ -61,7 +63,13 @@ function qsOf(e: Env): Record<string, unknown>[] {
   return c.q.slice(0, e.s.n);
 }
 /** Legacy bullet objects (only the fields legacy drawing reads). */
-export const bulletsView = (s: CombatState): Record<string, unknown>[] => Array.from({ length: s.nb }, (_, i) => { const f = s.bflags[i]!; return { x: s.bx[i], y: s.by[i], vx: s.bvx[i], vy: s.bvy[i], r: s.br[i], dead: !!(f & BF.dead), heavy: !!(f & BF.heavy), breaker: !!(f & BF.breaker), owner: s.bowner[i], refl: s.brefl[i], c: s.bcol[i] ? '#' + (s.bcol[i]! & 0xffffff).toString(16).padStart(6, '0') : undefined }; });
+const SHN = ['orb', 'rice', 'kunai', 'star', 'bubble', 'pill', 'flea'];
+export const bulletsView = (s: CombatState): Record<string, unknown>[] => Array.from({ length: s.nb }, (_, i) => {
+  const f = s.bflags[i]!, sh = SHN[s.bsh[i]!];
+  return { id: s.bid[i], x: s.bx[i], y: s.by[i], vx: s.bvx[i], vy: s.bvy[i], r: s.br[i], dead: !!(f & BF.dead), heavy: !!(f & BF.heavy), breaker: !!(f & BF.breaker), oneshot: !!(f & BF.oneshot), rifle: !!(f & BF.rifle),
+    owner: s.bowner[i], refl: s.brefl[i], dist: s.bdist[i], bf: s.bborn[i], ang: s.bang[i], sh: sh === 'orb' ? undefined : sh, m: f & BF.heavy ? { arm: s.barm[i], dmg: s.bdmg[i] } : undefined,
+    c: s.bcol[i] ? '#' + (s.bcol[i]! & 0xffffff).toString(16).padStart(6, '0') : undefined };
+});
 /** Everything the copied legacy drawing code touches, rebuilt per frame (cheap: <= 8 players, lazy bullet/entity views). */
 export function bindLegacy(c: CanvasRenderingContext2D, e: Env): void {
   const { w, s } = e, P = qsOf(e), cache: { B?: unknown[]; ENT?: unknown[] } = {};
@@ -89,14 +97,14 @@ import { bindViewFx, drawJuiceWorld, drawVignette } from './viewfx';
 import { juiceOf } from '../juice/state';
 /** Legacy drawView effect layers over the world (FX, graze arcs, rings, KO beams, texts, lines, cracks, waves, inversion, The World tint). */
 export function drawWorldFxL(c: CanvasRenderingContext2D, w: World, s: CombatState, L: number, Tp: number, R: number, Bt: number, vw: number, vh: number): void {
-  const e: Env = { w, s, th: w.slice<Record<string, ArrayLike<number>>>('touhou'), rnd: Math.random }, j = juiceOf(w);
+  const e: Env = { w, s, th: w.slice<Record<string, ArrayLike<number>>>('touhou'), rnd: () => RANDOM.fn() }, j = juiceOf(w);
   bindLegacy(c, e);
   bindViewFx({ ctx: c, frame: s.gf, P: cur, FX: j.FX, TX: j.TX, RINGS: j.RINGS, WAVES: j.WAVES, LINES: j.LINES, KOFX: j.KOFX, CRACK: j.CRACK, GZ: j.GZ.map(g => ({ ...g, p: cur[g['p'] as number] })), invF: j.invF, TSTOP: s.tstop, TSO: s.tso, drawP, fxLow: false });
   drawJuiceWorld(L, Tp, R, Bt, vw, vh);
 }
 /** Legacy low-HP red vignette of one view (drawn after the world transform is restored). */
 export function drawVignetteL(c: CanvasRenderingContext2D, w: World, s: CombatState, v: { x: number; w: number }, H: number, p: number): void {
-  const e: Env = { w, s, th: w.slice<Record<string, ArrayLike<number>>>('touhou'), rnd: Math.random };
+  const e: Env = { w, s, th: w.slice<Record<string, ArrayLike<number>>>('touhou'), rnd: () => RANDOM.fn() };
   bindLegacy(c, e); bindViewFx({ ctx: c, frame: s.gf, P: cur, drawP }); drawVignette(v, H, cur[p]);
 }
 
@@ -106,8 +114,10 @@ import { bindThemed } from './themed';
 import { magicCircleL } from './viewfx';
 /** Legacy drawWorldItems + entity drawings (EDR) + Reimu orbs/border + Nue UFOs. Item worlds come from their entities; themed items arrive with lot 3. */
 export function drawWorldItemsL(c: CanvasRenderingContext2D, w: World, s: CombatState): void {
-  const e: Env = { w, s, th: w.slice<Record<string, ArrayLike<number>>>('touhou'), rnd: Math.random };
-  bindLegacy(c, e);
+  const e: Env = { w, s, th: w.slice<Record<string, ArrayLike<number>>>('touhou'), rnd: () => RANDOM.fn() };
+  bindLegacy(c, e); drawWorldItemsBind(c, w, s); drawWorldItems();
+}
+function drawWorldItemsBind(c: CanvasRenderingContext2D, w: World, s: CombatState): void {
   const ENT = [...Array.from({ length: s.nent }, (_, i) => entView(s, i)).filter(x => !String(x['k']).startsWith('?')), ...juiceOf(w).PE];
   const of = (k: string): Record<string, unknown>[] => ENT.filter(x => x['k'] === k);
   const KOB = Array.from({ length: s.nkb }, (_, i) => ({ o: s.kbO[i], x: s.kbX[i], y: s.kbY[i], a: s.kbA[i], t: s.kbT[i], T: s.kbTT[i] })).filter(k => (k.t ?? 0) >= 0);
@@ -116,5 +126,31 @@ export function drawWorldItemsL(c: CanvasRenderingContext2D, w: World, s: Combat
   bindIfx({ ctx: c, frame: s.gf, P: cur, ENT: ENT.filter(x => !['heal', 'bomb', 'hole', 'bump', 'fairy'].includes(x['k'] as string)), ORBS, FAIRIES, HOLES, BUMPS, ZONES, PHOTO: [], WARP: s.warp, VIEW: 0, bodyR: (q: { id: number }) => bodyR(s, q.id) });
   bindWorld({ ctx: c, frame: s.gf, P: cur, B: [], ENT: ENT.filter(x => !['heal', 'bomb', 'hole', 'bump', 'fairy'].includes(x['k'] as string)), KOB,
     HOLES, BUMPS, PHOTO: [], ZONES, ORBS, FAIRIES, IM: { rifle: { start: 40 } }, bodyR: (q: { id: number }) => bodyR(s, q.id), magicCircle: magicCircleL });
-  drawWorldItems();
+}
+
+import { bindView, drawView as drawViewLegacy } from './view';
+import { CARD_ULT, MAXP as MP, T as TT } from '@pack/combat/api';
+/** Clock of time-based décor (legacy performance.now); parity probes pin it to the legacy harness clock (0). */
+/** Cosmetic randomness of the copied legacy code (jitters, particles); parity probes pin it. */
+export const RANDOM = { fn: (): number => Math.random() };
+export const RENDER_CLOCK = { now: (): number => performance.now() };
+/** One view through the verbatim legacy drawView. `cams` = the port camera objects (legacy writes x/y in place); `H`/`SCv` as legacy render() sets them. */
+export function drawViewL(c: CanvasRenderingContext2D, w: World, s: CombatState, v: { x: number; y: number; w: number; h: number; i: number; q?: 1 }, cams: { x: number; y: number }[], sc: number): void {
+  const e: Env = { w, s, th: w.slice<Record<string, ArrayLike<number>>>('touhou'), rnd: () => RANDOM.fn() }, j = juiceOf(w);
+  bindLegacy(c, e);
+  const items = sortItems(w), B = bulletsView(s);
+  const CARDS = Array.from({ length: s.ncard }, (_, k) => ({ type: s.ckind[k] === CARD_ULT ? 'rainbow' : items[s.ckind[k]!]?.k, x: s.cx[k], y: s.cy[k], on: s.con[k]! > 0, cont: !!s.ccont[k], cp: Array.from({ length: s.n }, (_, i) => s.ccp[k * MP + i]) }));
+  const ENT = [...Array.from({ length: s.nent }, (_, i) => entView(s, i)).filter(x => !String(x['k']).startsWith('?')), ...j.PE];
+  j.stock0 ||= Math.max(1, ...Array.from({ length: s.n }, (_, i) => s.stocks[i]!));
+  bindView({ ctx: c, frame: s.gf, P: cur, B, ENT, cams, performance: RENDER_CLOCK, STOCKS: [j.stock0], stI: 0, MVIEW: {}, T: { ...TT, MAP_W: s.mapW, MAP_H: s.mapH, EDGE: s.edge }, BGH: [], CARDS, ITEMS: items, item: CARDS[0] ?? null, hitstop: s.hitstop,
+    FX: j.FX, TX: j.TX, RINGS: j.RINGS, WAVES: j.WAVES, LINES: j.LINES, KOFX: j.KOFX, CRACK: j.CRACK, GZ: j.GZ.map(g => ({ ...g, p: cur[g['p'] as number] })), invF: j.invF, TSTOP: s.tstop, TSO: s.tso,
+    shake: j.shake, kx: j.kx, ky: j.ky, zk: j.zk, bgF: j.bgF, NERV: s.tempo, slow: s.slow, WARP: s.warp, TEAMS: s.teams, H: v.h, SCv: sc, bodyR: (q: { id: number }) => bodyR(s, q.id), coreR: (q: { id: number }) => coreR(s, q.id) });
+  drawWorldItemsBind(c, w, s);
+  drawViewLegacy(v);
+}
+/** Legacy ITEMS (k = content id without pack prefix, name, colour) in the card-draw order. */
+const IT = new WeakMap<World, { k: string; name: string; c: string }[]>();
+function sortItems(w: World): { k: string; name: string; c: string }[] {
+  let l = IT.get(w); if (!l) { l = sortBy(w.registry.list<{ name: string; color: string; order: number }>('item'), e => e[1].order, e => e[1].order).map(([id, d]) => ({ k: id.split(':').pop()!, name: d.name, c: d.color })); IT.set(w, l); }
+  return l;
 }
