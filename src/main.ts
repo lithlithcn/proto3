@@ -1,12 +1,14 @@
 import { BTN, FixedLoop, World, newInput, setInput } from '@kernel';
 import type { CombatState } from '@pack/combat/api';
 import { drawHud } from '@pack/render/hud';
-import { renderViews } from '@pack/render/view';
+import { camStart, renderViews } from '@pack/render/view';
+import { drawScreenL, drawScreenTopL, screenFilterL } from '@pack/render/ld/bind';
 import { builtinPacks } from './packs';
 
 /** Playable slice: Reimu (P1: WASD + JKL...) vs Marisa (P2: arrows + numpad). Menus, modes, touch and gamepad arrive with the ui/modes packs. */
 const cfg = { seed: (Math.random() * 1e9) | 0, players: 2, world: { players: [{ char: 'touhou:reimu' }, { char: 'touhou:marisa' }] } }; // sim-allow(boot-time seed)
 const world = new World({ packs: builtinPacks.filter(p => p.id !== 'sandbox'), ...cfg });
+camStart(world);
 const rec: number[][] = []; // every input frame of the match: the whole game is replayable from cfg + rec
 const KB = [
   { up: 'KeyW', down: 'KeyS', left: 'KeyA', right: 'KeyD', shot: 'KeyJ', heavy: 'KeyK', melee: 'KeyL', dash: 'Space', parry: 'KeyI', burst: 'KeyU', spell: 'KeyO', focus: 'ShiftLeft', prev: 'KeyE', next: 'KeyR' },
@@ -32,8 +34,10 @@ function frame(now: number): void {
   }
   if (canvas.width !== innerWidth || canvas.height !== innerHeight) { canvas.width = innerWidth; canvas.height = innerHeight; }
   c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = '#000'; c.fillRect(0, 0, canvas.width, canvas.height);
-  renderViews(c, world, world.slice<CombatState>('combat'), canvas.width, canvas.height);
-  drawHud(c, world, world.slice<CombatState>('combat'), canvas.width, canvas.height, performance.now() / 1000);
+  const S = world.slice<CombatState>('combat'), W = canvas.width, H = canvas.height;
+  renderViews(c, world, S, W, H); drawScreenL(c, world, S, W, H);
+  drawHud(c, world, S, W, H, performance.now() / 1000); drawScreenTopL(c, world, S, W, H);
+  const fl = screenFilterL(c, world, S, W, H); if (canvas.style.filter !== fl) canvas.style.filter = fl;
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);

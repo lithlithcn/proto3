@@ -21,3 +21,10 @@ Gotcha: the legacy HUD state (HUDS) lerps once per rendered frame, so the port m
 - Character juice lives in the sim files of each character (jfx calls) or in `packs/touhoufx/presentation/juice.ts` for touhou events.
 - Oracle: `pnpm render compare a,b frames` prints, per juice variable, the first frame that differs + the legacy html line that pushed (`legacy pushes`), legacy sfx sites and the port events of that frame. FX is compared as pushes per frame (lifetimes are random).
 - Known open: TX cap order (legacy dedupes at the 2381 wrapper, port in the tick), hlB count in spells 06/08/10/11, Nue `nDs` shadow trail (field not ported), Reimu `rbnd` entity (not ported).
+
+## Verbatim legacy rendering (ld/) — 2026-11-16
+- `packs/render/ld/*.ts` hold the legacy drawing code copied verbatim (`// @ts-nocheck`): view.ts (drawView + floor décor dynBG + cards + bullet sprites + heavy chain + tags/names/mini-HUD/indicators/danger), layers.ts (drawP chain), chars.ts (8 character draws + EMB), world.ts (drawWorldItems chain + every EDR), ifx.ts (item particles), themed.ts (chDraw..5), viewfx.ts (juice layers), screen.ts (banners, flash, speed lines, spell UI, timer, item line, CSS filter).
+- `ld/bind.ts` is the only adapter: it maps legacy names (`q.x`, `q.fx.koishi`, `P`, `B`, `ENT`, `CARDS`, juice lists) onto the SoA state. Fix a visual bug there (wrong field) or in the copied file (legacy bug, document the deviation).
+- Regenerate nothing by hand: the copies were produced from line ranges of the legacy file; if a block must change, edit the copy and note it here.
+- Parity: `pnpm render compare a,b frames` (cosmetic randomness pinned to 0.5 on both sides, clock pinned to 0). `DIFFCTX=<drawFn>` prints the ops around the first difference.
+- Known gaps: q.acts (item activation log), profiles/names, replay HUD, maps (drawMapObj), WebGL bullet path, themed item state (lot 3).

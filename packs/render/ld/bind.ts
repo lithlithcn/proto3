@@ -154,3 +154,19 @@ function sortItems(w: World): { k: string; name: string; c: string }[] {
   let l = IT.get(w); if (!l) { l = sortBy(w.registry.list<{ name: string; color: string; order: number }>('item'), e => e[1].order, e => e[1].order).map(([id, d]) => ({ k: id.split(':').pop()!, name: d.name, c: d.color })); IT.set(w, l); }
   return l;
 }
+
+import { bindScreen, drawScreen, drawScreenTop, screenFilterOf } from './screen';
+import { spellPool } from '@pack/combat/api';
+function bindScreenL(c: CanvasRenderingContext2D, w: World, s: CombatState, W: number, H: number): void {
+  const e: Env = { w, s, th: w.slice<Record<string, ArrayLike<number>>>('touhou'), rnd: () => RANDOM.fn() }, j = juiceOf(w);
+  bindLegacy(c, e);
+  const items = sortItems(w), card = s.ncard ? { type: s.ckind[0] === CARD_ULT ? 'rainbow' : items[s.ckind[0]!]?.k, on: s.con[0]! > 0 } : null;
+  bindScreen({ SPELLS: spellPool(w), ctx: c, cv: c.canvas, frame: s.gf, P: cur, W, H, T: { ...TT, MAP_W: s.mapW, MAP_H: s.mapH, EDGE: s.edge }, borderF: j.borderF, focusL: j.focusL, BIG: j.BIG, flashS: j.flashS, flashCol: j.flashCol, bright: j.bright, zblur: j.zblur, chroma: j.chroma,
+    NERV: s.tempo, slow: s.slow, TSTOP: s.tstop, ITEMS: items, item: card, itemT: s.itemT, itemsOn: s.itemsOn, WARP: s.warp, FAIRIES: Array.from({ length: s.nent }, (_, i) => s.ek[i]).filter(k => k === 104), bodyR: (q: { id: number }) => bodyR(s, q.id), fxLow: false });
+}
+/** Legacy render() layers over the views (border flash, speed lines, banners, flash/brightness, zoom blur, chroma split, spell UI). */
+export function drawScreenL(c: CanvasRenderingContext2D, w: World, s: CombatState, W: number, H: number): void { bindScreenL(c, w, s, W, H); drawScreen(); }
+/** Legacy render() layers after the HUD (timer, item activations, next-card line). */
+export function drawScreenTopL(c: CanvasRenderingContext2D, w: World, s: CombatState, W: number, H: number): void { bindScreenL(c, w, s, W, H); drawScreenTop(); }
+/** CSS filter of the canvas (legacy screenFilter: saturated during slow-motion, inverted during a time stop). */
+export function screenFilterL(c: CanvasRenderingContext2D, w: World, s: CombatState, W: number, H: number): string { bindScreenL(c, w, s, W, H); return screenFilterOf(); }
