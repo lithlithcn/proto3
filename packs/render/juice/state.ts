@@ -8,12 +8,12 @@ export interface Juice {
   shake: number; zk: number; kx: number; ky: number; chroma: number; bright: number; focusL: number; zblur: number; flashS: number; flashCol: string; invF: number;
   bgF: { c: string; t: number }; borderF: { c: string; t: number };
   FX: P2[]; PE: P2[]; TX: P2[]; RINGS: P2[]; WAVES: P2[]; LINES: P2[]; KOFX: P2[]; CRACK: P2[]; GZ: P2[]; BIG: P2[];
-  lastGf: number; rnd: () => number; q: { ev: string; gf: number }[]; cc: number[]; ccF: number[]; chG: number[];
+  lastGf: number; rnd: () => number; q: { ev: string; gf: number }[]; cc: number[]; ccF: number[]; chG: number[]; nds: number[];
 }
 const cache = new WeakMap<World, Juice>();
 export function juiceOf(w: World): Juice {
   let j = cache.get(w);
-  if (!j) { j = { shake: 0, zk: 0, kx: 0, ky: 0, chroma: 0, bright: 0, focusL: 0, zblur: 0, flashS: 0, flashCol: '#fff', invF: 0, bgF: { c: '#fff', t: 0 }, borderF: { c: '#fff', t: 0 }, FX: [], PE: [], TX: [], RINGS: [], WAVES: [], LINES: [], KOFX: [], CRACK: [], GZ: [], BIG: [], lastGf: -1, rnd: () => Math.random(), q: [], cc: [], ccF: [], chG: [] }; /* late-bound rnd: juiceOf may first run inside the sanitized step */ cache.set(w, j); }
+  if (!j) { j = { shake: 0, zk: 0, kx: 0, ky: 0, chroma: 0, bright: 0, focusL: 0, zblur: 0, flashS: 0, flashCol: '#fff', invF: 0, bgF: { c: '#fff', t: 0 }, borderF: { c: '#fff', t: 0 }, FX: [], PE: [], TX: [], RINGS: [], WAVES: [], LINES: [], KOFX: [], CRACK: [], GZ: [], BIG: [], lastGf: -1, rnd: () => Math.random(), q: [], cc: [], ccF: [], chG: [], nds: [] }; /* late-bound rnd: juiceOf may first run inside the sanitized step */ cache.set(w, j); }
   return j;
 }
 

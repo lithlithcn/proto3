@@ -30,10 +30,11 @@ const onBreak = on<{ victim: number }>('juice-spell-break', 'combat:spell-break'
 const onPip = on<{ p: number; pips: number; x: number; y: number }>('juice-wall-pip', 'combat:wall-pip', (j, e) => { txt(j, e.x, e.y - 46, 'WALL ' + e.pips + '/' + T.PIPS, '#f66'); });
 
 /** fx-tick: also carries the per-player trails legacy physics() pushed (dash afterimages, ejection trail) — only on frames the players moved. */
-H['combat:fx-tick'] = ((j: Juice, e: { gf: number; tr: number[]; pos: number[] }) => {
+H['combat:fx-tick'] = ((j: Juice, e: { gf: number; tr: number[]; pos: number[]; cn: string[] }) => {
   if (e.gf === j.lastGf) return; j.lastGf = e.gf;
   for (let i = 0; i < e.tr.length; i += 4) { const k = e.tr[i + 3]!; j.FX.push(k >= 0 ? { x: e.tr[i]!, y: e.tr[i + 1]!, vx: 0, vy: 0, t: 12, c: col(k), r: T.BODY_R } : { x: e.tr[i]!, y: e.tr[i + 1]!, vx: 0, vy: 0, t: 18, c: '#999' }); }
   tickJuice(j);
+  for (let p = 0; p * 2 < e.pos.length; p++) if ((j.nds[p] ?? 0) > e.gf && e.cn[p] === 'Nue' && e.gf % 2 === 0 && j.FX.length < 480) j.FX.push({ x: e.pos[p * 2]!, y: e.pos[p * 2 + 1]!, vx: 0, vy: 0, t: 18, c: '#1a1028' }); // Nue dash shadow (tick, line 4458)
   for (let p = 0; p * 2 < e.pos.length; p++) { const c = j.cc[p] ?? 0; if (c && e.gf - j.ccF[p]! > 18) { if (c >= 5) txt(j, e.pos[p * 2]!, e.pos[p * 2 + 1]! - 52, 'CANCEL x' + c, '#ffd23a', c >= 20 ? 18 : 14); j.cc[p] = 0; } } // step wrapper line 2398, after stepFx
 }) as never;
 const onTick: HookDef<{ gf: number }> = { id: 'juice-tick', event: 'combat:fx-tick', phase: 'after', run(w, ev) {
@@ -43,8 +44,8 @@ const onTick: HookDef<{ gf: number }> = { id: 'juice-tick', event: 'combat:fx-ti
     if (s.state[p] === PS.dash) tr.push(s.x[p]!, s.y[p]!, 0, p);
     if (s.state[p] === PS.hitstun && s.vx[p]! * s.vx[p]! + s.vy[p]! * s.vy[p]! > 49 && s.gf % 2) tr.push(s.x[p]!, s.y[p]!, 0, -1);
   }
-  const pos: number[] = []; for (let p = 0; p < s.n; p++) pos.push(s.x[p]!, s.y[p]!);
-  jq(w).push({ ev: 'combat:fx-tick', gf: ev.payload.gf, tr, pos } as never);
+  const pos: number[] = [], cn: string[] = []; for (let p = 0; p < s.n; p++) { pos.push(s.x[p]!, s.y[p]!); cn.push(charOf(w, s, p).name); }
+  jq(w).push({ ev: 'combat:fx-tick', gf: ev.payload.gf, tr, pos, cn } as never);
 } };
 type Pp = { p: number; px: number; py: number; pa: number; pcpu: number };
 const onGraze = on<Pp & { x: number; y: number; k: number; streak: number }>('juice-graze', 'combat:graze', (j, e) => {
@@ -98,6 +99,7 @@ const onFx = on<{ op: string; a: (number | string)[] }>('juice-fx', 'combat:fx',
     case 'max': J[a[0] as string] = Math.max(J[a[0] as string]!, a[1] as number); break;
     case 'edge': j.FX.push({ x: (a[0] as number) + (j.rnd() - 0.5) * 20, y: (a[1] as number) + (j.rnd() - 0.5) * 20, vx: 0, vy: -1, t: 16, c: '#f44' }); break; // red-zone damage sparks (line 357)
     case 'chg': j.chG[a[0] as number] = Math.min(100, (j.chG[a[0] as number] ?? 0) + (a[1] as number)); break; // Okina season gauge (presentation only in legacy)
+    case 'nds': j.nds[a[0] as number] = a[1] as number; break;
     case 'crack': crack(j, a[0] as number, a[1] as number); break;
     case 'push': { const o: Record<string, unknown> = {}; for (let i = 1; i + 1 < a.length; i += 2) o[a[i] as string] = a[i + 1]; (j as unknown as Record<string, unknown[]>)[a[0] as string]!.push(o); break; }
   }

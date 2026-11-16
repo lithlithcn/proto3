@@ -81,7 +81,7 @@ function run(s: CombatState, i: number, kind: number, ag: number, w?: World): vo
       const o = s.bp2[i]!, t = atan2(s.y[o]! - s.by[i]!, s.x[o]! - s.bx[i]!), d = atan2(sin(t - s.bang[i]!), cos(t - s.bang[i]!));
       setV(s, i, s.bang[i]! + clamp(d, -s.bp1[i]!, s.bp1[i]!), hypot(s.bvx[i]!, s.bvy[i]!));
     } break;
-    case BK.launch: if (ag === s.bp0[i]!) { setV(s, i, s.bp1[i]!, s.bp2[i]!); hl(w, s, i); } break; // at age bp0: heading bp1, speed bp2
+    case BK.launch: if (ag === s.bp0[i]!) { setV(s, i, s.bp1[i]!, s.bp2[i]!); if (s.bflags[i]! & BF.heavy) hl(w, s, i); } break; // rose curve: only its big bullets flash // at age bp0: heading bp1, speed bp2
     case BK.orbit: // ring of phase bp0, direction bp1, ring index bp2 around the caster, then released along the tangent
       if (ag < 80) { const a = s.bp0[i]! + s.bp1[i]! * ag * 0.04, R = 30 + ag * (1 + s.bp2[i]! * 0.55); s.bx[i] = s.x[p]! + cos(a) * R; s.by[i] = s.y[p]! + sin(a) * R; s.bvx[i] = 0; s.bvy[i] = 0; s.bang[i] = a + s.bp1[i]! * 1.5707963267948966; }
       else if (ag === 80) { setV(s, i, s.bang[i]!, 2.6); hl(w, s, i); }
