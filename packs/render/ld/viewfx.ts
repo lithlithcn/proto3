@@ -49,3 +49,4 @@ export function drawVignette(v, H, p) {
   const a=(.16+.08*Math.sin(frame*.2))*(1-q.hp/(T.HP*.3)),g=ctx.createRadialGradient(v.x+v.w/2,H/2,Math.min(v.w,H)*.35,v.x+v.w/2,H/2,Math.max(v.w,H)*.7);
   g.addColorStop(0,'rgba(255,0,0,0)');g.addColorStop(1,`rgba(255,0,0,${a})`);ctx.fillStyle=g;ctx.fillRect(v.x,0,v.w,H)}
 }
+export const magicCircleL = magicCircle;

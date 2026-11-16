@@ -1,5 +1,5 @@
 import { type World, atan2, hypot } from '@kernel';
-import { BF, PS, TAU, bodyR, chHitQ, customHeavy, foe, moveOf, nearFoe, type CombatState, jBurst } from '@pack/combat/api';
+import { BF, PS, TAU, bodyR, chHitQ, customHeavy, foe, moveOf, nearFoe, type CombatState, jBurst, jTxt } from '@pack/combat/api';
 import { EK_OBD, EK_ODN, EK_ODR } from './kinds';
 
 const live = (s: CombatState, o: number, q: number): boolean => q !== o && s.state[q] !== PS.dead && s.inv[q]! <= 0 && foe(s, o, q);
@@ -25,7 +25,7 @@ export function okinaEnts(w: World, s: CombatState, p: number): void {
         const m = moveOf(w, s, q); if (!m || m.spd !== undefined || s.t[q]! < m.start || s.t[q]! >= m.start + m.act) continue;
         if (hypot(s.x[q]! - s.ex[i]!, s.y[q]! - s.ey[i]!) < (m.range || 40) + bodyR(s, q) + 16) { s.ehc[i * 32 + q] = s.gf + 20; s.eh[i] = s.eh[i]! - (m.dmg || 5); }
       }
-      if (s.eh[i]! <= 0) s.et[i] = 0;
+      if (s.eh[i]! <= 0) { s.et[i] = 0; jBurst(w, s.ex[i]!, s.ey[i]!, '#ffd23a', 18); jTxt(w, s.ex[i]!, s.ey[i]! - 30, 'DOOR BROKEN', '#ffd23a', 13); }
     } else if (k === EK_ODN) { // dancer: kicks foes it touches (toward its sister if both are out), throws an 8-way ring every 45 frames and a big pair every 3rd ring
       let S = -1; for (let z = 0; z < s.nent; z++) if (z !== i && s.ek[z] === EK_ODN && s.eo[z] === p && s.et[z]! > 0) { S = z; break; }
       for (let q = 0; q < s.n; q++) {

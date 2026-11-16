@@ -11,7 +11,7 @@ import { bodyR } from './stats';
 export const EK_RAY = 10;
 export const RAYF = { warn: 1, follow: 2, clear: 4, nodash: 8 } as const;
 
-export interface RayOpts {
+export interface RayOpts { /** presentation colour 0xRRGGBB (default white) */ c?: number;
   /** Total frames. */ T: number; /** Warning frames before it fires. */ tele?: number; w?: number; len?: number; dmg?: number; ev?: number; kb?: number; stun?: number;
   a?: number; spin?: number; push?: number; flags?: number; /** Origin (default: the owner). */ x?: number; y?: number;
 }
@@ -20,7 +20,7 @@ export function fireRay(s: CombatState, p: number, o: RayOpts): void {
   const i = addEnt(s, EK_RAY, p, o.T, o.x ?? s.x[p]!, o.y ?? s.y[p]!);
   if (i < 0) return;
   s.ebc[i] = o.T; s.eh[i] = o.tele ?? 20; s.ew[i] = o.w ?? 10; s.er[i] = o.len ?? 900; s.ed[i] = o.dmg ?? 2; s.eg[i] = o.ev ?? 6; s.ekb[i] = o.kb ?? 4; s.est[i] = o.stun ?? 14;
-  s.ea[i] = o.a ?? s.aim[p]!; s.evx[i] = o.spin ?? 0; s.evy[i] = o.push ?? 0; s.efl[i] = o.flags ?? RAYF.follow;
+  s.ec[i] = o.c !== undefined ? o.c + 1 : 0; s.ea[i] = o.a ?? s.aim[p]!; s.evx[i] = o.spin ?? 0; s.evy[i] = o.push ?? 0; s.efl[i] = o.flags ?? RAYF.follow;
 }
 
 /** Ray step (legacy chStep, ray part): runs after every character hook. */

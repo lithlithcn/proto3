@@ -7,7 +7,30 @@ import { bindLayers } from './layers';
 /** Presentation view-model: legacy draw code reads `q.x`, `q.fx.koishi`, `P[i]`, `ENT`… — this maps those names onto the SoA state (per-character aliases: legacy `ch*` fields live under each character's own names). */
 const PSN: string[] = []; for (const [k, v] of Object.entries(PS)) PSN[v] = k;
 const ALIAS: Record<string, Record<string, string>> = { hecatia: { chM: 'hM' }, okina: { chM: 'oS' }, nue: { chS: 'nS' } };
-const EKN: Record<number, string> = { 1: 'ryy', 2: 'rbar' };
+/** Port entity kind -> legacy ENT name and the columns its legacy fields live in (per-kind; base fields x/y/t/o/vx/vy/a/r always mapped). */
+const EKN: Record<number, [string, Record<string, string | ((s: CombatState, i: number) => unknown)>]> = {
+  1: ['ryy', { g: 'eg' }], 2: ['rbar', { w: 'ew', h: 'eh' }],
+  3: ['mpot', { T: 'ebc' }], 4: ['mpud', {}], 5: ['mtr', {}],
+  6: ['fsb', { T: 'ebc', c: (s, i) => ['#ff4a4a', '#ffa33a', '#ffe83a', '#5cff7a', '#4ab3ff', '#7a5cff', '#ff5cf0'][s.ea[i]!] }], 7: ['flv', { sp: 'ew' }], 8: ['ffl', {}], 9: ['fcl', { T: 'ebc' }],
+  10: ['cray', { T: 'ebc', tele: 'eh', w: 'ew', len: 'er', warn: (s, i) => s.efl[i]! & 1, c: (s, i) => s.ec[i] ? '#' + (s.ec[i]! - 1).toString(16).padStart(6, '0') : '#fff', r: () => undefined }],
+  200: ['hpl', { b: 'ebc' }], 201: ['hst', { b: 'ebc' }], 202: ['hrg', { i: 'ebc' }],
+  203: ['ncl', { i: 'ebc' }], 204: ['nufo', {}], 205: ['nst', {}],
+  206: ['obd', { T: 'ebc', n: 'ew' }], 207: ['odr', { hp: 'eh' }], 208: ['odn', { i: 'ebc' }],
+  209: ['nms', { i: 'ebc' }], 210: ['npd', { ax: 'er', ay: 'eh', big: (s, i) => s.ebc[i] === 200 }], 211: ['npg', { i: 'ebc' }], 212: ['nrc', {}], 213: ['ncoin', { T: 'ebc' }],
+  214: ['atn', {}], 215: ['anw', { tg: 'ebc' }], 216: ['awd', {}],
+  100: ['heal', {}], 101: ['bomb', {}], 102: ['hole', {}], 103: ['bump', {}], 104: ['fairy', {}],
+};
+const ENTF: Record<string, string> = { o: 'eo', t: 'et', x: 'ex', y: 'ey', vx: 'evx', vy: 'evy', a: 'ea', r: 'er' };
+const EV = new Map<number, Record<string, unknown>>();
+function entView(s: CombatState, i: number): Record<string, unknown> {
+  const [k, m] = EKN[s.ek[i]!] ?? ['?' + s.ek[i], {}], id = s.eid[i]!;
+  let o = EV.get(id); if (!o) { o = {}; EV.set(id, o); if (EV.size > 600) { const first = EV.keys().next().value!; EV.delete(first); } }
+  o['k'] = k; o['i'] = 0; o['_i'] = i;
+  const S = s as unknown as Record<string, ArrayLike<number>>;
+  for (const [f, c] of Object.entries(ENTF)) o[f] = S[c]![i];
+  for (const [f, c] of Object.entries(m)) o[f] = typeof c === 'function' ? c(s, i) : S[c]![i];
+  return o;
+}
 
 export interface Env { w: World; s: CombatState; th: Record<string, ArrayLike<number>>; rnd: () => number }
 export function makeQ(e: Env, p: number): Record<string, unknown> {
@@ -30,13 +53,22 @@ export function makeQ(e: Env, p: number): Record<string, unknown> {
   } });
 }
 
+const QS = new WeakMap<World, { env: Env; q: Record<string, unknown>[] }>();
+/** Player proxies, one per player and world (stable identity: legacy trail caches key on the player object). */
+function qsOf(e: Env): Record<string, unknown>[] {
+  let c = QS.get(e.w); if (!c) { c = { env: e, q: [] }; QS.set(e.w, c); }
+  Object.assign(c.env, e); for (let i = c.q.length; i < e.s.n; i++) c.q.push(makeQ(c.env, i));
+  return c.q.slice(0, e.s.n);
+}
+/** Legacy bullet objects (only the fields legacy drawing reads). */
+export const bulletsView = (s: CombatState): Record<string, unknown>[] => Array.from({ length: s.nb }, (_, i) => { const f = s.bflags[i]!; return { x: s.bx[i], y: s.by[i], vx: s.bvx[i], vy: s.bvy[i], r: s.br[i], dead: !!(f & BF.dead), heavy: !!(f & BF.heavy), breaker: !!(f & BF.breaker), owner: s.bowner[i], refl: s.brefl[i], c: s.bcol[i] ? '#' + (s.bcol[i]! & 0xffffff).toString(16).padStart(6, '0') : undefined }; });
 /** Everything the copied legacy drawing code touches, rebuilt per frame (cheap: <= 8 players, lazy bullet/entity views). */
 export function bindLegacy(c: CanvasRenderingContext2D, e: Env): void {
-  const { w, s } = e, P = Array.from({ length: s.n }, (_, i) => makeQ(e, i)), cache: { B?: unknown[]; ENT?: unknown[] } = {};
+  const { w, s } = e, P = qsOf(e), cache: { B?: unknown[]; ENT?: unknown[] } = {};
   const v = {
     ctx: c, frame: s.gf, P, rnd: e.rnd, hitstop: s.hitstop, CX: {} as Record<string, unknown>, bodyR: (q: { id: number }) => bodyR(s, q.id), coreR: (q: { id: number }) => coreR(s, q.id),
-    get B() { return cache.B ??= Array.from({ length: s.nb }, (_, i) => ({ x: s.bx[i], y: s.by[i], dead: !!(s.bflags[i]! & BF.dead), heavy: !!(s.bflags[i]! & BF.heavy), owner: s.bowner[i] })); },
-    get ENT() { return cache.ENT ??= Array.from({ length: Math.min(s.nent, MAX_ENT) }, (_, i) => ({ k: EKN[s.ek[i]!], o: s.eo[i], t: s.et[i], x: s.ex[i], y: s.ey[i] })); },
+    get B() { return cache.B ??= bulletsView(s); },
+    get ENT() { return cache.ENT ??= Array.from({ length: Math.min(s.nent, MAX_ENT) }, (_, i) => entView(s, i)); },
     chOf: (q: { id: number }) => { const k = charOf(w, s, q.id).name.toLowerCase(); const d = (CHDRAW as Record<string, unknown>)[k]; return d ? { k, draw: d } : null; },
     foeOf: (id: number, q: { id: number }) => !s.teams || s.team[id] !== s.team[q.id],
     COLS,
@@ -66,4 +98,23 @@ export function drawWorldFxL(c: CanvasRenderingContext2D, w: World, s: CombatSta
 export function drawVignetteL(c: CanvasRenderingContext2D, w: World, s: CombatState, v: { x: number; w: number }, H: number, p: number): void {
   const e: Env = { w, s, th: w.slice<Record<string, ArrayLike<number>>>('touhou'), rnd: Math.random };
   bindLegacy(c, e); bindViewFx({ ctx: c, frame: s.gf, P: cur, drawP }); drawVignette(v, H, cur[p]);
+}
+
+import { bindWorld, drawWorldItems } from './world';
+import { bindIfx } from './ifx';
+import { bindThemed } from './themed';
+import { magicCircleL } from './viewfx';
+/** Legacy drawWorldItems + entity drawings (EDR) + Reimu orbs/border + Nue UFOs. Item worlds come from their entities; themed items arrive with lot 3. */
+export function drawWorldItemsL(c: CanvasRenderingContext2D, w: World, s: CombatState): void {
+  const e: Env = { w, s, th: w.slice<Record<string, ArrayLike<number>>>('touhou'), rnd: Math.random };
+  bindLegacy(c, e);
+  const ENT = [...Array.from({ length: s.nent }, (_, i) => entView(s, i)).filter(x => !String(x['k']).startsWith('?')), ...juiceOf(w).PE];
+  const of = (k: string): Record<string, unknown>[] => ENT.filter(x => x['k'] === k);
+  const KOB = Array.from({ length: s.nkb }, (_, i) => ({ o: s.kbO[i], x: s.kbX[i], y: s.kbY[i], a: s.kbA[i], t: s.kbT[i], T: s.kbTT[i] })).filter(k => (k.t ?? 0) >= 0);
+  const ORBS = of('heal'), FAIRIES = of('fairy').map(f => ({ ...f, o: s.eg[f['_i'] as number] })), HOLES = of('hole').map(h => Object.assign(h, { a: (360 - (h['t'] as number)) * 0.1 })), BUMPS = of('bump').map(u => Object.assign(u, { hit: s.eh[u['_i'] as number] ?? 0 })), ZONES = of('bomb');
+  bindThemed({ ctx: c, frame: s.gf, P: cur, ENT, B: bulletsView(s), bodyR: (q: { id: number }) => bodyR(s, q.id) });
+  bindIfx({ ctx: c, frame: s.gf, P: cur, ENT: ENT.filter(x => !['heal', 'bomb', 'hole', 'bump', 'fairy'].includes(x['k'] as string)), ORBS, FAIRIES, HOLES, BUMPS, ZONES, PHOTO: [], WARP: s.warp, VIEW: 0, bodyR: (q: { id: number }) => bodyR(s, q.id) });
+  bindWorld({ ctx: c, frame: s.gf, P: cur, B: [], ENT: ENT.filter(x => !['heal', 'bomb', 'hole', 'bump', 'fairy'].includes(x['k'] as string)), KOB,
+    HOLES, BUMPS, PHOTO: [], ZONES, ORBS, FAIRIES, IM: { rifle: { start: 40 } }, bodyR: (q: { id: number }) => bodyR(s, q.id), magicCircle: magicCircleL });
+  drawWorldItems();
 }

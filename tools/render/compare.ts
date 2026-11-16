@@ -9,11 +9,12 @@ import type { World } from '@kernel';
 import type { CombatState } from '@pack/combat/api';
 import { BF } from '@pack/combat/api';
 import { drawBullet } from '@pack/render/actors';
-import { drawPlayerL } from '@pack/render/ld/bind';
+import { drawPlayerL, drawWorldItemsL } from '@pack/render/ld/bind';
 import { drawCard } from '@pack/render/cards';
 import { HUDS, drawHudPanel } from '@pack/render/hud';
 import { camOf, drawView, renderViews, viewsOf } from '@pack/render/view';
 import { juiceOf, syncJuice } from '@pack/render/juice/state';
+import { IFXOPT } from '@pack/render/ld/ifx';
 import { session } from '../parity/session';
 
 const { makeRecorder, diffOps, isMarker } = createRequire(import.meta.url)('../parity/recorder.cjs') as { makeRecorder(): Rec; diffOps(a: Op[], b: Op[], tol?: number): { i: number; a: Op | null; b: Op | null; who: string } | null; isMarker(o: Op): boolean };
@@ -61,14 +62,16 @@ function juiceCheck(f: number): void {
   const sites = (ev('JSON.stringify(globalThis.__JW||[])') as string), sf = (ev('JSON.stringify(__SFL)') as string); ev('globalThis.__JW=[];__SFL=[]');
   N.forEach((n, i) => { const a = l[i]!, b = P[i] as number; if (Math.abs(a - b) > 1e-6 && !juiceBad.has(n)) juiceBad.set(n, `f${f}: legacy ${a} | port ${b}   legacy pushes this frame: ${[...new Set(JSON.parse(sites) as string[])].filter(x => x.startsWith(n.split(/[. ]/)[0]!)).join(' ') || '-'}   port events: ${pev}   sfx this frame: ${(JSON.parse(sf) as string[]).join(' ') || '-'}`); });
 }
+// item particles (IFX) are random on both sides: switched off for the comparison
+ev('ifxUnder=()=>{};ifxOver=()=>{}'); IFXOPT.off = true;
 const tally = new Map<string, { ok: number; bad: number; first?: string }>(), unported = new Map<string, number>(), sfxSeen = new Map<string, number>();
 const mark = (n: string, ok: boolean, why: string): void => { const t = tally.get(n) ?? { ok: 0, bad: 0 }; if (ok) t.ok++; else { t.bad++; t.first ??= why; } tally.set(n, t); };
 
 for (let f = 1; f <= FR; f++) {
   ev(WRAP); ss.pre(f); const [i0, i1] = ss.inputs(f); k.step([() => i0, () => i1], f);
   const ops = k.legacy.render() as Op[];
+  juiceCheck(f); // before the port draw (which drains the juice journal)
   renderViews(sink.screenCtx as unknown as CanvasRenderingContext2D, W, S, +ev('W')!, +ev('H')!); sink.take(); // advances the port camera exactly like the browser does
-  juiceCheck(f);
   const hudPre = f % STEP === 0 ? structuredClone([...HUDS]) : [];
   for (let n = 0; n < S.n; n++) drawHudPanel(sink.screenCtx as unknown as CanvasRenderingContext2D, W, S, n, 0, false, 0, 0, () => 0.5); sink.take(); // legacy HUDS animates every frame (harness clock VT = 0)
   if (f % STEP) continue;
@@ -83,10 +86,13 @@ for (let f = 1; f <= FR; f++) {
     const n = nth(x.name), want = x.ops.filter(o => !isMarker(o));
     let got: Op[] | null = null;
     if (x.name === 'drawHUD' && n < S.n) got = portOps(x.snap, c => { HUDS[n] = structuredClone(hudPre[n]!); drawHudPanel(c, W, S, n, (n % 2 ? WW - 12 : 12) / hk, n % 2 === 1, (n < 2 ? 30 : HH - 100) / hk, 0, () => 0.5); });
-    else if (x.name === 'drawP' && n < S.n) got = portOps(x.snap, c => drawPlayerL(c, W, S, n, () => 0.5));
+    else if (x.name === 'drawP') got = portOps(x.snap, c => drawPlayerL(c, W, S, n % S.n, () => 0.5)); // one block per player per view
+    else if (x.name === 'drawWorldItems') got = portOps(x.snap, c => drawWorldItemsL(c, W, S));
     else if (x.name === 'drawHeavy' && heavies[n] !== undefined) got = portOps(x.snap, c => drawBullet(c, S, heavies[n]!));
     else if (x.name === 'drawItem' && n < S.ncard) got = portOps(x.snap, c => drawCard(c, W, S, n));
-    if (got) { if (x.name === 'drawHUD' || (x.name === 'drawP' && S.hitstop > 0)) { const t = (a: Op[]): Op[] => { const i = a.findIndex(o => o[0] === 'translate'); return a.filter((_, j) => j !== i); }; want.splice(0, want.length, ...t(want)); got = t(got); } /* HUD shake uses Math.random: not comparable */ const d = diffOps(canon(want), canon(got), 1e-6); mark(x.name, !d, d ? `f${f} #${n} op ${d.i}: legacy ${fmt(d.a)} | port ${fmt(d.b)}` : ''); }
+    if (got) { if (x.name === 'drawHUD' || ((x.name === 'drawP' || x.name === 'drawWorldItems') && S.hitstop > 0)) { const t = (a: Op[]): Op[] => { const i = a.findIndex(o => o[0] === 'translate'); return a.filter((_, j) => j !== i); }; want.splice(0, want.length, ...t(want)); got = t(got); } /* HUD shake uses Math.random: not comparable */ const d = diffOps(canon(want), canon(got), 1e-6);
+      if (d && process.env['DIFFCTX'] === x.name && !(globalThis as { __dc?: 1 }).__dc) { (globalThis as { __dc?: 1 }).__dc = 1; const W = (a: Op[]): string => a.slice(Math.max(0, d.i - 8), d.i + 4).map((o, k) => `   ${Math.max(0, d.i - 8) + k}: ${fmt(o)}`).join('\n'); console.log(`DIFFCTX ${x.name} f${f} #${n}\n legacy:\n${W(canon(want))}\n port:\n${W(canon(got))}`); }
+      mark(x.name, !d, d ? `f${f} #${n} op ${d.i}: legacy ${fmt(d.a)} | port ${fmt(d.b)}` : ''); }
     else if (x.name !== 'drawView' || n > 0) unported.set(x.name, (unported.get(x.name) ?? 0) + 1);
   }
   // drawView: floor/grid/edge prefix (everything the port draws before cards/bullets), one block per view
@@ -102,4 +108,4 @@ console.log(`\nJUICE STATE (per frame, ${juiceN} frames; first divergence per va
 for (const [n, w] of juiceBad) console.log(`  ${n} ${w}`);
 console.log(`\nNOT PORTED visual (legacy draw functions with no port counterpart, instances over the samples): ${[...unported].sort((x, y) => y[1] - x[1]).map(([n, c]) => `${n}x${c}`).join(' ') || 'none'}`);
 console.log(`NOT PORTED audio (legacy sfx() names triggered; the port has no audio pack): ${[...sfxSeen].sort((x, y) => y[1] - x[1]).map(([n, c]) => `${n}x${c}`).join(' ') || 'none'}`);
-console.log('NOT COMPARED: light bullets (legacy draws cached sprites; compare by pixels), everything legacy draws outside a named draw function (floor FX, post effects), animation timing between samples.');
+console.log('NOT COMPARED: item particles (IFX, random), light bullets (legacy draws cached sprites; compare by pixels), everything legacy draws outside a named draw function (floor FX, post effects), animation timing between samples.');

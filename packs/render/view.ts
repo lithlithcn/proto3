@@ -2,7 +2,7 @@ import { PS, type CombatState } from '@pack/combat/api';
 import type { World } from '@kernel';
 import { drawArena } from './arena';
 import { drawBullet } from './actors';
-import { drawPlayerL, drawVignetteL, drawWorldFxL } from './ld/bind';
+import { drawPlayerL, drawVignetteL, drawWorldFxL, drawWorldItemsL } from './ld/bind';
 import { juiceOf, syncJuice } from './juice/state';
 import { drawCards } from './cards';
 import { newCam, stepCam, type Cam } from './camera';
@@ -43,6 +43,7 @@ export function drawView(c: CanvasRenderingContext2D, w: World, v: VW, until?: '
   for (let i = 0; i < s.nb; i++) if (!(s.bflags[i]! & 2) && !(s.bflags[i]! & 1) && inV(i)) drawBullet(c, s, i); // light bullets
   for (let i = 0; i < s.nb; i++) if (!(s.bflags[i]! & 2) && (s.bflags[i]! & 1) && inV(i)) drawBullet(c, s, i); // heavy bullets on top
   for (let q = 0; q < s.n; q++) drawPlayerL(c, w, s, q);
+  drawWorldItemsL(c, w, s);
   drawWorldFxL(c, w, s, L, Tp, L + ww, Tp + hh, ww, hh);
   c.restore();
   drawVignetteL(c, w, s, v, v.h, viewer);

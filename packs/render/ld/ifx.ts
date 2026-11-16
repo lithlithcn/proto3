@@ -1,0 +1,85 @@
+// @ts-nocheck — legacy item/entity particle layer (IFX: trails, glows, ribbons, emitted particles), copied verbatim. Not sim code.
+import { COLS, LCOLS } from '../colors';
+import { magicCircleL as magicCircle } from './viewfx';
+const TAU = 6.2832, RB = ['#ff4a4a', '#ffa63a', '#ffe83a', '#5cff7a', '#4ab3ff', '#c06cff'];
+let ctx, frame, P, ENT, ORBS, FAIRIES, CLOUDS = [], SLASH = [], HOLES, BUMPS, ZONES, PHOTO, WARP = 0, VIEW = 0, bodyR, fxLow = false, perfLow = false;
+const ITEMK = {};
+export const bindIfx = (v) => { ({ ctx, frame, P, ENT, ORBS, FAIRIES, HOLES, BUMPS, ZONES, PHOTO, WARP, VIEW, bodyR } = v); };
+const IFX={tr:new WeakMap(),bt:new WeakMap(),rp:[],seen:new Set(),t:0,
+ R:{},E:{},
+ M:{spark:[2,0,25,3,1],star:[1,0,40,5,1.6],petal:[.6,.03,80,5,2.6],snow:[.5,.02,90,4,2.6],flame:[.8,-.07,30,7,1],note:[.8,-.03,60,6,1.8],bolt:[0,0,7,6,1.3],bubble:[.5,-.04,50,5,1.5],leaf:[.6,.025,90,6,2.6],smoke:[.4,-.01,60,11,1.2],coin:[1.5,.08,50,5,1.5],water:[1.5,.07,35,3,1.2],blood:[1,.1,45,3,1],shard:[2,0,35,6,1.4],ghost:[.4,-.04,60,6,1.6],shadow:[.5,0,50,9,1.6],void:[0,0,40,4,3],glitch:[0,0,10,9,2],rune:[1,0,40,4,1.8],clock:[1,0,40,4,1.8]}};
+'yellow spark #ffe23a #fff|white star #fff #f44|green bubble #5cff8a #fff|purple glitch #b45cff #ff5cf0|blue star #6cf #fff|orange flame #ff9a2a #ff4020|mirror shard #e0e6f0 #9cf|gap void #ffa040 #6020a0|clone ghost #8a8f9a #fff|spark star rb #fff|reimu rune #ff4a4a #fff|rumia shadow #6b5bb0 #120820|daiyousei leaf #7fe0a0 #fff|rin smoke #9aa #fff|meiling spark #3fbf6f #ff4a4a|koakuma flame #c0392b #ff80c0|patchouli rune #b07cd8 #5cf|remilia blood #e0302f #ff8080|flandre shard #ff3030 rb|freeze snow #a8f0ff #fff|world clock #00d0a0 #fff|letty snow #cfe8ff #fff|chen spark #d9534f #ffd23a|shanghai glitch #5aa0e0 #fff|hourai ghost #e070a0 #fff|lily petal #ffd6f0 #fff|lunasa note #6a6ad8 #b0b0ff|merlin note #e8e8ff #ffd6f0|lyrica note #ff6b6b #ffd23a|layla note #c8a0ff #fff|youmu ghost #9fe0c0 #fff|ran flame #f2c14e #6cf|yuyuko petal #ff9ad5 #fff|saigyou petal #ffb7d5 #a03060|yukari void #c020e0 #fff|oni flame #c8102e #ffd23a|wriggle star #c8ff5a #fff|mystia shadow #b06cff #0a0418|keine clock #5a8cff #fff|tewi star #ff8fb0 #fff|reisen glitch #ff3355 #fff|eirin bubble #7fa8ff #ff5050|kaguya star #ffcf6a #fff|mokou flame #ff4b1f #ffd23a|elixir flame #ff5030 #ffd23a|medicine smoke #a050ff #e080ff|komachi ghost #e04a4a #fff|eiki rune #3a7f5a #9f9|shizuha leaf #ff8a2a #c04010|minoriko leaf #e8c040 #fff|hina void #c070ff #ff80c0|nitori water #4ab3ff #fff|momiji spark #e0e6f0 #ff8a2a|sanae star #5cff7a #fff|kanako rune #e04a4a #ffd23a|suwako smoke #c8b050 #fff|camera star #d4a050 #fff|bumpers water #1fb5a5 #fff|yamame spark #e8e8c0 #fff|parsee ghost #5cff7a #fff|yuugi flame #e04a4a #ffd23a|satori rune #ff8fd0 #fff|orin flame #ff5030 #a060ff|okuu flame #ffa63a #fff|koishi petal #7fe0a0 #ff8fd0|nazrin spark #aaa #ffd23a|kogasa water #a060ff #fff|ichirin smoke #ffb0d0 #b0b8d0|minamitsu water #3a7fff #fff|shou star #ffe83a #fff|byakuren rune #c06cff #ffd23a|nue glitch #c06cff #ff3355|kyouko bubble #5cff7a #fff|yoshika ghost #7a9ac0 #fff|seiga ghost #3a7fff #fff|tojiko bolt #9ad0ff #fff|futo shard #e8e8e8 #ff8a2a|miko star #e8c040 #fff|wakasagi water #3a7fff #9cf|sekibanki ghost #e04a4a #fff|kagerou spark #c8c8ff #fff|benben note #c06cff #fff|yatsuhashi note #ff6b6b #fff|seija glitch #ff4a4a #4ab3ff|shinmyou star #ffd23a #fff|raiko bolt #ff7b2c #ffd23a|seiran star #4ab3ff #fff|ringo bubble #ffb04a #fff|doremy bubble #ffb0e0 #b0a0ff|sagume shard #e8e8ff #fff|clown star #ff4a4a #4a6aff|junko flame #ff3355 #fff|hecatia rune #ff4a4a #4ab3ff|larva petal #c8ff5a #fff|nemuno rune #e04a4a #fff|aunn spark #5cff7a #fff|narumi smoke #a0a0a0 #fff|satono note #ff8fd0 #5cff7a|mai leaf #5cff7a #fff|okina rune #ffd23a #fff|eika smoke #c8b8a0 #fff|urumi void #8a7a6a #fff|kutaka petal #ffd23a #fff|yachie shadow #6a9a4a #08140a|mayumi smoke #c87a4a #fff|keiki shard #5cff7a #fff|saki smoke #888 #fff|yuuma void #c03030 #fff|mike coin #ffd23a #fff|takane leaf #3a9a3a #9f9|sannyo smoke #c8a8ff #fff|misumaru shard #4ab3ff #fff|tsukasa glitch #e8e0a0 #fff|megumu star #4a6aff #fff|chimata coin #ffd23a rb|momoyo flame #40c080 #ffd23a|biten spark #e8a040 #fff|enoko leaf #a08060 #fff|chiyari blood #c01020 #ff5050|hisami shadow #8a4ac0 #100818|zanmu void #444 #000|ubame smoke #8a6a4a #fff|chimi water #5a8a5a #9cf|nareko spark #e8c040 #fff|yuiman flame #ff5030 #ffd23a|toyohime petal #e8e8ff #fff|ariya smoke #b0a080 #fff|nina glitch #a0e0ff #fff|saisen coin #ffd23a #d04040|mamizou leaf #c08040 #fff|rainbow star rb #fff'.split('|').forEach(l=>{const[k,s,a,b]=l.split(' ');IFX.R[k]=[s,a,b]});
+'efairy star #7fe0a0|decoy smoke #9aa|voodoo ghost #e070a0|tree petal #ffb7d5|treasure star #ffcf6a|kline bolt #5a8cff|gtrail smoke #a050ff|flake snow #cfe8ff|petal petal #ffd6f0|fakeitem glitch #fff|fruit leaf #e8c040|book rune #b07cd8|web spark #e8e8c0|ufo glitch #c06cff|fist smoke #ffb0d0|onbw rune #e04a4a|shark water #3a7fff|fish water #6cf|zombie ghost #7a9ac0|puddle water #3a7fff|head ghost #e04a4a|dream bubble #ffb0e0|terr rune #e04a4a|dog spark #5cff7a|bamb leaf #5cff7a|mirr shard #ffd23a|darkz void #666|bolt bolt #9ad0ff|shaku star #ffd23a|kstr star #4a6aff|moonf star #ff4a4a|gapS void #c020e0|train smoke #c020e0|plate shard #e8e8e8|fire flame #ff5030|zap bolt #9ad0ff|lbeam bolt #ff6b6b|chick petal #ffd23a|haniwa smoke #c87a4a|qtree leaf #3a9a3a|smoke smoke #c8a8ff|jewel shard #4ab3ff|dragon flame #40c080|trap spark #a08060|hound smoke #a08060|lfan petal #e8e8ff|coin coin #ffd23a|geyser water #3a7fff|clay smoke #5cff7a|sblood blood #c01020|crystal shard #a8f0ff|stone smoke #c8b8a0|fstone smoke #b0a080|mochi bubble #fff|mallet star #ffd23a|wbeam water #4ab3ff|stx void #8a7a6a'.split('|').forEach(l=>{const[k,s,a]=l.split(' ');IFX.E[k]=[s,a]});
+const ifxC=c=>c==='rb'?RB[Math.random()*6|0]:c;
+function ifxTr(o,x,y,n,M=IFX.tr){let t=M.get(o);if(!t||frame<t.f){t={f:frame,p:[]};M.set(o,t)}if(t.f!==frame||!t.p.length){t.f=frame;t.p.unshift(x,y);if(t.p.length>n*2)t.p.length=n*2}return t.p}
+function ifxRib(p,c,w){const n=p.length/2;if(n<2)return;ctx.strokeStyle=c;ctx.lineCap='round';for(let i=1;i<n;i++){const dx=p[i*2]-p[i*2-2],dy=p[i*2+1]-p[i*2-1];if(dx*dx+dy*dy>22500)break;const u=1-i/n;ctx.globalAlpha=u*.55;ctx.lineWidth=w*u+1;ctx.beginPath();ctx.moveTo(p[i*2-2],p[i*2-1]);ctx.lineTo(p[i*2],p[i*2+1]);ctx.stroke()}}
+function ifxGlow(x,y,r,c,a){if(r<1)return;const g=ctx.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,c);g.addColorStop(1,'rgba(0,0,0,0)');ctx.globalAlpha=a;ctx.fillStyle=g;ctx.fillRect(x-r,y-r,r*2,r*2)}
+// émet n particules de style st autour de (x,y) ; R = rayon d'apparition, burst = vitesse multipliée
+function ifxEmit(st,x,y,c1,c2,n,R,burst){const lo=fxLow||perfLow,m=IFX.M[st]||IFX.M.spark;if(lo)n=Math.random()<n/3?1:n/3|0;
+ for(let i=0;i<n&&IFX.rp.length<1100;i++){const a=Math.random()*TAU,rr=burst?Math.random()*10:R*m[4]*(.4+Math.random()*.6),v=m[0]*(burst?4+Math.random()*4:.4+Math.random()),c=ifxC(Math.random()<.7?c1:c2||c1);
+  const p={k:st,x:x+Math.cos(a)*rr,y:y+Math.sin(a)*rr,vx:Math.cos(a)*v,vy:Math.sin(a)*v,t:m[2]*(.6+Math.random()*.7),c,s:m[3]*(.6+Math.random()*.8),g:m[1],r:Math.random()*TAU,vr:(Math.random()-.5)*.3};p.T=p.t;
+  if(st==='void'&&!burst){p.cx=x;p.cy=y;p.x=x+Math.cos(a)*R*3;p.y=y+Math.sin(a)*R*3}
+  if(st==='bolt'||st==='glitch'){p.vx=p.vy=0;if(burst){p.x=x+Math.cos(a)*(20+Math.random()*90);p.y=y+Math.sin(a)*(20+Math.random()*90)}}
+  if((st==='petal'||st==='leaf'||st==='snow')&&!burst){p.vy=Math.abs(p.vy)*.3;p.y-=R}
+  IFX.rp.push(p)}}
+function ifxDraw(p,u){const s=p.s*(.4+u*.6);ctx.fillStyle=ctx.strokeStyle=p.c;ctx.globalAlpha=Math.min(1,u*1.6);
+ switch(p.k){
+ case 'star':{ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.r);ctx.beginPath();for(let i=0;i<8;i++){const rr=i&1?s*.35:s*1.4,a=i*Math.PI/4;ctx.lineTo(Math.cos(a)*rr,Math.sin(a)*rr)}ctx.fill();ctx.restore();break}
+ case 'petal':case 'leaf':{ctx.save();ctx.translate(p.x+Math.sin(p.t*.1+p.r)*6,p.y);ctx.rotate(p.r);ctx.beginPath();ctx.ellipse(0,0,s*(p.k==='leaf'?1.5:1.1),s*.5,0,0,TAU);ctx.fill();ctx.restore();break}
+ case 'snow':{ctx.lineWidth=1.5;ctx.beginPath();for(let i=0;i<3;i++){const a=p.r+i*Math.PI/3;ctx.moveTo(p.x-Math.cos(a)*s,p.y-Math.sin(a)*s);ctx.lineTo(p.x+Math.cos(a)*s,p.y+Math.sin(a)*s)}ctx.stroke();break}
+ case 'flame':{const z=p.s*(u<.7?u/.7:1)*(1.3-u*.3);ctx.globalAlpha=u*.8;ctx.beginPath();ctx.arc(p.x,p.y,z,0,TAU);ctx.fill();ctx.fillStyle='#fff';ctx.globalAlpha=u*.5;ctx.beginPath();ctx.arc(p.x,p.y,z*.4,0,TAU);ctx.fill();break}
+ case 'note':{ctx.font='bold '+(s*3|0)+'px sans-serif';ctx.textAlign='center';ctx.fillText(p.r>3?'♫':'♪',p.x+Math.sin(p.t*.15)*4,p.y);break}
+ case 'bolt':{ctx.lineWidth=2;ctx.beginPath();let x=p.x,y=p.y;ctx.moveTo(x,y);for(let i=0;i<4;i++){x+=(Math.random()-.5)*s*4;y+=(Math.random()-.5)*s*4;ctx.lineTo(x,y)}ctx.stroke();ctx.globalAlpha*=.4;ctx.lineWidth=6;ctx.stroke();break}
+ case 'bubble':case 'water':{ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(p.x,p.y,s,0,TAU);ctx.stroke();ctx.globalAlpha*=.3;ctx.fill();break}
+ case 'smoke':{ctx.globalAlpha=u*.18;ctx.beginPath();ctx.arc(p.x,p.y,p.s*(1.8-u),0,TAU);ctx.fill();break}
+ case 'coin':{ctx.beginPath();ctx.ellipse(p.x,p.y,s*Math.abs(Math.cos(p.r*3))+.5,s,0,0,TAU);ctx.fill();break}
+ case 'shard':{ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.r);ctx.beginPath();ctx.moveTo(0,-s*1.5);ctx.lineTo(s*.5,0);ctx.lineTo(0,s*1.5);ctx.lineTo(-s*.5,0);ctx.fill();ctx.restore();break}
+ case 'ghost':{ctx.globalAlpha=u*.6;ctx.beginPath();ctx.arc(p.x,p.y,s,0,TAU);ctx.fill();ctx.globalAlpha=u*.3;ctx.beginPath();ctx.arc(p.x-p.vx*4,p.y-p.vy*4+s,s*.6,0,TAU);ctx.fill();break}
+ case 'glitch':{ctx.globalAlpha=u*.7;ctx.fillRect(p.x,p.y,s*(1+Math.random()*3),s*.35);break}
+ case 'ring':{ctx.globalAlpha=u;ctx.lineWidth=10*u+1;ctx.beginPath();ctx.arc(p.x,p.y,p.s*(1-u*u)+8,0,TAU);ctx.stroke();break}
+ default:{ctx.beginPath();ctx.arc(p.x,p.y,s,0,TAU);ctx.fill()}}}
+// aura dessinée autour d'un joueur selon le style de son item
+function ifxAura(q,st,c1,c2,R,k){const t=frame;ctx.lineWidth=2;
+ if(st==='rune'){ctx.globalAlpha=.55*k;magicCircle(q.x,q.y,R*2.2,t*.03,ifxC(c1));ctx.globalAlpha=.4*k;magicCircle(q.x,q.y,R*1.5,-t*.05,ifxC(c2||c1))}
+ else if(st==='clock'){ctx.globalAlpha=.6*k;ctx.strokeStyle=c1;ctx.beginPath();ctx.arc(q.x,q.y,R*2.3,0,TAU);ctx.stroke();for(let i=0;i<12;i++){const a=i*TAU/12;ctx.beginPath();ctx.moveTo(q.x+Math.cos(a)*R*2,q.y+Math.sin(a)*R*2);ctx.lineTo(q.x+Math.cos(a)*R*2.3,q.y+Math.sin(a)*R*2.3);ctx.stroke()}
+  ctx.lineWidth=3;for(const[a,l]of[[t*.02,1.6],[t*.002,1.1]]){ctx.beginPath();ctx.moveTo(q.x,q.y);ctx.lineTo(q.x+Math.cos(a)*R*l,q.y+Math.sin(a)*R*l);ctx.stroke()}}
+ else if(st==='bolt'&&Math.random()<.5){ctx.globalAlpha=.8*k;ctx.strokeStyle=c1;ctx.beginPath();const a=Math.random()*TAU;let x=q.x+Math.cos(a)*R,y=q.y+Math.sin(a)*R;ctx.moveTo(x,y);for(let i=0;i<5;i++){x+=Math.cos(a)*9+(Math.random()-.5)*14;y+=Math.sin(a)*9+(Math.random()-.5)*14;ctx.lineTo(x,y)}ctx.stroke()}
+ else if(st==='mirror'||st==='shard'){ctx.globalAlpha=.35*k;ctx.strokeStyle=c1;ctx.beginPath();for(let i=0;i<6;i++){const a=i*TAU/6+t*.02;ctx.lineTo(q.x+Math.cos(a)*R*1.8,q.y+Math.sin(a)*R*1.8)}ctx.closePath();ctx.stroke()}
+ else if(st==='note'){ctx.globalAlpha=.35*k;ctx.strokeStyle=c1;for(let i=0;i<5;i++){ctx.beginPath();for(let x=-R*2.5;x<=R*2.5;x+=6)ctx.lineTo(q.x+x,q.y+R*1.6+i*5+Math.sin(x*.05+t*.1)*3);ctx.stroke()}}
+ else if(st==='void'||st==='shadow'){ctx.save();ctx.globalCompositeOperation='source-over';ifxGlow(q.x,q.y,R*3.5,st==='void'?'#000':c2||'#000',.45*k);ctx.restore()}
+ else if(st==='water'||st==='bubble'){ctx.globalAlpha=.4*k;ctx.strokeStyle=c1;const u=(t%40)/40;ctx.beginPath();ctx.arc(q.x,q.y,R*(1.2+u*1.6),0,TAU);ctx.globalAlpha=.5*(1-u)*k;ctx.stroke()}}
+function ifxUnder(){const lo=fxLow||perfLow,N=lo?6:14;ctx.save();ctx.globalCompositeOperation='lighter';
+ for(const q of P){if(q.state==='dead')continue;const R=bodyR(q),acts=(q.acts||[]).filter(a=>frame-a.f<a.T&&ITEMK[a.k]);
+  for(const a of q.acts||[]){const key=q.id+':'+a.k+':'+a.f;if(frame-a.f<12&&!IFX.seen.has(key)){IFX.seen.add(key);if(IFX.seen.size>300)IFX.seen.clear();const r=IFX.R[a.k]||['spark',(ITEMK[a.k]||{}).c||'#fff','#fff'];
+   ifxEmit(r[0],q.x,q.y,r[1],r[2],lo?12:35,R,1);ifxEmit('spark',q.x,q.y,'#fff',r[1],lo?4:10,R,1);IFX.rp.push({k:'ring',x:q.x,y:q.y,t:30,T:30,c:ifxC(r[1]),s:150},{k:'ring',x:q.x,y:q.y,t:22,T:22,c:ifxC(r[2]||'#fff'),s:90})}}
+  const fl=[];if(q.blade>0)fl.push('yellow');if(q.star>0)fl.push('elixir');if(q.giant>0)fl.push('oni');if(q.mirror>0)fl.push('mirror');if(q.clone>0)fl.push('clone');if(q.spk>0)fl.push('spark');
+  const ks=[...new Set([...acts.map(a=>a.k),...fl])];if(!ks.length)continue;
+  const r0=IFX.R[ks[0]]||['spark',(ITEMK[ks[0]]||{}).c||'#fff','#fff'],c=ifxC(r0[1]),tp=ifxTr(q,q.x,q.y,N);
+  for(let i=2;i<tp.length/2;i+=2){const u=1-i/(tp.length/2);ctx.globalAlpha=u*.3;ctx.fillStyle=c;ctx.beginPath();ctx.arc(tp[i*2],tp[i*2+1],R*(.6+.4*u),0,TAU);ctx.fill()}
+  ifxGlow(q.x,q.y,R*3.2,c,.3+.1*Math.sin(frame*.3));
+  for(const k of ks.slice(0,3)){const r=IFX.R[k]||['spark',(ITEMK[k]||{}).c||'#fff','#fff'];ifxAura(q,r[0],r[1],r[2],R,1);if(frame%(lo?6:3)===0)ifxEmit(r[0],q.x,q.y,r[1],r[2],1,R,0)}
+  if(q.blade>0){const h=ifxTr(q,q.bA,0,8,IFX.bt);ctx.lineCap='round';for(let i=1;i<h.length/2;i++)for(let k=0;k<2;k++){const a=h[i*2]+k*Math.PI,u=1-i/(h.length/2),cc=Math.cos(a),s=Math.sin(a);ctx.globalAlpha=u*.45;ctx.strokeStyle='#ffe23a';ctx.lineWidth=10*u+2;ctx.beginPath();ctx.moveTo(q.x+cc*26,q.y+s*26);ctx.lineTo(q.x+cc*62,q.y+s*62);ctx.stroke()}
+   if(!lo)for(let k=0;k<2;k++){const a=q.bA+k*Math.PI;ifxEmit('spark',q.x+Math.cos(a)*62,q.y+Math.sin(a)*62,'#fff3a0','#fff',1,2,0)}}
+  if(q.state==='rifle'&&!lo&&Math.random()<.5){const a=q.aim+(Math.random()-.5)*.3;ifxEmit('star',q.x+Math.cos(a)*30,q.y+Math.sin(a)*30,'#fff','#f44',1,2,0)}}
+ for(const o of ORBS){ifxRib(ifxTr(o,o.x,o.y,N),'#5cff8a',9);if(!lo&&Math.random()<.2)ifxEmit('bubble',o.x,o.y,'#5cff8a','#fff',1,4,0)}
+ for(const f of FAIRIES){ifxRib(ifxTr(f,f.x,f.y,N),'#6cf',8);if(!lo&&Math.random()<.3)ifxEmit('star',f.x,f.y,'#6cf','#fff',1,4,0)}
+ for(const e of ENT){if(e.x===undefined)continue;const r=IFX.E[e.k]||['spark',COLS[e.o]||'#fff'];ifxRib(ifxTr(e,e.x,e.y,N),r[1],10);if(Math.random()<(lo?.05:.25))ifxEmit(r[0],e.x,e.y,r[1],'#fff',1,10,0)}
+ for(const c of CLOUDS)if(!lo&&Math.random()<.15)ifxEmit('ghost',c.x,c.y,'#a050ff','#e080ff',1,c.r*.5,0);
+ for(const s of SLASH){const key='s'+s.x1+','+s.y1+','+s.x2;if(!IFX.seen.has(key)){IFX.seen.add(key);for(let i=0;i<(lo?6:20);i++){const u=Math.random();ifxEmit('spark',s.x1+(s.x2-s.x1)*u,s.y1+(s.y2-s.y1)*u,COLS[s.o]||'#fff','#fff',1,4,0)}}}
+ for(const h of HOLES){const r=(h.r||30);ifxEmit('void',h.x,h.y,'#ffb050','#c070ff',lo?1:2,r,0);ifxGlow(h.x,h.y,r*2.4,'#6020a0',.5)}
+ for(const u of BUMPS){ifxGlow(u.x,u.y,u.r*2.2,u.hit>0?'#fff':'#1fb5a5',u.hit>0?.7:.3);if(u.hit===9)ifxEmit('water',u.x,u.y,'#1fb5a5','#fff',12,u.r,1)}
+ for(const z of ZONES){if(!lo||Math.random()<.3)ifxEmit('flame',z.x+(Math.random()-.5)*z.r*1.4,z.y+(Math.random()-.5)*z.r*1.4,'#ff9a2a','#ff4020',1,4,0);if(z.t<=2)ifxEmit('flame',z.x,z.y,'#ff9a2a','#ffd23a',lo?15:50,z.r,1)}
+ for(const ph of PHOTO)ifxGlow(ph.x||0,ph.y||0,90,'#fff',.25*Math.min(1,(ph.t||0)/20));
+ if(WARP>0&&!lo){const v=P[VIEW]||P[0];if(v)ifxEmit('glitch',v.x+(Math.random()-.5)*900,v.y+(Math.random()-.5)*600,'#b45cff','#ff5cf0',1,4,0)}
+ ctx.restore();ctx.globalAlpha=1}
+function ifxOver(){const now=performance.now(),dt=Math.min(3,(now-(IFX.t||now))/16.7);IFX.t=now;ctx.save();ctx.globalCompositeOperation='lighter';
+ for(const o of ORBS)ifxGlow(o.x,o.y,26,'#5cff8a',.5);for(const f of FAIRIES)ifxGlow(f.x,f.y,30,'#6cf',.45);for(const e of ENT)if(e.x!==undefined)ifxGlow(e.x,e.y,34,(IFX.E[e.k]||[0,COLS[e.o]||'#fff'])[1],.3);
+ const L=IFX.rp;let w=0;for(const p of L){p.t-=dt;if(p.t<=0)continue;L[w++]=p;const u=p.t/p.T;
+  if(p.cx!==undefined){p.x+=(p.cx-p.x)*.07*dt;p.y+=(p.cy-p.y)*.07*dt;const a=.1*dt,dx=p.x-p.cx,dy=p.y-p.cy;p.x=p.cx+dx*Math.cos(a)-dy*Math.sin(a);p.y=p.cy+dx*Math.sin(a)+dy*Math.cos(a)}
+  else if(p.k!=='ring'){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=Math.pow(.94,dt);p.vy=p.vy*Math.pow(.94,dt)+p.g*dt;p.r+=p.vr*dt}
+  if(p.k==='shadow'){ctx.globalCompositeOperation='source-over';ifxDraw(p,u);ctx.globalCompositeOperation='lighter'}else ifxDraw(p,u)}
+ L.length=w;ctx.restore();ctx.globalAlpha=1}
+/** Parity probes switch the random particle layer off on both sides (`pnpm render compare`). */
+export const IFXOPT = { off: false };
+const ifxU = () => { if (!IFXOPT.off) ifxUnder(); }, ifxO = () => { if (!IFXOPT.off) ifxOver(); };
+export { ifxU as ifxUnder, ifxO as ifxOver };

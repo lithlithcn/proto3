@@ -7,13 +7,13 @@ export interface P2 { x: number; y: number; t: number; c?: string; [k: string]: 
 export interface Juice {
   shake: number; zk: number; kx: number; ky: number; chroma: number; bright: number; focusL: number; zblur: number; flashS: number; flashCol: string; invF: number;
   bgF: { c: string; t: number }; borderF: { c: string; t: number };
-  FX: P2[]; TX: P2[]; RINGS: P2[]; WAVES: P2[]; LINES: P2[]; KOFX: P2[]; CRACK: P2[]; GZ: P2[]; BIG: P2[];
+  FX: P2[]; PE: P2[]; TX: P2[]; RINGS: P2[]; WAVES: P2[]; LINES: P2[]; KOFX: P2[]; CRACK: P2[]; GZ: P2[]; BIG: P2[];
   lastGf: number; rnd: () => number; q: { ev: string; gf: number }[]; cc: number[]; ccF: number[]; chG: number[];
 }
 const cache = new WeakMap<World, Juice>();
 export function juiceOf(w: World): Juice {
   let j = cache.get(w);
-  if (!j) { j = { shake: 0, zk: 0, kx: 0, ky: 0, chroma: 0, bright: 0, focusL: 0, zblur: 0, flashS: 0, flashCol: '#fff', invF: 0, bgF: { c: '#fff', t: 0 }, borderF: { c: '#fff', t: 0 }, FX: [], TX: [], RINGS: [], WAVES: [], LINES: [], KOFX: [], CRACK: [], GZ: [], BIG: [], lastGf: -1, rnd: () => Math.random(), q: [], cc: [], ccF: [], chG: [] }; /* late-bound rnd: juiceOf may first run inside the sanitized step */ cache.set(w, j); }
+  if (!j) { j = { shake: 0, zk: 0, kx: 0, ky: 0, chroma: 0, bright: 0, focusL: 0, zblur: 0, flashS: 0, flashCol: '#fff', invF: 0, bgF: { c: '#fff', t: 0 }, borderF: { c: '#fff', t: 0 }, FX: [], PE: [], TX: [], RINGS: [], WAVES: [], LINES: [], KOFX: [], CRACK: [], GZ: [], BIG: [], lastGf: -1, rnd: () => Math.random(), q: [], cc: [], ccF: [], chG: [] }; /* late-bound rnd: juiceOf may first run inside the sanitized step */ cache.set(w, j); }
   return j;
 }
 
@@ -22,9 +22,9 @@ export function tickJuice(j: Juice): void {
   for (const f of j.FX) { if (f['vx']) { f.x += f['vx'] as number; f['vx'] = (f['vx'] as number) * 0.92; } if (f['vy']) { f.y += f['vy'] as number; f['vy'] = (f['vy'] as number) * 0.92; } f.t--; }
   for (const t of j.TX) { t.y -= 0.6; t.t--; }
   for (const r of j.RINGS) { (r['r'] as number) += ((r['m'] as number) - (r['r'] as number)) * 0.25; r.t--; }
-  for (const a of [j.KOFX, j.WAVES, j.LINES, j.CRACK, j.GZ, j.BIG]) for (const x of a) x.t--;
+  for (const a of [j.KOFX, j.WAVES, j.LINES, j.CRACK, j.GZ, j.BIG, j.PE]) for (const x of a) x.t--; // PE = presentation-only legacy ENT (dowsing cone, photo flash)
   if (j.invF > 0) j.invF--; j.kx *= 0.8; j.ky *= 0.8; j.chroma *= 0.85; j.bright *= 0.85; j.focusL *= 0.9; j.zblur *= 0.85; j.borderF.t--; j.bgF.t--;
-  for (const a of [j.FX, j.TX, j.RINGS, j.KOFX, j.WAVES, j.LINES, j.CRACK, j.GZ, j.BIG]) { let w = 0; for (const x of a) if (x.t > 0) a[w++] = x; a.length = w; }
+  for (const a of [j.FX, j.TX, j.RINGS, j.KOFX, j.WAVES, j.LINES, j.CRACK, j.GZ, j.BIG, j.PE]) { let w = 0; for (const x of a) if (x.t > 0) a[w++] = x; a.length = w; }
   if (j.LINES.length > 240) j.LINES.splice(0, j.LINES.length - 240); if (j.RINGS.length > 120) j.RINGS.splice(0, j.RINGS.length - 120); if (j.WAVES.length > 60) j.WAVES.splice(0, j.WAVES.length - 60); if (j.TX.length > 80) j.TX.splice(0, j.TX.length - 80);
   j.shake = j.shake > 0.3 ? j.shake * 0.86 : 0; j.zk *= 0.9; j.flashS *= 0.85;
   if (j.TX.length > 10) { const seen = new Set<unknown>(); j.TX = j.TX.reverse().filter(t => { const k = t['s']; if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 10).reverse(); }

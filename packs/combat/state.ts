@@ -40,7 +40,7 @@ export const combatSchema: Schema = {
   // skills (next = skill 1, prev = skill 2): edge flags + cooldown deadlines
   skPN: i32s(MAXP), skPP: i32s(MAXP), slowT: f64s(MAXP), skC1: f64s(MAXP), skC2: f64s(MAXP),
   // entities (legacy ENT): small pool of typed world objects owned by a player, kind ids are defined by content
-  nent: i32(), eid: i32s(MAX_ENT), eborn: i32s(MAX_ENT), ek: i32s(MAX_ENT), eo: i32s(MAX_ENT), eg: i32s(MAX_ENT), et: f64s(MAX_ENT), ex: f64s(MAX_ENT), ey: f64s(MAX_ENT), evx: f64s(MAX_ENT), evy: f64s(MAX_ENT), ea: f64s(MAX_ENT), er: f64s(MAX_ENT), ew: f64s(MAX_ENT), eh: f64s(MAX_ENT), ebc: f64s(MAX_ENT), efl: f64s(MAX_ENT), ed: f64s(MAX_ENT), ekb: f64s(MAX_ENT), est: f64s(MAX_ENT), ehc: f64s(MAX_ENT * MAXP),
+  nent: i32(), eid: i32s(MAX_ENT), eborn: i32s(MAX_ENT), ek: i32s(MAX_ENT), eo: i32s(MAX_ENT), eg: i32s(MAX_ENT), et: f64s(MAX_ENT), ex: f64s(MAX_ENT), ey: f64s(MAX_ENT), evx: f64s(MAX_ENT), evy: f64s(MAX_ENT), ea: f64s(MAX_ENT), er: f64s(MAX_ENT), ew: f64s(MAX_ENT), eh: f64s(MAX_ENT), ebc: f64s(MAX_ENT), efl: f64s(MAX_ENT), ed: f64s(MAX_ENT), ekb: f64s(MAX_ENT), est: f64s(MAX_ENT), ec: i32s(MAX_ENT), ehc: f64s(MAX_ENT * MAXP),
   // item cards (legacy CARDS/itemT/ultT) and item-granted timers
   itemT: i32(), ultT: i32(), maxC: i32(1), itemsOn: i32(1), ncard: i32(), cx: f64s(MAX_CARD), cy: f64s(MAX_CARD), ckind: i32s(MAX_CARD), con: i32s(MAX_CARD), cage: i32s(MAX_CARD), ccont: i32s(MAX_CARD), ccp: f64s(MAX_CARD * MAXP), itemOn: i32s(MAX_ITEMS),
   fx: i32s(MAXP * MAX_FX), frz: i32(), frzO: i32(), frzqN: i32(), frzqF: f64(), frzqO: i32(), hCD: f64s(MAXP), uCD: f64s(MAXP),
@@ -69,7 +69,7 @@ export interface CombatState {
   spI: Int32Array; ultS: Int32Array; ult: Int32Array; spN: Int32Array; spHv: Int32Array; spellHit: Int32Array; spRef: Float64Array; spPick: number; eLo: number; eHi: number; spSeed: number;
   kos: Int32Array; sd: Int32Array; spit: Int32Array; beamPip: Int32Array;
   skPN: Int32Array; skPP: Int32Array; slowT: Float64Array; skC1: Float64Array; skC2: Float64Array;
-  nent: number; eid: Int32Array; eborn: Int32Array; ek: Int32Array; eo: Int32Array; eg: Int32Array; et: Float64Array; ex: Float64Array; ey: Float64Array; evx: Float64Array; evy: Float64Array; ea: Float64Array; er: Float64Array; ew: Float64Array; eh: Float64Array; ebc: Float64Array; efl: Float64Array; ed: Float64Array; ekb: Float64Array; est: Float64Array; ehc: Float64Array;
+  nent: number; eid: Int32Array; eborn: Int32Array; ek: Int32Array; eo: Int32Array; eg: Int32Array; et: Float64Array; ex: Float64Array; ey: Float64Array; evx: Float64Array; evy: Float64Array; ea: Float64Array; er: Float64Array; ew: Float64Array; eh: Float64Array; ebc: Float64Array; efl: Float64Array; ed: Float64Array; ekb: Float64Array; est: Float64Array; ec: Int32Array; ehc: Float64Array;
   itemT: number; ultT: number; maxC: number; itemsOn: number; ncard: number; cx: Float64Array; cy: Float64Array; ckind: Int32Array; con: Int32Array; cage: Int32Array; ccont: Int32Array; ccp: Float64Array; itemOn: Int32Array;
   fx: Int32Array; frz: number; frzO: number; frzqN: number; frzqF: number; frzqO: number; hCD: Float64Array; uCD: Float64Array;
   mirror: Int32Array; giant: Int32Array; lastIt: Int32Array; blade: Int32Array; bombs: Int32Array; bombN: Int32Array; bA: Float64Array; bCD: Float64Array; warp: number;

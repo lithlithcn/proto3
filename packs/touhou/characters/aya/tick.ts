@@ -33,7 +33,7 @@ export function ayaTick(w: World, s: CombatState, p: number): void {
       if (Math.abs(u - D) < S && Math.abs(v) < S * 0.75 && chHitQ(w, s, p, q, c, n, 3, 0, 60)) { s.vx[q] = 0; s.vy[q] = 0; jTxt(w, s.x[q]!, s.y[q]! - 34, 'STUN!', '#fff', 15); }
     }
     w.emit('touhou:aya-photo', { p, x: s.x[p]! + c * D, y: s.y[p]! + n * D, a: s.aim[p]!, S, bullets: hit });
-    jFlash(w, 0.15, '#fff'); if (hit) jTxt(w, s.x[p]!, s.y[p]! - 36, 'PHOTO x' + hit, '#fff', 13);
+    pushJ(w, 'PE', 'k', 'aph', 'o', p, 't', 12, 'x', s.x[p]! + c * D, 'y', s.y[p]! + n * D, 'a', s.aim[p]!, 'S', S); jFlash(w, 0.15, '#fff'); if (hit) jTxt(w, s.x[p]!, s.y[p]! - 36, 'PHOTO x' + hit, '#fff', 13);
     t.aF[p] = 0; t.aCd[p] = s.gf + 90;
   }
   if (t.aG[p]! > s.gf) {

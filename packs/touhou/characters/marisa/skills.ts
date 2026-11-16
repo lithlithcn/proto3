@@ -20,5 +20,5 @@ export function marisaPotion(w: World, s: CombatState, p: number): void {
 export function marisaLaser(w: World, s: CombatState, p: number): void {
   if (s.skC2[p]! > s.gf) { w.emit('combat:skill-cooldown', { p, left: s.skC2[p]! - s.gf, n: 'LASER' }); return; }
   s.skC2[p] = s.gf + 480;
-  for (let i = 0; i < 4; i++) fireRay(s, p, { T: 120, tele: 14, flags: RAYF.follow | RAYF.nodash, w: 4, len: 120, dmg: 1.5, ev: 10, kb: 3, stun: 12, a: s.aim[p]! + i * TAU / 4, spin: 0.045 });
+  for (let i = 0; i < 4; i++) fireRay(s, p, { T: 120, tele: 14, flags: RAYF.follow | RAYF.nodash, w: 4, len: 120, dmg: 1.5, ev: 10, kb: 3, stun: 12, c: 0x7cff7a, a: s.aim[p]! + i * TAU / 4, spin: 0.045 });
 }
