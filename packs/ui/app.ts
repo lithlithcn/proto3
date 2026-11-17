@@ -126,3 +126,16 @@ export function fightKey(code: string, h: UiHost, v: FightView): boolean {
   if (v.winner >= 0 && code === 'KeyM') { APP.mode = 'menu'; h.sfx('cancel00'); return true; }
   return false;
 }
+/** Pad menu event (legacy padEv): Start = quick fight on the hub / pause or rematch in a fight; otherwise the menu nav. */
+export function padEv(k: string, h: UiHost, now: number, v: FightView | null): void {
+  if (APP.mode === 'binds' && BIND.wait) return;
+  if (APP.mode === 'css') return; // the character select reads every pad itself
+  if (k === 'start' && APP.mode === 'items') { nav('start', h, now); return; }
+  if (APP.mode === 'game' && v) {
+    if (k === 'start' || k === 'sel') { if (v.winner >= 0) { if (v.winT >= 100) h.restart(); } else { APP.paused = !APP.paused; if (APP.paused) PZ.why = ''; h.sfx(APP.paused ? 'cancel00' : 'ok00'); } return; }
+    if (APP.paused) { fightKey(({ up: 'ArrowUp', down: 'ArrowDown', ok: 'Enter', back: 'Escape' } as Record<string, string>)[k] ?? '', h, v); return; }
+    if (v.winner >= 0 && v.winT >= 100) { if (k === 'ok') h.restart(); else if (k === 'back') { APP.mode = 'menu'; h.sfx('cancel00'); } }
+    return;
+  }
+  nav(k as NavEv, h, now);
+}

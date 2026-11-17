@@ -14,6 +14,7 @@ Same screens and look as the legacy game: title (warp stars, galaxy, planet, log
 - Item list: `packs/ui/screens/items/items.ts` (catalog = item content in legacy order, per-item ON/OFF -> match `itemSet`, `sf_opts.itemOn`). Item `name` / `color` / `desc` / `ch` now carry the legacy strings.
 - Controls: `packs/ui/screens/binds/binds.ts` (keys incl. mouse buttons + wheel, pad buttons, Spell = 2-button chord, live test rows, pad test line, mouse-aim toggle `sf_mouse` — the in-fight mouse aim itself is not ported yet).
 - Guide: `packs/ui/screens/info/info.ts` + the 40 legacy pages copied verbatim in `packs/ui/ld/info.ts` (`buildInfo(catalog)`: item pages follow the catalog). `tests/ld-names.test.ts` also checks `packs/ui/ld`.
+- Touch: `packs/ui/input/touch.ts` (floating stick, thumb pad, AUTO fire, pause, results buttons, swipe-to-scroll lists, tap = click, landscape notice, fullscreen on first tap); the touch player is the first human. Pad menu navigation: `packs/ui/input/padnav.ts` (`pollNav`) -> `padEv` in app.ts.
 - Match end: once a winner exists the sim only counts `winT` and ticks the effects (combat `gate`, legacy loop `stepFx();winT++`); the oracle runner does the same.
 - Settings with the legacy storage keys: `packs/ui/settings.ts` (`SET`, `loadSettings`, `saveSettings`).
 ## Tests
@@ -21,4 +22,4 @@ Same screens and look as the legacy game: title (warp stars, galaxy, planet, log
 ## Bugs
 - Legacy pad reading in the character select overwrote the vertical stick with the Y button (`I.y=bt(3)`): pads could not move up/down and Y moved down. Port keeps the team-flag button apart (`t`) — deliberate fix.
 ## Not ported yet
-Replay (V), profiles, records, mouse aim in fight, training, online lobby, map maker, YouTube sidebar (`sb` = 0), touch layer, pad menu polling (pollNav), CPU AI (CPUs stand still until lot 4), profiles' per-player bindings.
+Replay (V), profiles, records, mouse aim in fight, training, online lobby, map maker, YouTube sidebar (`sb` = 0), CPU AI (CPUs stand still until lot 4), profiles' per-player bindings.

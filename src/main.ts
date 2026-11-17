@@ -5,7 +5,10 @@ import { VIEWZ, camStart, renderViews } from '@pack/render/view';
 import { drawScreenL, drawScreenTopL, screenFilterL } from '@pack/render/ld/bind';
 import { juiceOf } from '@pack/render/juice/state';
 import { VOLS, audioLocked, initAudio, playSounds, uiSound } from '@pack/audio/player';
-import { APP, fightKey, onKey, renderFightUi, renderUi, type UiHost } from '@pack/ui/app';
+import { APP, fightKey, onKey, padEv, renderFightUi, renderUi, type UiHost } from '@pack/ui/app';
+import { pollNav } from '@pack/ui/input/padnav';
+import { TCH, drawTouch, installTouch, touchInput } from '@pack/ui/input/touch';
+import { GUIDE } from '@pack/ui/screens/info/info';
 import { PZ, lsZoom, type FightView } from '@pack/ui/screens/fight/overlays';
 import { BIND } from '@pack/ui/screens/binds/binds';
 import { flowSample, resetResults, type ResP } from '@pack/ui/screens/fight/results';
@@ -44,7 +47,11 @@ function playground(d: string[], chars: number[]): void {
 }
 const step = (w: World, ds: string[]): void => {
   const f = newInput(w.players), ps = pads();
-  for (let p = 0; p < w.players; p++) { const dv = ds[p]; if (!dv) continue; const I = readDev(dv, keys, ps, w.frame); setInput(f, p, Math.round(I.x * 127), Math.round(I.y * 127), I.b); }
+  for (let p = 0; p < w.players; p++) {
+    const dv = ds[p]; if (!dv && !(p === 0 && TCH.on)) continue; const I = dv ? readDev(dv, keys, ps, w.frame) : { x: 0, y: 0, b: 0 };
+    if (p === 0 && TCH.on) { const T = touchInput(); if (T.x || T.y) { I.x = T.x; I.y = T.y; } I.b |= T.b; } // the touch player = first human
+    setInput(f, p, Math.round(I.x * 127), Math.round(I.y * 127), I.b);
+  }
   if (w === world) rec.push(Array.from(f)); w.step(f);
 };
 /** Per-player view for the results / last-stock overlays. */
@@ -60,7 +67,7 @@ const drawFight = (w: World, W: number, H: number): void => {
 /** Held keys + keys tapped since the last frame (legacy tapQ: a press shorter than a frame still counts once). */
 const held = new Set<string>(), tap = new Set<string>(), keys = { has: (k: string): boolean => held.has(k) || tap.has(k) }, now = (): number => performance.now() / 1000;
 const host: UiHost = {
-  sfx: uiSound, audioLocked, nowMs: () => performance.now(), sb: 0, touch: false, music: false, open() { /* online, training, rules... arrive screen by screen */ },
+  sfx: uiSound, audioLocked, nowMs: () => performance.now(), sb: 0, get touch() { return TCH.on; }, music: false, open() { /* online, training, rules... arrive screen by screen */ },
   items: catalog, restart: () => newMatch(lastDevs, lastChars), save: () => { saveSettings(localStorage); saveBinds(localStorage); }, fullscreen: () => !!document.fullscreenElement, toggleFullscreen: () => { try { if (document.fullscreenElement) void document.exitFullscreen(); else void document.documentElement.requestFullscreen(); } catch { /* not allowed */ } }, roster, keys, pads, frame: () => world?.frame ?? 0, start: newMatch, playground, drawPlayground: cc => { if (pg) { void cc; drawFight(pg.w, canvas.width, canvas.height); } },
 };
 addEventListener('keydown', e => {
@@ -80,12 +87,16 @@ addEventListener('gamepadconnected', () => { if (PZ.why.startsWith('CONTROLLER')
 /** Pointer: hover / click the hot regions of the screen drawn last frame (legacy `hot`). */
 let hot: Hot[] = [], mx = 0, my = 0;
 const at = (x: number, y: number): Hot | undefined => hot.find(r => x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h);
-addEventListener('pointermove', e => { mx = e.clientX; my = e.clientY; if (APP.mode !== 'game' || APP.paused) at(mx, my)?.hover(); });
-addEventListener('pointerdown', e => { mx = e.clientX; my = e.clientY; if (APP.mode === 'binds' && BIND.wait && BIND.col < 2) { onKey('Mouse' + e.button, host, now()); return; } /* a mouse button bound to an action */ if (APP.mode === 'title' && audioLocked()) return; if (APP.mode !== 'game' || APP.paused) at(mx, my)?.click(mx, my); }, true);
+addEventListener('pointermove', e => { if (e.pointerType === 'touch') return; mx = e.clientX; my = e.clientY; if (APP.mode !== 'game' || APP.paused) at(mx, my)?.hover(); });
+addEventListener('pointerdown', e => { if (e.pointerType === 'touch') return; /* touches go through the touch layer */ mx = e.clientX; my = e.clientY; if (APP.mode === 'binds' && BIND.wait && BIND.col < 2) { onKey('Mouse' + e.button, host, now()); return; } /* a mouse button bound to an action */ if (APP.mode === 'title' && audioLocked()) return; if (APP.mode !== 'game' || APP.paused) at(mx, my)?.click(mx, my); }, true);
 addEventListener('wheel', e => { if (APP.mode === 'binds' && BIND.wait && BIND.col < 2) onKey(e.deltaY < 0 ? 'WheelUp' : 'WheelDown', host, now()); });
 /** F8: downloads the match (config + every input frame + build id) so a bug can be replayed exactly. */
 addEventListener('keydown', e => { if (e.code !== 'F8' || !world) return; e.preventDefault(); const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify({ v: 1, build: import.meta.env.MODE, cfg, frames: rec.length, inputs: rec })], { type: 'application/json' })); a.download = `proto3-match-${cfg.seed}-f${rec.length}.json`; a.click(); });
 
+(globalThis as { __APP?: unknown }).__APP = APP; // debug handle (tests, console)
+installTouch({ mode: () => APP.mode, paused: () => APP.paused, over: () => !!world && APP.mode === 'game' && !APP.paused && world.slice<CombatState>('combat').winner >= 0 && world.slice<CombatState>('combat').winT >= 100, hot: () => hot,
+  nav: ev => { if (APP.mode === 'game' && world) padEv(ev, host, now(), fview(world)); else onKey(({ up: 'ArrowUp', down: 'ArrowDown', ok: 'Enter', back: 'Escape' } as Record<string, string>)[ev] ?? '', host, now()); },
+  pause: () => { if (world) padEv('start', host, now(), fview(world)); }, sfx: uiSound, unlock: () => {}, noTouch: () => APP.mode === 'binds' && BIND.wait, infoScroll: dy => { GUIDE.scr = Math.max(0, Math.min(GUIDE.max, GUIDE.scr + dy)); }, W: () => canvas.width, H: () => canvas.height });
 let last = performance.now();
 function frame(t: number): void {
   const n = loop.advance(t - last); last = t;
@@ -93,13 +104,15 @@ function frame(t: number): void {
   const W = canvas.width, H = canvas.height;
   const u: UiCtx = { c, W, H, now: t / 1000, mx, my, fxLow: SET.fxLow, hot: [], acc: '#ff3355' };
   VIEWZ.k = 1; Object.assign(VOLS, SET.vols);
+  pollNav(pads()[0], t, k => padEv(k, host, t / 1000, APP.mode === 'game' && world ? fview(world) : null));
   if (APP.mode === 'css' && pg) for (let i = 0; i < n; i++) step(pg.w, pg.devs); // playground keeps running behind the select
   if (renderUi(u, host)) { hot = u.hot; tap.clear(); if (canvas.style.filter) canvas.style.filter = ''; requestAnimationFrame(frame); return; }
   const w = world!;
   const S = w.slice<CombatState>('combat');
   if (!APP.paused) for (let i = 0; i < n; i++) { const g0 = S.gf; step(w, devs); tap.clear(); if (S.gf !== g0 && S.winner < 0 && S.gf % 30 === 0) tlg[S.gf / 30 | 0] = flowSample(resP(w)); } // match-flow curve (legacy TLG)
   VIEWZ.k = lsZoom(u.now, SET.fxLow); VIEWZ.fxLow = SET.fxLow;
-  drawFight(w, W, H); renderFightUi(u, host, fview(w), resP(w), tlg, matchId, true); hot = u.hot;
+  drawFight(w, W, H); const fv = fview(w); renderFightUi(u, host, fv, resP(w), tlg, matchId, true); hot = u.hot;
+  drawTouch(u, 'game', APP.paused, fv.winner >= 0 && fv.winT >= 100 && !APP.paused, { spirit: S.spirit[0]!, ult: !!S.ult[0] }, 100, S.gf);
   const fl = screenFilterL(c, w, w.slice<CombatState>('combat'), W, H); if (canvas.style.filter !== fl) canvas.style.filter = fl;
   requestAnimationFrame(frame);
 }
