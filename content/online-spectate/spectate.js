@@ -14,7 +14,7 @@
   while (L.A.length <= ca) { const f = L.A.length; L.A.push(Array.from({ length: NET.n }, (_, i) => f >= NET.drop[i] ? netNeutral() : (NET.inp[i].get(f) || netNeutral()))); }
   for (const k of ONL.cl) { if (!k.spec || !k.r || !k.r.open) continue;
     try { if (k.spSent < 0) { k.r.send({ t: 'spec', o: ONL.lastGo }); k.spSent = 0; }
-      if (L.A.length - k.spSent >= 6 || winner >= 0 && L.A.length > k.spSent) { for (let a = k.spSent; a < L.A.length; a += 1200) k.r.send({ t: 'spf', f0: a, A: L.A.slice(a, Math.min(L.A.length, a + 1200)) }); k.spSent = L.A.length; } } catch (e) {} } }; }
+      if (L.A.length - k.spSent >= 6 || winner >= 0 && L.A.length > k.spSent) { for (let a = k.spSent; a < L.A.length; a += 1200) k.r.send({ t: 'spf', f0: a, A: L.A.slice(a, Math.min(L.A.length, a + 1200)) }); k.spSent = L.A.length; if (winner >= 0) k.spec = false; } } catch (e) {} } }; } // match over: the spectator is a normal player for the rematch
 // ---------- spectator side
 function specRecv(x) {
   if (x.t === 'spec') { const o = x.o; if (o.cm && !NETMAP) { onlLog('Match in progress on a custom map: you will join the next match.'); return; }

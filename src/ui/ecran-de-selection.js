@@ -3,7 +3,7 @@
 const SHD=['Wide fan · deadly up close','Fast stream · highest damage over time','Homing charms · safe and steady','Slow wall · zoning and area control'];
 let DEVMAP=null,SELTY=null;const CSEL={sl:[],pv:{},cd:0,t0:0};
 const devList=()=>{const L=['k0','k1'];pads().forEach((g,j)=>L.push('p'+j));return L};
-const devName=d=>d==='k0'?'KEYBOARD 1':d==='k1'?'KEYBOARD 2':'PAD '+(+d.slice(1)+1);
+const devName=d=>typeof d==='string'&&d.startsWith('net')?ocsName(+d.slice(3)):d==='k0'?'KEYBOARD 1':d==='k1'?'KEYBOARD 2':'PAD '+(+d.slice(1)+1);
 function devIn(d){const I={x:0,y:0,a:0,b:0,s:0};if(d[0]==='k'){const m=KB[+d[1]];I.x=kd(m.right)-kd(m.left);I.y=kd(m.down)-kd(m.up);I.a=kd(m.shot)||d==='k0'&&(kd('Enter')||kd('Space'));I.b=kd(m.parry)||d==='k0'&&kd('Escape');I.s=d==='k0'&&kd('Enter')}
  else{const g=pads()[+d.slice(1)];if(!g)return I;const bt=n=>g.buttons[n]&&g.buttons[n].pressed;I.x=(Math.abs(g.axes[0]||0)>.5?Math.sign(g.axes[0]):0)||(bt(15)?1:bt(14)?-1:0);I.y=(Math.abs(g.axes[1]||0)>.5?Math.sign(g.axes[1]):0)||(bt(13)?1:bt(12)?-1:0);I.a=bt(0);I.b=bt(1);I.s=bt(9);I.y=bt(3)}return I}
 function cselOpen(){CSEL.sl=[0,1,2,3,4,5,6,7].map(i=>({dev:null,ty:SELTY&&SELTY[i]>=CH0?SELTY[i]:CHL[i%CHL.length],rd:false}));CSEL.pv={};CSEL.cd=0;CSEL.t0=UNOW();for(const d of devList())CSEL.pv[d]=devIn(d);mode='csel';sfx('ok00')}

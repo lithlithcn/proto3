@@ -17,7 +17,7 @@ const FAKE_PEER = () => {
 };
 async function openRoom(n = 2, opts = {}) {
   await new Promise(r => server.listening ? r() : server.listen(0, r));
-  const b = await chromium.launch(), ctx = await b.newContext({ viewport: { width: 1280, height: 720 } }), pages = [], errs = [];
+  const b = await chromium.launch({ args: ['--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows'] }), ctx = await b.newContext({ viewport: { width: 1280, height: 720 } }), pages = [], errs = [];
   const tab = async i => { const pg = await ctx.newPage(); pg.on('pageerror', e => errs.push(`tab${i}: ${e.message}`)); await pg.addInitScript(FAKE_PEER);
     await pg.goto(`http://localhost:${server.address().port}/index.html`); await pg.waitForTimeout(1200);
     await pg.evaluate(([i, pic]) => { Peer = FakePeer; onlIce = async () => []; try { localStorage.setItem('sf_nick', 'Tab' + (i + 1)); } catch (e) {} if (pic) MYPIC = pic; }, [i, opts.pics ? opts.pics[i] : null]); pages.push(pg); return pg; };
