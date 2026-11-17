@@ -19,6 +19,7 @@ Before any tool/abstraction/doc system answer: which concrete problem, how often
 ## Reflexes learned from Proto3 ("proto3guide": what made it cost a week of credits for 2 %)
 - Never translate working code into another data model. Reuse the code as it is.
 - Before editing a function, `node tools/map.cjs <name>`: the wrapper chain is where behaviour hides (most Proto3 rework came from missed wrappers).
+- Inserting code into a legacy line: never a `//` comment (it swallows the rest of the line; happened twice), use `/* */`.
 - Legacy lines are huge: never cat a whole file; grep + `cut -c` / map. Read only what the task needs.
 - Gameplay identity is checked by `npm test`; no pixel/sound exactness hunts.
 - Validate once per batch of changes, not after every edit. A task unexpectedly past ~1 h: stop, write down why, reassess.

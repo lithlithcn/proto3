@@ -170,9 +170,9 @@ function drawWorldItems(){
   if(p.bombs>0){ctx.strokeStyle='#ff9a2a';ctx.lineWidth=2;ctx.setLineDash([4,4]);ctx.beginPath();ctx.arc(p.x,p.y,30,0,TAU);ctx.stroke();ctx.setLineDash([])}}
  for(const k of KOB){const f=k.t/(k.T||120),e=1-f,col=COLS[k.o]; // visée du rayon de KO
   ctx.save();ctx.translate(k.x,k.y);ctx.rotate(k.a);
-  ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.03+.08*e;ctx.fillStyle=col;ctx.fillRect(0,-90*e,3000,180*e);ctx.globalAlpha=.2+.5*e;ctx.fillRect(0,-2-e*3,3000,4+e*6);ctx.globalCompositeOperation='source-over';
-  ctx.globalAlpha=.3+.4*e;ctx.strokeStyle=col;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,-86);ctx.lineTo(3000,-86);ctx.moveTo(0,86);ctx.lineTo(3000,86);ctx.stroke();
-  ctx.globalAlpha=.75;ctx.lineWidth=3;ctx.beginPath();for(let x=frame*6%120+40;x<3000;x+=120){ctx.moveTo(x-12,-14);ctx.lineTo(x,0);ctx.lineTo(x-12,14)}ctx.stroke(); // chevrons
+  ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.03+.08*e;ctx.fillStyle=col;ctx.fillRect(0,-90*e,KOLEN(),180*e);ctx.globalAlpha=.2+.5*e;ctx.fillRect(0,-2-e*3,KOLEN(),4+e*6);ctx.globalCompositeOperation='source-over';
+  ctx.globalAlpha=.3+.4*e;ctx.strokeStyle=col;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,-86);ctx.lineTo(KOLEN(),-86);ctx.moveTo(0,86);ctx.lineTo(KOLEN(),86);ctx.stroke();
+  ctx.globalAlpha=.75;ctx.lineWidth=3;ctx.beginPath();for(let x=frame*6%120+40;x<KOLEN();x+=120){ctx.moveTo(x-12,-14);ctx.lineTo(x,0);ctx.lineTo(x-12,14)}ctx.stroke(); // chevrons
   for(let i=2;i>=0;i--){ctx.globalAlpha=(.3+.3*e)/(i+1);ctx.fillStyle=i?col:'#fff';ctx.beginPath();ctx.arc(0,0,(8+e*24)*(1+i*.7),0,TAU);ctx.fill()} // orbe qui charge
   ctx.globalCompositeOperation='lighter';ctx.fillStyle=col;for(let i=0;i<14;i++){const a=i*TAU/14+frame*.12*(i%2?1:-1),r=18+((f*70+i*11)%80);ctx.globalAlpha=.25+.6*e;ctx.beginPath();ctx.arc(Math.cos(a)*r,Math.sin(a)*r,1.5+e*2.5,0,TAU);ctx.fill()}ctx.globalCompositeOperation='source-over';ctx.globalAlpha=.35+.55*e;magicCircle(0,0,26+e*34,frame*.1,col);magicCircle(0,0,(26+e*34)*.62,-frame*.16,'#fff') // énergie aspirée
   ctx.restore();ctx.globalAlpha=1;

@@ -152,6 +152,8 @@ function koBeam(k,w,len,f){const lo=fxLow||perfLow,hu=k.hu!==undefined?k.hu:(k.h
 function magicCircle(x,y,r,a,c){ctx.save();ctx.translate(x,y);ctx.rotate(a);ctx.strokeStyle=c;ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,r,0,TAU);ctx.stroke();ctx.beginPath();ctx.arc(0,0,r*.72,0,TAU);ctx.stroke();
  ctx.beginPath();for(let k=0;k<=96;k++){const aa=k*TAU/96,w=r*(.5+.12*Math.sin(aa*6+frame*.08));ctx.lineTo(Math.cos(aa)*w,Math.sin(aa)*w)}ctx.stroke();ctx.lineWidth=3;for(let k=0;k<3;k++){ctx.beginPath();ctx.arc(0,0,r*1.12,k*TAU/3-a*2,k*TAU/3-a*2+.9);ctx.stroke()}ctx.lineWidth=2;for(let k=0;k<6;k++){const aa=k*TAU/6,c1=Math.cos(aa),s1=Math.sin(aa),px=-s1,py=c1;ctx.beginPath();ctx.moveTo(c1*r*.95+px*6,s1*r*.95+py*6);ctx.lineTo(c1*r*.8,s1*r*.8);ctx.lineTo(c1*r*.95-px*6,s1*r*.95-py*6);ctx.stroke()}for(let k=0;k<12;k++){const aa=k*TAU/12;ctx.fillStyle=c;ctx.fillRect(Math.cos(aa)*r*.86-2,Math.sin(aa)*r*.86-2,4,4)}ctx.restore()}
 
+/** KO beams always cross the whole map, whatever its size (owner: a big custom map showed the beam's end). */
+function KOLEN(){return Math.hypot(T.MAP_W,T.MAP_H)+800}
 function fireBeam(x,y,a,o,col,edge,dep){ // rayon de KO : traverse ; s'arrête et rebondit sur celui qui le pare (à l'infini)
  const kf={x,y,a,t:70,c:col,edge};KOFX.push(kf);const c=Math.cos(a),s=Math.sin(a),own=P[o];
  const L=P.filter(q=>q.id!==o&&q.state!=='dead'&&q.inv<=0&&!ally(own,q)).map(q=>{const rx=q.x-x,ry=q.y-y;return{q,d:rx*c+ry*s,e:Math.abs(ry*c-rx*s)}}).filter(h=>h.d>0&&h.e<70+T.BODY_R).sort((u,v)=>u.d-v.d);

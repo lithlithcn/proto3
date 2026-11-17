@@ -109,7 +109,7 @@ function drawView(v){
  ctx.save();ctx.globalCompositeOperation='lighter';for(const r of RINGS){const u=Math.min(1,r.t/30);ctx.strokeStyle=r.c;ctx.globalAlpha=u*.22;ctx.lineWidth=14*u+2;ctx.beginPath();ctx.arc(r.x,r.y,r.r,0,TAU);ctx.stroke();ctx.globalAlpha=u;ctx.lineWidth=4*u+1;ctx.stroke();ctx.globalAlpha=u*.6;ctx.strokeStyle='#fff';ctx.lineWidth=1.2;ctx.stroke()}ctx.restore()
  const ray=(x,y,a,w,L)=>{ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+Math.cos(a-w)*L,y+Math.sin(a-w)*L);ctx.lineTo(x+Math.cos(a+w)*L,y+Math.sin(a+w)*L);ctx.fill()};
  for(const k of KOFX){const f=k.t/70,w=90*Math.min(1,(70-k.t)/4)*(f<.45?Math.pow(f/.45,.7):1); // rayon de KO
-  koBeam(k,w,k.len!==undefined?k.len:3400,f)}
+  koBeam(k,w,k.len!==undefined?k.len:KOLEN(),f)}
  ctx.textAlign='center';for(const t of TX){ctx.globalAlpha=Math.min(1,t.t/20);ctx.font='bold '+t.z+'px monospace';ctx.fillStyle=t.c;ctx.fillText(t.s,t.x,t.y)}
  ctx.globalAlpha=1;
  ctx.strokeStyle='#fff';ctx.lineCap='round';for(const l of LINES){const f=l.t/l.T,r0=12+(1-f)*30,c=Math.cos(l.a),s=Math.sin(l.a); // lignes d'impact
@@ -126,7 +126,7 @@ function drawView(v){
  for(const q of v.fixed?P:[p])if(q.state!=='dead'&&q.hp<T.HP*.3){ // vignette rouge quand la vie est basse
   const a=(.16+.08*Math.sin(frame*.2))*(1-q.hp/(T.HP*.3)),g=ctx.createRadialGradient(v.x+v.w/2,H/2,Math.min(v.w,H)*.35,v.x+v.w/2,H/2,Math.max(v.w,H)*.7);
   g.addColorStop(0,'rgba(255,0,0,0)');g.addColorStop(1,`rgba(255,0,0,${a})`);ctx.fillStyle=g;ctx.fillRect(v.x,0,v.w,H)}
- if(!v.fixed)drawIndicators(v,p,o,cam)}
+ if(!v.fixed){if(GLR&&OC)ovl(v,()=>drawIndicators(v,p,o,cam));else drawIndicators(v,p,o,cam)}} /* on the overlay canvas with WebGL, so nothing can cover it */
 
 function drawHeavy(b){
  if(b.gung){const l=Math.hypot(b.vx,b.vy)||1;ctx.lineCap='round';ctx.strokeStyle=COLS[b.owner]||'#fff';ctx.lineWidth=16;ctx.beginPath();ctx.moveTo(b.x-b.vx/l*56,b.y-b.vy/l*56);ctx.lineTo(b.x+b.vx/l*14,b.y+b.vy/l*14);ctx.stroke();ctx.strokeStyle='#e0302f';ctx.lineWidth=10;ctx.beginPath();ctx.moveTo(b.x-b.vx/l*56,b.y-b.vy/l*56);ctx.lineTo(b.x+b.vx/l*14,b.y+b.vy/l*14);ctx.stroke();ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.stroke();return}
@@ -174,14 +174,14 @@ function drawItem(){
  ctx.restore()}
 
 function drawIndicators(v,p,o,cam){
- if(p.state==='dead')return;const pad=28,cx=v.x+v.w/2,cy=H/2;
+ if(p.state==='dead')return;const pad=40,vy=v.y||0,vh=v.h||H,cx=v.x+v.w/2,cy=vy+vh/2; /* stacked split-screen views have their own y/h (was always the full height) */
  const edge=(x,y,col,label,sz)=>{
   const sx=cx+(x-cam.x)*SCv,sy=cy+(y-cam.y)*SCv;
-  if(sx>v.x+pad&&sx<v.x+v.w-pad&&sy>pad&&sy<H-pad)return false;
-  const dx=sx-cx,dy=sy-cy,k=Math.min((v.w/2-pad)/Math.abs(dx||1e-6),(H/2-pad)/Math.abs(dy||1e-6)),ex=cx+dx*k,ey=cy+dy*k,a=Math.atan2(dy,dx);
-  ctx.save();ctx.translate(ex,ey);ctx.rotate(a);ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(sz,0);ctx.lineTo(-sz,-sz*.7);ctx.lineTo(-sz,sz*.7);ctx.fill();ctx.restore();
-  if(label){ctx.fillStyle='#fff';ctx.font='12px monospace';ctx.textAlign='center';ctx.fillText(label,ex-Math.cos(a)*26,ey-Math.sin(a)*26+4)}return true};
- for(const q of P)if(q!==p&&q.state!=='dead')edge(q.x,q.y,COLS[q.id],Math.round(Math.hypot(q.x-p.x,q.y-p.y)/10)+'m',14);
+  if(sx>v.x+pad&&sx<v.x+v.w-pad&&sy>vy+pad&&sy<vy+vh-pad)return false;
+  const dx=sx-cx,dy=sy-cy,k=Math.min((v.w/2-pad)/Math.abs(dx||1e-6),(vh/2-pad)/Math.abs(dy||1e-6)),ex=cx+dx*k,ey=cy+dy*k,a=Math.atan2(dy,dx);
+  /* owner: bigger, outlined, gently pulsing (no flashing) so it is always noticed */const ps=fxOff?1:1+.12*Math.sin(frame*.15),z=sz*ps;ctx.save();ctx.globalAlpha=1;ctx.translate(ex,ey);ctx.rotate(a);ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(z,0);ctx.lineTo(-z,-z*.75);ctx.lineTo(-z*.55,0);ctx.lineTo(-z,z*.75);ctx.closePath();ctx.lineWidth=5;ctx.strokeStyle='#05060c';ctx.stroke();ctx.fillStyle=col;ctx.fill();ctx.lineWidth=1.5;ctx.strokeStyle='#fff';ctx.stroke();ctx.restore();
+  if(label){const lx=ex-Math.cos(a)*(z+22),ly=ey-Math.sin(a)*(z+22)+5;ctx.save();ctx.globalAlpha=1;ctx.font='bold 15px monospace';ctx.textAlign='center';ctx.lineWidth=4;ctx.strokeStyle='#05060c';ctx.strokeText(label,lx,ly);ctx.fillStyle=col;ctx.fillText(label,lx,ly);ctx.restore()}return true};
+ for(const q of P)if(q!==p&&q.state!=='dead')edge(q.x,q.y,COLS[q.id],'P'+(q.id+1)+' '+Math.round(Math.hypot(q.x-p.x,q.y-p.y)/10)+'m',22);
  let n=0;for(const b of B){if(!b.heavy||b.owner===p.id||n>5)continue; // alerte lourde hors-champ
   const dx=p.x-b.x,dy=p.y-b.y,d=Math.hypot(dx,dy),sp=Math.hypot(b.vx,b.vy);
   if(d>900||(b.vx*dx+b.vy*dy)/(d*sp)<.8)continue;if(edge(b.x,b.y,'#f33','!',9))n++}

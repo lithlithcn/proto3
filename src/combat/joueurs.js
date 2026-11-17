@@ -31,7 +31,7 @@ function updP(p,o,I){
  if(pr('spell')&&p.spirit<T.SPELL_COST&&!p.ult&&(p.spRef||0)<frame){p.spRef=frame+45;txt(p.x,p.y-30,'SPELL '+(p.spirit|0)+'%','#f8f',13);sfx('cancel00',.4);log('spell refused: spirit '+(p.spirit|0)+'%')}
  if(p.spirit>=T.SPELL_COST){if(!p.spReady){p.spReady=1;txt(p.x,p.y-50,'SPELL READY','#f8f',18);RINGS.push({x:p.x,y:p.y,r:0,m:80,t:24,c:'#f8f'});flash(.15,'#f8f')}}else p.spReady=0
  switch(st){
-  case'hitstun':if(!p.spit){p.vx*=.93;p.vy*=.93}else{p.t=Math.max(p.t,2);p.inv=Math.max(p.inv,2)}if(--p.t<=0){p.state='idle';p.combo=0}return;
+  case'hitstun':if(!p.spit){p.vx*=.93;p.vy*=.93}else{p.t=Math.max(p.t,2);p.inv=Math.max(p.inv,2);if(WARP>0){if(!p.spitF)p.spitF=frame;if(frame-p.spitF>=420){p.spit=0;p.vx=p.vy=0;p.t=1;p.spitF=0;burst(p.x,p.y,'#b45cff',16)}}else if(p.spitF)p.spitF=0} /* owner: with warp edges a thrown/ejected fighter (beam parry...) stops after 7 s instead of flying forever */if(--p.t<=0){p.state='idle';p.combo=0}return;
   case'eaten':updEaten(p);return;
   case'cocoon':updCocoon(p,I);return;
   case'pray':updPray(p);return;
@@ -152,7 +152,8 @@ function physics(p){
  p.x+=p.vx*kP();p.y+=p.vy*kP();const R=T.BODY_R;
  if(WARP>0){const ox=p.x,oy=p.y; // Warp : on ressort de l'autre côté
   if(p.x<0)p.x+=T.MAP_W;else if(p.x>T.MAP_W)p.x-=T.MAP_W;if(p.y<0)p.y+=T.MAP_H;else if(p.y>T.MAP_H)p.y-=T.MAP_H;
-  if(ox!==p.x||oy!==p.y){sfx('wrap_teleportation',.6);burst(ox,oy,'#b45cff',10);burst(p.x,p.y,'#b45cff',10);if(p.id===0||!p.cpu)cams[p.id].x=p.x,cams[p.id].y=p.y}}
+  if(ox!==p.x||oy!==p.y){sfx('wrap_teleportation',.6);burst(ox,oy,'#b45cff',10);if(p.spit&&p.state==='hitstun'){const v=Math.hypot(p.vx,p.vy),k=Math.min(1.3,160/Math.max(1,v));p.vx*=k;p.vy*=k} // owner: each wrap while ejected = x1.3 speed (capped 160 px/frame)
+  burst(p.x,p.y,'#b45cff',10);if(p.id===0||!p.cpu)cams[p.id].x=p.x,cams[p.id].y=p.y}}
  else{if(p.x<R){p.x=R;wall(p,0)}else if(p.x>T.MAP_W-R){p.x=T.MAP_W-R;wall(p,0)}
  if(p.state==='dead')return;
  if(p.y<R){p.y=R;wall(p,1)}else if(p.y>T.MAP_H-R){p.y=T.MAP_H-R;wall(p,1)}}
