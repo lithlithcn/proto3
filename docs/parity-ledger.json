@@ -40,8 +40,8 @@
     {
       "id": "themed-items-115",
       "status": "not-ported",
-      "area": "115 themed items (fx.*), four-way echo (FQ/xFour), ITEMEL/ENTEL",
-      "see": "docs/INVENTORY.md"
+      "area": "115 themed items: 1/115 ported and validated (rumia); rule framework in place (packs/combat/rules.ts, packs/themed). Remaining 114, four-way echo (FQ/xFour), ITEMEL/ENTEL not ported",
+      "see": "docs/game/items/themed-plan.md"
     },
     {
       "id": "modes-maps-teams-cpu-online",

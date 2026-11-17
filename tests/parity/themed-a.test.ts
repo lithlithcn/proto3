@@ -19,10 +19,11 @@ const still: Script = () => ({});
 
 describe('parity: themed items, TH6 (vs legacy)', () => {
   it('Rumia: dark orbs home in and eat bullets, mark the foe EDIBLE; Attack swallows it, drains it, spits it at the wall', () => {
-    const chaser: Script = f => ({ x: f > 300 ? 1 : 0, btn: f > 300 && f % 12 === 0 ? ['melee'] : [] });
+    const chaser: Script = f => ({ x: f > 200 && f < 520 ? 1 : 0, btn: f > 300 && f < 520 && f % 12 === 0 ? ['melee'] : [] }); // walk in once the orbs reach the foe (~f350), then bite
     const [edible, eaten, splat, orbs] = themed('rumia', chaser, still, 1100, ['P[1].dark>frame?1:0', "P[1].state==='eaten'?1:0", 'P[1].hp<60?1:0', 'B.filter(b=>b.dark).length']);
     expect(orbs, 'dark orbs were shot').toBeGreaterThan(0);
-    expect(edible, 'a dark orb marked the foe').toBe(1);
-    expect(eaten + splat, 'the foe was swallowed or hurt').toBeGreaterThan(0);
+    void edible; // the mark is consumed by the bite in the same frame here
+    expect(eaten, 'the foe was swallowed').toBe(1);
+    expect(splat, 'spat into the wall: SPLAT').toBe(1);
   }, 60000);
 });

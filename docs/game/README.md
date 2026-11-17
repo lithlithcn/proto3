@@ -21,4 +21,7 @@ Links to code use file paths and symbol names (stable), never line numbers (they
 - [mechanics/render.md](mechanics/render.md) — view/camera/arena/actors, what is ported and what is not
 - [mechanics/audio.md](mechanics/audio.md) — sound effects: sites, player, gains, cooldown, reverb, ENDK
 - [mechanics/ui.md](mechanics/ui.md) — menus and screens: router, title, hub, settings, `pnpm ui` oracle
+- [mechanics/item-rules.md](mechanics/item-rules.md) — themed-item framework: legacy extension points (chPre/chHit/chDmg…) and where they live
+- [items/themed-plan.md](items/themed-plan.md) — the 115 themed items: how they are wired, port order, inventory
+- [items/rumia.md](items/rumia.md) — The Darkness Feeds
 - [mechanics/doppelganger.md](mechanics/doppelganger.md) — clone item and its bare stand-in
