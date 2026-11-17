@@ -10,6 +10,7 @@ import { startParry } from './parry';
 import { snap, startRifle } from '../items/rifle';
 import { SPARK } from '../items/spark';
 import { CLONE, cloneAim, clonePos } from '../items/clone';
+import { meleeRule } from '../rules';
 
 /** Idle locomotion + actions (legacy updP after the state switch). */
 export function updIdle(c: PCtx): void {
@@ -38,7 +39,7 @@ export function updIdle(c: PCtx): void {
     else doDash(c);
     return;
   }
-  if (pr(c, BTN.melee)) { startAtk(s, p, focus ? MV.strong : rel(c) === 'F' ? MV.lunge : MV.jab); return; }
+  if (pr(c, BTN.melee)) { if (meleeRule(w, s, p)) return; startAtk(s, p, focus ? MV.strong : rel(c) === 'F' ? MV.lunge : MV.jab); return; }
   if (pr(c, BTN.heavy)) {
     if (s.rifle[p]! > 0) { startRifle(s, p); return; }
     if (s.cam[p]! > 0) { snap(s, p); return; }

@@ -11,6 +11,7 @@ import { heavyClash, heavyContact } from './heavy';
 import { T } from '../tuning';
 import { EK_FAIRY, hitFairy } from '../items/fairy';
 import { PS, BF, type CombatState } from '../state';
+import { bulletRule } from '../rules';
 
 /** Distance from point (px,py) to segment a→b (legacy segD). */
 export function segD(px: number, py: number, ax: number, ay: number, bx: number, by: number): number {
@@ -47,7 +48,7 @@ export function updateBullets(w: World, s: CombatState): void {
     for (let t = 0; t < s.n; t++) {
       if (s.bflags[i]! & BF.dead) break;
       const owner = s.bowner[i]!; // live: a mirror bounce changes the owner mid-loop
-      if ((s.teams !== 0 && owner !== t && s.team[owner] === s.team[t]) || t === owner || s.state[t] === PS.dead || (s.bflags[i]! & BF.fake)) continue; // `fake` = harmless decoy (Nue)
+      if ((s.teams !== 0 && owner !== t && s.team[owner] === s.team[t]) || t === owner || s.state[t] === PS.dead || (s.bflags[i]! & BF.fake) || s.state[t] === PS.eaten) continue; // `fake` = harmless decoy (Nue)
       const vx = s.bvx[i]!, vy = s.bvy[i]!; // live: a mirror bounce earlier in this loop changed them (legacy reads b.vx directly)
       const ax = s.x[t]! - bx, ay = s.y[t]! - by, mg = 82 + (fast ? Math.abs(vx) + Math.abs(vy) : 0);
       if (ax > mg || ax < -mg || ay > mg || ay < -mg) continue;
@@ -58,7 +59,7 @@ export function updateBullets(w: World, s: CombatState): void {
       if (s.mirror[t]! > 0 && d < bodyR(s, t) + r) { mirrorRef(s, i, t); continue; }
       if (s.state[t] === PS.parry && d < T.PARRY_R) { s.bflags[i] = s.bflags[i]! | BF.dead; continue; }
       if (!(s.bflags[i]! & BF.grazed) && d < r + T.GRAZE_R) { s.bflags[i] = s.bflags[i]! | BF.grazed; graze(w, s, t, bx, by, 1); }
-      if (s.state[t] !== PS.dash && s.inv[t]! <= 0 && d < r * 0.68 + coreR(s, t)) { s.bflags[i] = s.bflags[i]! | BF.dead; if (s.bsea[i]) { seaHit(s, i, t, owner); jfx(w, 'chg', owner, 2.2); } lightHit(w, s, t, owner, s.bdmg[i]!); }
+      if (s.state[t] !== PS.dash && s.inv[t]! <= 0 && d < r * 0.68 + coreR(s, t)) { if (bulletRule(w, s, i, t)) continue; s.bflags[i] = s.bflags[i]! | BF.dead; if (s.bsea[i]) { seaHit(s, i, t, owner); jfx(w, 'chg', owner, 2.2); } lightHit(w, s, t, owner, s.bdmg[i]!); }
     }
     if (nf && !(s.bflags[i]! & BF.dead) && hitFairy(s, i)) s.bflags[i] = s.bflags[i]! | BF.dead;
   }

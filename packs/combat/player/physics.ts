@@ -4,9 +4,11 @@ import { kP } from '../stats';
 import { T } from '../tuning';
 import { PS, type CombatState } from '../state';
 import { ko } from './ko';
+import { wallRule } from '../rules';
 
 /** Wall contact (legacy `wall`). ax: 0 = x axis, 1 = y axis. */
 function wall(w: World, s: CombatState, p: number, ax: number): void {
+  if (wallRule(w, s, p, ax)) return; // legacy xSpitWall (spit 1/3) and spinning items, before the beam push
   if (s.spit[p] === 2) { // pushed to the edge by a parried KO beam: costs a wall pip, then free
     if (s.beamPip[p]) { s.beamPip[p] = 0; s.pips[p] = Math.max(0, s.pips[p]! - 1); w.emit('combat:wall-pip', { p, pips: s.pips[p]! }); }
     s.spit[p] = 0; s.state[p] = PS.idle; s.t[p] = 0; if (ax) s.vy[p] = 0; else s.vx[p] = 0;

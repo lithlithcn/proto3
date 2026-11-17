@@ -7,6 +7,7 @@ import { updateTimeStop } from './items/timestop';
 import { bufferInputs } from './input';
 import { updateBeams } from './kobeam';
 import { tickFx } from './fx';
+import { rulesOf, rulesOwnPre } from './rules';
 import { updateCards } from './items/cards';
 import { updateItemWorld } from './items/world';
 import { driftBumpers } from './items/bumpers';
@@ -45,7 +46,7 @@ const bullets: SystemDef = { id: 'bullets', phase: 'sim', after: ['physics'], ru
 const charTick: SystemDef = { id: 'char-tick', phase: 'sim', after: ['item-late'], run(w) { const s = combatOf(w); if (s.skip) return; settleSpirit(s); for (let p = 0; p < s.n; p++) if (s.state[p] !== PS.dead) charOf(w, s, p).tick?.(w, s, p); for (let p = 0; p < s.n; p++) s.spP[p] = s.spirit[p]!; } };
 const items: SystemDef = { id: 'items', phase: 'sim', after: ['bullets'], run(w) { const s = combatOf(w); if (!s.skip) updateCards(w, s); } };
 const itemWorld: SystemDef = { id: 'item-world', phase: 'sim', after: ['ko-beam'], run(w) { const s = combatOf(w); if (!s.skip) updateItemWorld(w, s); } };
-const status: SystemDef = { id: 'status', phase: 'sim', after: ['item-world'], run(w) { const s = combatOf(w); if (!s.skip) tickFx(w, s); } };
+const status: SystemDef = { id: 'status', phase: 'sim', after: ['item-world'], run(w) { const s = combatOf(w); if (s.skip) return; if (rulesOwnPre(w)) { for (const r of rulesOf(w)) r.pre?.(w, s); } else tickFx(w, s); } }; // legacy chPre..chPre5 (themed rules) or the bare status countdown
 /** Legacy end of the base `step` (where `stepFx` runs, also on hit-stop frames): presentation listeners tick their effects here; every later wrapper and `chStep` happen after it. */
 const baseEnd: SystemDef = { id: 'base-end', phase: 'sim', after: ['bullet-motion', 'item-world', 'status'], run(w) { const s = combatOf(w); w.emit('combat:fx-tick', { gf: s.gf, wt: s.winner >= 0 ? s.winT : 0 }); } };
 const itemLate: SystemDef = { id: 'item-late', phase: 'sim', after: ['base-end'], run(w) { const s = combatOf(w); if (!s.skip) { for (let p = 0; p < s.n; p++) if (s.state[p] !== PS.dead) updateClone(s, p); driftBumpers(s); updateFreezeQueue(s); updateTimeStop(w, s); } } };

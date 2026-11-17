@@ -8,6 +8,7 @@ import { T } from '../tuning';
 import { bodyR, coreR } from '../stats';
 import { mirrorRef } from './mirror';
 import { BF, PS, type CombatState } from '../state';
+import { bulletRule } from '../rules';
 
 
 /** Parry reflects a heavy bullet back at its shooter: damage x1.3 per reflection, faster, homing; the 7th reflection cannot be parried and kills (legacy `reflect`). */
@@ -31,6 +32,7 @@ export function heavyContact(w: World, s: CombatState, i: number, t: number, d: 
   if (parrying && d < r + T.PARRY_R && !(f & BF.np)) { reflect(w, s, i, t); return; }
   const armed = s.bdist[i]! >= s.barm[i]!;
   if (armed && s.inv[t]! <= 0 && d < r * 0.82 + coreR(s, t)) {
+    if (bulletRule(w, s, i, t)) return; // legacy chBullet
     s.bflags[i] = f | BF.dead;
     const n = s.brefl[i]!;
     if (f & BF.oneshot) s.hp[t] = 0;

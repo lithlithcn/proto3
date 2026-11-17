@@ -4,6 +4,7 @@ import combat from '../../packs/combat/pack';
 import touhou from '../../packs/touhou/pack';
 import render from '../../packs/render/pack';
 import touhoufx from '../../packs/touhoufx/pack';
+import themed from '../../packs/themed/pack';
 import { PS, type CombatState } from '../../packs/combat/state';
 import { spellPool } from '../../packs/combat/api';
 
@@ -32,7 +33,7 @@ const STATE_NAME = Object.fromEntries(Object.entries(PS).map(([k, v]) => [v, k])
 /** Item name → pool index of the ported items (pool order = legacy order), rainbow = Last Word card. */
 /** Item name → pool index: the ported items sorted by `order` (= legacy list order); the Last Word card is -2. */
 function kindMap(world: World): Record<string, number> {
-  const l = world.registry.list<{ order: number }>('item').map(([id, d]) => [id.replace('touhou:', ''), d.order] as const).sort((a, b) => a[1] - b[1]);
+  const l = world.registry.list<{ order: number }>('item').map(([id, d]) => [id.replace(/^\w+:/, ''), d.order] as const).sort((a, b) => a[1] - b[1]);
   return { rainbow: -2, ...Object.fromEntries(l.map(([n], i) => [n, i])) };
 }
 export interface PairOpt { items?: string[]; maxCards?: number }
@@ -40,7 +41,7 @@ export function makePair(chars: string[], seed = 1, opt: PairOpt = {}) {
   const legacy = createLegacy({ chars, seed, items: !!opt.items });
   if (opt.items) legacy.eval(`ITEMS.forEach(i=>itemOn[i.k]=i.k==='rainbow'||${JSON.stringify(opt.items)}.includes(i.k));maxC=${opt.maxCards ?? 1}`);
   const world = new World({
-    packs: process.env['PARITY_RENDER'] ? [combat, touhou, render, touhoufx] : [combat, touhou], seed, players: chars.length, sanitize: true, strict: true, diag: 2,
+    packs: process.env['PARITY_RENDER'] ? [combat, touhou, themed, render, touhoufx] : [combat, touhou, themed], seed, players: chars.length, sanitize: true, strict: true, diag: 2,
     world: { players: chars.map(c => ({ char: `touhou:${c}` })), ...(opt.items ? { items: true, itemSet: opt.items.map(i => `touhou:${i}`), maxCards: opt.maxCards ?? 1 } : { items: false }) },
   });
   const s = world.slice<CombatState>('combat'), KIND = kindMap(world);

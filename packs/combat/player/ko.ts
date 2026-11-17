@@ -5,6 +5,7 @@ import { T } from '../tuning';
 import { PS, type CombatState } from '../state';
 import { addBeam, BEAM_T } from '../kobeam';
 import { bestId } from '../rank';
+import { rulesOf } from '../rules';
 
 /**
  * K.O. (legacy `ko`, core part). Presentation (KO beam, shake, rings) belongs to listeners of `combat:ko`.
@@ -17,6 +18,7 @@ export function ko(w: World, s: CombatState, p: number, why = 'K.O.'): void { //
   const killer = s.gf - s.lastByF[p]! < 600 ? s.lastBy[p]! : -1; // credit the last attacker within 10 s, else self-destruct
   if (killer >= 0 && killer !== p) s.kos[killer] = s.kos[killer]! + 1; else s.sd[p] = s.sd[p]! + 1;
   s.lastByF[p] = -1e9;
+  for (const r of rulesOf(w)) r.kill?.(w, s, p); // legacy chKill
   const ev0 = (v: number, kb: number): number => (v || kb); // legacy `p.vx||p.kbx`: ONLY an exact 0 falls back to the knockback (a 1e-12 friction residue still picks the beam direction)
   const mx = ev0(s.vx[p]!, s.kbx[p]!), my = ev0(s.vy[p]!, s.kby[p]!);
   const a = mx || my ? atan2(my, mx) + 3.141592653589793 : atan2(s.mapH / 2 - s.y[p]!, s.mapW / 2 - s.x[p]!);

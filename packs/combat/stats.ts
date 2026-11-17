@@ -1,5 +1,6 @@
 import { pow, type World } from '@kernel';
 import { charOf } from './api';
+import { rulesOf } from './rules';
 import { PS, type CombatState } from './state';
 import { T } from './tuning';
 
@@ -7,7 +8,7 @@ import { T } from './tuning';
  * Stat pipeline (DESIGN §4.4). Today: character multipliers only. Statuses (items, spells, rules) plug in here as modifiers,
  * so no system ever sprinkles `if (flag)` checks. Order of multiplication is fixed and deterministic.
  */
-export const speedMul = (w: World, s: CombatState, p: number): number => { const c = charOf(w, s, p); return c.spd * (c.spdM ? c.spdM(w, s, p) : 1) * (s.slowT[p]! > s.gf ? 0.5 : 1); };
+export const speedMul = (w: World, s: CombatState, p: number): number => { const c = charOf(w, s, p); let k = c.spd * (c.spdM ? c.spdM(w, s, p) : 1) * (s.slowT[p]! > s.gf ? 0.5 : 1); for (const r of rulesOf(w)) if (r.speed) k *= r.speed(w, s, p); return k; }; // + legacy chSpeed
 /**
  * Damage multiplier (legacy chDmg wrappers): attacker `dout`, victim `din`, then the attacker's accumulated parry streak
  * (×1.3 per streak step, applies to its melee and to non-heavy shots).
@@ -19,6 +20,7 @@ export function scaleDamage(w: World, s: CombatState, victim: number, attacker: 
   if (attacker >= 0 && attacker !== victim) { const c = charOf(w, s, attacker); d *= c.dout * (c.doutM ? c.doutM(w, s, attacker, victim, heavy) : 1); }
   const cv = charOf(w, s, victim); d *= cv.din * (cv.dinM ? cv.dinM(w, s, victim) : 1);
   if (attacker >= 0 && s.pStk[attacker]! > 0 && (s.state[attacker] === PS.atk || !heavy)) d *= pow(1.3, s.pStk[attacker]!);
+  for (const r of rulesOf(w)) if (r.dmg) d = r.dmg(w, s, victim, attacker, d, heavy); // legacy chDmg item factors
   return d;
 }
 /** Body / core collision radii (legacy bodyR / coreR): the Oni giant is twice as wide and an easier target. */

@@ -16,6 +16,7 @@ import { ko } from './ko';
 import { respawn } from './respawn';
 import { inEdge } from '../stats';
 import { spellInput, startSpell, updSpell } from './spell';
+import { stateRule } from '../rules';
 
 
 /**
@@ -68,6 +69,7 @@ function step(w: World, s: CombatState, p: number): void {
     case PS.dash: updDash(c); return;
     case PS.dashlag: updDashLag(c); return;
     case PS.hitstun: updHitstun(c); return;
+    case PS.eaten: case PS.cocoon: case PS.pray: stateRule(w, s, p); return; // item states (themed rules: legacy updEaten / updCocoon / updPray)
     case PS.atk: updAtk(c); return;
     case PS.parry: updParry(c); return;
     case PS.parrylag: updParrylag(c); return;
