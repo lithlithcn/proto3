@@ -62,6 +62,6 @@ requestAnimationFrame(specLoop);
 { const B0 = uiBG; uiBG = word => { B0(word); if (!SPX.on || !specGame() || typeof YTP === 'undefined') return; const op = (YTP.Y.op ?? 60) / 100; if (op <= 0) return;
   ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = op; if (YTP.Y.bl) ctx.filter = 'blur(' + (YTP.Y.bl * .6) + 'px)'; specDraw(ctx, W, H, (() => { let s = 0; for (let i = 0; i < 8; i++) s += SPX.lv[i]; return s / 8; })()); ctx.restore(); }; }
 // the toggle, in the playlist's VIDEO OPTIONS
-{ const pv2 = document.querySelector('#yt .pv2'), ref = pv2 && pv2.querySelector('.ph.s');
+if (typeof document.querySelector === 'function') { const pv2 = document.querySelector('#yt .pv2'), ref = pv2 && pv2.querySelector('.ph.s');
   if (pv2) { const l = document.createElement('label'); l.className = 'tg'; l.innerHTML = '<input type="checkbox" class="spc"><i></i>Audio spectrum in the background'; pv2.insertBefore(l, ref || null);
     const cb = l.querySelector('input'); cb.checked = SPX.on; cb.onchange = () => { SPX.on = cb.checked; try { localStorage.setItem('sf_spec', SPX.on ? '1' : '0'); } catch (e) {} }; } }
