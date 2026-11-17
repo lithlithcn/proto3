@@ -1,0 +1,25 @@
+'use strict';
+// ===== sauvegarde/chargement instantané de l'état (rollback) =====
+let SNAPG,SNAPS,SNAPC;DEFER(()=>{SNAPG=[()=>seed,()=>mode,()=>P,()=>B,()=>FX,()=>TX,()=>RINGS,()=>LOG,()=>KOFX,()=>WAVES,()=>LINES,()=>invF,()=>hitstop,()=>shake,()=>slow,()=>zk,()=>flashS,()=>frame,()=>item,()=>itemT,()=>winner,()=>winT,()=>ultT,()=>TSTOP,()=>TSO,()=>FRZ,()=>HOLES,()=>BUMPS,()=>PHOTO,()=>sMir,()=>GFX,()=>ENT,()=>SLASH,()=>JUDG,()=>CLOUDS,()=>ECHO,()=>THR,()=>fateLock,()=>VIEW,()=>CX,()=>KOB,()=>ORBS,()=>FAIRIES,()=>ZONES,()=>kx,()=>ky,()=>sDmg,()=>sGraze,()=>sKira,()=>sBrk,()=>chroma,()=>bright,()=>focusL,()=>borderF,()=>bgF,()=>flashCol,()=>CRACK,()=>GZ,()=>zblur,()=>BIG,()=>CARDS,()=>RXN,()=>TIMER,()=>ENDK,()=>SMR,()=>RDK,()=>FRZQ,()=>LUNA,()=>FQ,()=>WT,()=>FC,()=>CSAV,()=>WARP];SNAPS=[v=>{seed=v},v=>{mode=v},v=>{P=v},v=>{B=v},v=>{FX=v},v=>{TX=v},v=>{RINGS=v},v=>{LOG=v},v=>{KOFX=v},v=>{WAVES=v},v=>{LINES=v},v=>{invF=v},v=>{hitstop=v},v=>{shake=v},v=>{slow=v},v=>{zk=v},v=>{flashS=v},v=>{frame=v},v=>{item=v},v=>{itemT=v},v=>{winner=v},v=>{winT=v},v=>{ultT=v},v=>{TSTOP=v},v=>{TSO=v},v=>{FRZ=v},v=>{HOLES=v},v=>{BUMPS=v},v=>{PHOTO=v},v=>{sMir=v},v=>{GFX=v},v=>{ENT=v},v=>{SLASH=v},v=>{JUDG=v},v=>{CLOUDS=v},v=>{ECHO=v},v=>{THR=v},v=>{fateLock=v},v=>{VIEW=v},v=>{CX=v},v=>{KOB=v},v=>{ORBS=v},v=>{FAIRIES=v},v=>{ZONES=v},v=>{kx=v},v=>{ky=v},v=>{sDmg=v},v=>{sGraze=v},v=>{sKira=v},v=>{sBrk=v},v=>{chroma=v},v=>{bright=v},v=>{focusL=v},v=>{borderF=v},v=>{bgF=v},v=>{flashCol=v},v=>{CRACK=v},v=>{GZ=v},v=>{zblur=v},v=>{BIG=v},v=>{CARDS=v},v=>{RXN=v},v=>{TIMER=v},v=>{ENDK=v},v=>{SMR=v},v=>{RDK=v},v=>{FRZQ=v},v=>{LUNA=v},v=>{FQ=v},v=>{WT=v},v=>{FC=v},v=>{CSAV=v},v=>{WARP=v}];SNAPC=[cams]});
+let SNAPST=null;const SNAPROOTS=()=>[T,MAPS,MOVES,MELEE,SHOTS,COLS,LCOLS,ACTS,ACT_FR,ITEMS,IM,ULT,SPELLS,HEAVY,PERMFX,FXN,ELC,GIVE,TN,TC,TRE,TRP,RULES,UFC,BANS,ELN,ELC2,PROPH,GAMES,RES,ELN9,ELC9,SHOTEL,ITEMEL,ENTEL,RX,CPUACT,NCOL,NCN,NANIM,SDC,TSTEPS,YBAN,STF,STC,NOBUF,ITEMK,SPRC,PREV,PREVL,TKB,TKS,SPAM,INFO,MENU,SFX,ALIAS];
+function snapStatic(){if(SNAPST)return SNAPST;const W=new WeakSet(),st=[...SNAPROOTS()];while(st.length){const v=st.pop();if(!v||typeof v!=='object'||W.has(v))continue;W.add(v);if(Array.isArray(v))for(const x of v)st.push(x);else if(Object.getPrototypeOf(v)===Object.prototype)for(const k in v)st.push(v[k])}return SNAPST=W}
+const OP=Object.prototype,AP=Array.prototype,MP=Map.prototype,SP=Set.prototype;
+function gameSave(){const S=snapStatic(),seen=new Set(),L=[],st=[];const vals=SNAPG.map(g=>g());for(const v of vals)st.push(v);for(const c of SNAPC)st.push(c);
+ while(st.length){const v=st.pop();if(!v||typeof v!=='object'||seen.has(v)||S.has(v))continue;const pr=Object.getPrototypeOf(v);seen.add(v);
+  if(pr===AP){L.push(v,v.slice());for(let i=0;i<v.length;i++){const x=v[i];if(x&&typeof x==='object')st.push(x)}}
+  else if(pr===OP||pr===null){const c={};for(const k in v){const x=v[k];c[k]=x;if(x&&typeof x==='object')st.push(x)}L.push(v,c)}
+  else if(pr===MP){L.push(v,[...v]);for(const[k,x]of v){if(k&&typeof k==='object')st.push(k);if(x&&typeof x==='object')st.push(x)}}
+  else if(pr===SP){L.push(v,[...v]);for(const x of v)if(x&&typeof x==='object')st.push(x)}
+  else if(ArrayBuffer.isView(v)&&!(v instanceof DataView))L.push(v,v.slice())}
+ return {vals,L}}
+function gameLoad(s){const L=s.L;for(let i=0;i<L.length;i+=2){const o=L[i],c=L[i+1],pr=Object.getPrototypeOf(o);
+  if(pr===AP){o.length=c.length;for(let j=0;j<c.length;j++)o[j]=c[j]}
+  else if(pr===OP||pr===null){for(const k in o)if(!(k in c))delete o[k];for(const k in c)o[k]=c[k]}
+  else if(pr===MP){o.clear();for(const[k,x]of c)o.set(k,x)}else if(pr===SP){o.clear();for(const x of c)o.add(x)}else o.set(c)}
+ s.vals.forEach((v,i)=>SNAPS[i](v))}
+function gameSumD(){const H=a=>{let h=2166136261>>>0;for(const x of a)h=Math.imul(h^((typeof x==='number'?x*1000:String(x).length*7919+String(x).charCodeAt(0))|0),16777619)>>>0;return h};
+ const D={f:frame,s:seed,P:P.map(p=>H([p.x,p.y,p.vx,p.vy,p.hp,p.stocks,p.spirit,p.t,p.state,p.shotT,p.aim])),B:H(B.flatMap(b=>[b.x,b.y,b.owner])),E:{},X:{}};
+ for(const e of ENT){D.E[e.k]=H([D.E[e.k]||0,e.x||0,e.y||0,e.t||0])}for(const k in CX){const v=CX[k];if(v==null)continue;try{D.X[k]=H([JSON.stringify(v).length,typeof v==='object'?(v.t||0):v])}catch(e){D.X[k]=1}}return D}
+function diffD(a,b){if(!a||!b)return 'no detail';const o=[];if(a.f!==b.f)o.push('frame');if(a.s!==b.s)o.push('rng');a.P.forEach((x,i)=>{if(x!==b.P[i])o.push('P'+(i+1))});if(a.B!==b.B)o.push('bullets');
+ for(const k of new Set([...Object.keys(a.E),...Object.keys(b.E)]))if(a.E[k]!==b.E[k])o.push('ent:'+k);for(const k of new Set([...Object.keys(a.X),...Object.keys(b.X)]))if(a.X[k]!==b.X[k])o.push('cx:'+k);return o.join(',')||'?'}
+function gameSum(){let h=2166136261>>>0;const m=x=>{h=Math.imul(h^(x*1000|0),16777619)>>>0};m(frame);m(seed);m(B.length);m(ENT.length);m(winner);for(const p of P){m(p.x);m(p.y);m(p.vx);m(p.vy);m(p.hp);m(p.stocks);m(p.spirit);m(p.t);m(p.state.length)}for(const b of B){m(b.x);m(b.y)}return h}

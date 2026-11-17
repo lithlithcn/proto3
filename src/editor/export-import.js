@@ -1,0 +1,6 @@
+'use strict';
+// ---- export / import (.sfmap.json : la carte + toutes ses images et sa musique)
+function mapPack(m){const ids=new Set(m.layers.map(l=>l.a).concat(m.mus?[m.mus]:[]));const assets={};for(const id of ids)if(AST[id])assets[id]=AST[id].d;return {sfmap:2,map:JSON.parse(JSON.stringify(m)),assets}}
+function mapUnpack(o,keepIds){if(!o||!o.map)throw new Error('not a SHMUP FIGHTER map');const m=mUp(o.map),remap={};for(const id in o.assets||{}){const nid=keepIds?id:newId();remap[id]=nid;if(!AST[nid]||AST[nid].d!==o.assets[id])astSet(nid,o.assets[id],keepIds)}for(const l of m.layers)l.a=remap[l.a]||l.a;if(m.mus)m.mus=remap[m.mus]||m.mus;return fixM(m)}
+function mapExport(m){const t=JSON.stringify(mapPack(m)),b=new Blob([t],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=(m.name||'map').replace(/[^\w\- ]/g,'_')+'.sfmap.json';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000);big('MAP EXPORTED ('+Math.round(t.length/1024)+' KB)','#5cff8a',30)}
+function mapImport(){pickFile('.json,.sfmap,application/json',t=>{try{const m=mapUnpack(JSON.parse(t));m.name=(m.name||'Imported').slice(0,20);CMAPS.push(m);saveMaps();big('MAP IMPORTED: '+m.name,'#5cff8a',30);sfx('ok00')}catch(e){big('IMPORT FAILED: '+e.message,'#ff6a6a',26);errRep('map import',e)}},true)}

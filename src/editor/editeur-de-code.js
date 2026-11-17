@@ -1,0 +1,9 @@
+'use strict';
+// ---- éditeur de code (zone de texte par-dessus le jeu)
+function codeEdit(m){const d=document.createElement('div');d.style.cssText='position:fixed;inset:5% 8%;background:#0b0d16;border:2px solid #ffd23a;z-index:99;display:flex;flex-direction:column;font:13px monospace;color:#ccc;padding:10px;gap:8px';
+ d.innerHTML='<b style="color:#ffd23a;font-size:16px">MAP SCRIPT (JavaScript, runs every frame)</b><div>api: frame, P (players), T, api.mem (saved state), api.rng(), api.item(k), api.ring(n), api.rain(n), api.bullet(x,y,vx,vy,r,color), api.text(s), api.sound(k), api.shake(n), api.wind(deg), api.pull(k), api.layer(i,on), api.heal(n).<br>Use api.rng() (never Math.random) so online games stay in sync. Example: <code style="color:#9fe0c0">if(frame%600===0) api.ring(24)</code></div>';
+ const ta=document.createElement('textarea');ta.value=m.js||'';ta.spellcheck=false;ta.style.cssText='flex:1;background:#05060a;color:#e8e8e8;border:1px solid #444;font:14px monospace;padding:8px;resize:none';const bar=document.createElement('div');bar.style.cssText='display:flex;gap:10px';
+ const btn=(t,f)=>{const b=document.createElement('button');b.textContent=t;b.style.cssText='background:#1a1d2b;color:#ffd23a;border:1px solid #ffd23a;padding:8px 16px;font:bold 13px monospace;cursor:pointer';b.onclick=f;bar.appendChild(b)};
+ const close=()=>{d.remove();removeEventListener('keydown',stop,true)},stop=e=>{if(e.key==='Escape'){close();e.preventDefault()}e.stopImmediatePropagation()};
+ btn('SAVE',()=>{try{new Function('api','frame','P','B',ta.value);m.js=ta.value;saveMaps();sfx('ok00');close()}catch(e){alertBox.textContent='Syntax error: '+e.message}});btn('CANCEL',close);const alertBox=document.createElement('span');alertBox.style.color='#ff6a6a';bar.appendChild(alertBox);
+ d.appendChild(ta);d.appendChild(bar);document.body.appendChild(d);addEventListener('keydown',stop,true);setTimeout(()=>ta.focus(),50)}

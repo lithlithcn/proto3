@@ -1,37 +1,30 @@
-# CLAUDE.md — working in Proto3
+# CLAUDE.md — working in Proto4
 
-Owner: Houcine (HKN), French-speaking; reply in French, code/docs in English. Minimise token usage; hyper-optimised files; no AI-generated assets (code only); no religious content or pentagrams; never weaken flashiness; mobile must be fully usable by touch; Effects OFF must be epilepsy-safe. Do not attach files already pushed to GitHub.
+Owner: Houcine (HKN), French-speaking: reply in French, code/docs in English. Minimise token usage. No AI-generated assets (code only). No religious content or pentagrams. Mobile must stay fully usable by touch. Effects OFF must stay epilepsy-safe. Do not attach files already pushed to GitHub. Never enter or repeat secrets (the TURN token lives only in the Cloudflare Worker secret, `workers/`).
 
-**Porting freedom (owner's rule):** if something in the legacy code is problematic or can't be ported as-is, do NOT replicate it — recode a better solution, and optimise/improve the legacy logic whenever possible (document it in DESIGN §25 as a deliberate deviation, keep the parity test meaningful).
+## What Proto4 is
+The original game's code (frozen copy: `legacy/shmup-fighter.html`), copied verbatim and organized in files by theme. Proto3 (a full rewrite) is archived on branch `proto3-archive`: it was too costly to finish (DESIGN lesson: never again translate working code into another data model).
 
-**Permanent purpose (owner, never forget):** Proto3 is rebuilt not for cleaner code but to be the best, most autonomous, self-sufficient workspace for YOU (the AI): fast to understand, easy to locate where to change, consequences visible, bugs self-detected/diagnosed/reproduced, fixes verified, features added without breaking old ones, maintainable for years. Judge every decision by that (DESIGN §27); invest in foundations now, but no artificial complexity — each tool must earn its place. Before touching an area run `pnpm map <term>`.
+## Working rules (owner's, non-negotiable)
+- The goal is the GAME. Keep what works; change only what the task needs. No rewrite "for cleanliness".
+- Clean an area (split a big file, untangle its wrappers, add JSDoc types) only while working on it for a real feature or bug.
+- No new tool unless it clearly saves more time than it costs. Reuse `tools/`.
+- Validate what matters, not more: `node tools/regress.cjs` for gameplay, `node tools/smoke.cjs` when UI/loading changed. No pixel hunts.
+- Log every task in `docs/velocity.md` (one line: what, time spent, result) so speed is measured.
 
-**Detection is the core (DESIGN §28):** a lot of work is DONE only when `pnpm gate` prints GATE PASS (check + oracle campaign 0 divergences + coverage ratchet). Fixed bug → `pnpm parity keep <report>`. New feature → rule written first, scenario test from the rule, invariants where a value contract has worth, then gate. Drawing code must draw through a given `Ctx2D` (recordable) — see render parity. Never report "parity complete" without a gate pass and the mutation score (`pnpm mutate`) known.
-
-## Read first
-1. `PROJECT_MAP.md` — "to change X, open Y".
-2. `docs/DESIGN.md` — the full design (§21 checklist before any new feature, §24 working method, §25 risk register: add every new failure mode).
-3. `docs/INVENTORY.md` — parity checklist vs the old game (`legacy/shmup-fighter.html`, frozen).
+## How the code runs (read once)
+- `index.html` loads `src/**/*.js` as plain scripts, in its listed order (the order = the original file's order). All files share one global scope.
+- In the original single script every function existed from the start. Split files load one after another, so load-time statements are queued with `DEFER(()=>{...})` and run in the original order by `src/core/boot.js` after every file is loaded. New load-time code: wrap it in `DEFER` too (functions and plain-literal constants don't need it).
+- Many functions are REPLACED by later files: `{const S0=step;step=()=>{...;S0()}}` (step 31×, render 19×, ...). Before changing a function run `node tools/map.cjs <name>`: it lists the base definition and every wrapper in order (the last one runs first).
+- Characters: `src/characters/<name>.js` (one kit each, pushed into `CHR7`; Reimu = base kit in combat/joueurs + characters/reimu-yinyang). Items: by legacy batch in `src/items/`. Find any word: `node tools/map.cjs <word>` / grep.
+- Where is what: `PROJECT_MAP.md` (regenerate with `node tools/map.cjs` after adding/renaming files).
 
 ## Commands
-`pnpm check:fast` (8 s inner loop: typecheck + lint + unit tests) · `pnpm check` (116 s, full) · `pnpm check:all` (+ build) · `pnpm map <term>` (what to know before touching X) · `pnpm gate` (definition of done) · `pnpm spec lock|check` (content contracts) · `pnpm rca <report.json>` (root cause of one divergence in ~30 lines: port writers + LEGACY writers/calls/born bullets/timers) · `pnpm investigate <report>` (hypotheses + ddmin + known quirks, start here for any divergence) · `pnpm affected [--run]` (only the checks my diff needs) · `pnpm metrics` (investigation timings, honest) · `pnpm spec ledger` (validated / diverging / not-ported / comparison-disabled / unverifiable — GATE PASS ≠ port complete) · `pnpm parity keep <report> --cause …` (mandatory post-mortem) · `pnpm match <proto3-match-*.json>` (replay a browser match recorded with F8 against the legacy oracle, frame by frame; the owner's playtests arrive this way) · `pnpm parity --matrix` (every item × every character) · `pnpm spec standin` (fields the legacy clone stand-in lacks) · `pnpm parity …` / `pnpm mutate` / `pnpm render legacy …` · `pnpm dev` · `pnpm sim demo|run|bisect` · `pnpm audit:legacy` (regenerate old-game inventory).
-
-## Hard rules
-- Kernel (`src/kernel`) never imports a pack. Packs import only `@kernel` and packs listed in their `requires`. Enforced by `pnpm lint`.
-- Sim code (kernel + packs except `ui/ render/ audio/ presentation/`): no `Math.sin/cos/atan2/hypot/pow/exp/log/random`, `Date`, `performance`, timers, DOM, storage, `.sort(`, `JSON.stringify` — use `sim.math`, `w.rng('<pack>:<stream>')`, `sortBy`. Escape hatch `// sim-allow(reason)` only with a real reason.
-- State = numbers + typed arrays declared in a schema. No classes/functions/closures in state.
-- Everything that affects the sim is an input or a command. Units: frames, px, radians.
-- One concept per file, ≤ 400 lines (lint). File name = content id. Balance numbers live in the content file, not in systems.
-- Same commit: code + test + docs (catalog/ADR/PROJECT_MAP if structure changed).
-- Never enter or repeat secrets (TURN token lives only in the Cloudflare Worker secret).
-- Parity scenarios are short and isolate one mechanic; tolerance-level equality with the legacy game.
-
-## Game knowledge base
-`docs/game/` (README = template): one short English sheet per mechanic/character/item (rule, legacy location, port files, tests, bugs). A port/fix/feature is DONE only when its sheet is created/updated; `tests/docs.test.ts` rejects dead paths. Read the sheet before touching the area (`pnpm map` lists them).
+`npm run dev` (http://localhost:8080, edit + reload, no build) · `npm test` = `node tools/regress.cjs` (8 CPU matches headless vs `tests/baseline.json`; `--update` after an INTENDED gameplay change, and say in the commit what changed) · `npm run smoke` (browser: loads, runs a match, no JS error; needs Playwright) · `npm run map [name]`.
+`tools/headless.cjs` runs the game without rendering (for tests, bug repro, mass simulations).
 
 ## After every push
-Check CI (`gh run list --limit 1`, `gh run watch`): local gate passing is not enough (GitHub runners are slower: no test may sit near the 5 s default timeout). A red CI e-mails the owner; never leave main red.
-Bug log: `docs/game/bugs.md` is filled by `pnpm parity keep` (`--attempts` = what failed); read it before fixing similar things.
+Check CI (`gh run list --limit 1`). A red CI e-mails the owner; never leave main red.
 
-## Before coding a feature
-Answer DESIGN §21 (which pack, state slice, events, inputs, UI slot, i18n keys, tests, debug output).
+## Knowledge from Proto3
+`docs/proto3-notes/`: mechanic/character/item sheets (rules + legacy line refs; their "port files" paths are in branch proto3-archive) and `bugs.md` (real legacy bugs found during the rewrite; not yet applied here).

@@ -1,41 +1,12 @@
 {
-  "name": "shmup-fighter-proto3",
+  "name": "shmup-fighter-proto4",
   "private": true,
-  "version": "0.0.1",
-  "type": "module",
-  "packageManager": "pnpm@10.28.0",
-  "engines": {
-    "node": ">=22"
-  },
+  "description": "SHMUP FIGHTER (Touhou danmaku brawler): the original game's code, organized in files by theme.",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "typecheck": "tsc --noEmit",
-    "lint": "node tools/lint/check.mjs",
-    "test": "vitest run",
-    "check": "pnpm typecheck && pnpm lint && pnpm test",
-    "check:all": "pnpm check && pnpm build",
-    "sim": "tsx tools/sim/cli.ts",
-    "parity": "tsx tools/parity/campaign.ts",
-    "spec": "tsx tools/spec/cli.ts",
-    "render": "PARITY_RENDER=1 tsx tools/render/cli.ts",
-    "mutate": "tsx tools/parity/mutate.ts",
-    "gate": "tsx tools/gate.ts",
-    "map": "tsx tools/spec/cli.ts map",
-    "audit:legacy": "python3 tools/audit/extract.py && node tools/audit/dump.js build/legacy-main.js && node tools/audit/gen-inventory.js",
-    "rca": "tsx tools/parity/why.ts",
-    "check:fast": "pnpm typecheck && pnpm lint && vitest run --exclude 'tests/parity/**' --exclude 'tests/regressions.test.ts'",
-    "investigate": "tsx tools/parity/investigate.ts",
-    "metrics": "tsx tools/metrics.ts",
-    "affected": "tsx tools/affected.ts",
-    "match": "tsx tools/sim/match.ts",
-    "ui": "tsx tools/ui/compare.ts"
+    "dev": "node tools/serve.cjs",
+    "test": "node tools/regress.cjs",
+    "smoke": "node tools/smoke.cjs",
+    "map": "node tools/map.cjs"
   },
-  "devDependencies": {
-    "@types/node": "^22.10.0",
-    "tsx": "^4.19.0",
-    "typescript": "^5.7.0",
-    "vite": "^6.0.0",
-    "vitest": "^3.0.0"
-  }
+  "engines": { "node": ">=22" }
 }

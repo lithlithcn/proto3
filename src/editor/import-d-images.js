@@ -1,0 +1,7 @@
+'use strict';
+// ---- import d'images (PNG/JPG/WEBP, sprite sheets, GIF animés décodés en planche)
+function pickFile(acc,cb,asText){const i=document.createElement('input');i.type='file';i.accept=acc;i.onchange=()=>{const f=i.files[0];if(!f)return;const r=new FileReader();r.onload=()=>cb(r.result,f);if(asText)r.readAsText(f);else r.readAsDataURL(f)};i.click()}
+async function gifSheet(file){if(typeof ImageDecoder==='undefined')return null;try{const dec=new ImageDecoder({data:await file.arrayBuffer(),type:file.type||'image/gif'});await dec.tracks.ready;const n=Math.min(dec.tracks.selectedTrack.frameCount,240);const fr=[];let dur=0;for(let i=0;i<n;i++){const r=await dec.decode({frameIndex:i});fr.push(r.image);dur+=(r.image.duration||100000)/1000}
+ const w=fr[0].displayWidth,h=fr[0].displayHeight,cols=Math.max(1,Math.min(n,Math.floor(8192/w))),rows=Math.ceil(n/cols),c=document.createElement('canvas');c.width=w*cols;c.height=h*rows;const x=c.getContext('2d');fr.forEach((f,i)=>{x.drawImage(f,(i%cols)*w,(i/cols|0)*h);f.close()});
+ return {d:c.toDataURL('image/png'),cols,rows,n,dur:Math.round(dur)||n*100}}catch(e){errRep('gif import',e);return null}}
+function addLayer(m){pickFile('image/*',async(d,f)=>{const l=LDEF();l.name=f.name.replace(/\.[^.]+$/,'').slice(0,20);if(/gif$/i.test(f.type)||/\.gif$/i.test(f.name)){const g=await gifSheet(f);if(g){d=g.d;l.cols=g.cols;l.rows=g.rows;l.n=g.n;l.dur=g.dur}}l.a=astSet(newId(),d);m.layers.push(l);MK.li=m.layers.length-1;saveMaps();sfx('ok00')})}
