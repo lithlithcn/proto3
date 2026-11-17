@@ -139,3 +139,4 @@ Files in LOAD ORDER (= index.html). Folder = theme. The order matters: a later f
 - `src/engine/modes.js` 
 - `content/debug-lab/lab.js` 
 - `content/graze-rush/graze-rush.js` 
+- `content/spectrum/spectrum.js` 
