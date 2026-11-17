@@ -3,7 +3,8 @@ import { PS, type CharacterDef, type CombatState, type ItemDef } from '@pack/com
 import { drawHud } from '@pack/render/hud';
 import { VIEWZ, camStart, renderViews } from '@pack/render/view';
 import { drawScreenL, drawScreenTopL, screenFilterL } from '@pack/render/ld/bind';
-import { juiceOf } from '@pack/render/juice/state';
+import { juiceOf, safeView, syncJuice } from '@pack/render/juice/state';
+import { FXF } from '@pack/render/ld/fx';
 import { VOLS, audioLocked, initAudio, playSounds, uiSound } from '@pack/audio/player';
 import { APP, fightKey, onKey, padEv, renderFightUi, renderUi, type UiHost } from '@pack/ui/app';
 import { pollNav } from '@pack/ui/input/padnav';
@@ -59,9 +60,9 @@ const resP = (w: World): ResP[] => { const S = w.slice<CombatState>('combat'); r
 const fview = (w: World): FightView => { const S = w.slice<CombatState>('combat'); return { f: S.gf, winner: S.winner, winT: S.winT, teams: !!S.teams, teamA: S.team, intro: true }; };
 const drawFight = (w: World, W: number, H: number): void => {
   c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = '#000'; c.fillRect(0, 0, W, H);
-  const S = w.slice<CombatState>('combat');
+  const S = w.slice<CombatState>('combat'), j0 = juiceOf(w); syncJuice(j0, S); const restore = SET.fxOff ? safeView(j0) : null;
   renderViews(c, w, S, W, H); drawScreenL(c, w, S, W, H);
-  drawHud(c, w, S, W, H, performance.now() / 1000); drawScreenTopL(c, w, S, W, H);
+  drawHud(c, w, S, W, H, performance.now() / 1000); drawScreenTopL(c, w, S, W, H); restore?.();
   const j = juiceOf(w); playSounds(j.SND.splice(0), j.stop.splice(0), S.tstop > 0, j.endk); // juice was synced by renderViews
 };
 /** Held keys + keys tapped since the last frame (legacy tapQ: a press shorter than a frame still counts once). */
@@ -102,7 +103,7 @@ function frame(t: number): void {
   const n = loop.advance(t - last); last = t;
   if (canvas.width !== innerWidth || canvas.height !== innerHeight) { canvas.width = innerWidth; canvas.height = innerHeight; }
   const W = canvas.width, H = canvas.height;
-  const u: UiCtx = { c, W, H, now: t / 1000, mx, my, fxLow: SET.fxLow, hot: [], acc: '#ff3355' };
+  const u: UiCtx = { c, W, H, now: t / 1000, mx, my, fxLow: SET.fxLow, fxOff: SET.fxOff, hot: [], acc: '#ff3355' }; FXF.low = SET.fxLow; FXF.off = SET.fxOff;
   VIEWZ.k = 1; Object.assign(VOLS, SET.vols);
   pollNav(pads()[0], t, k => padEv(k, host, t / 1000, APP.mode === 'game' && world ? fview(world) : null));
   if (APP.mode === 'css' && pg) for (let i = 0; i < n; i++) step(pg.w, pg.devs); // playground keeps running behind the select

@@ -1,13 +1,14 @@
 // @ts-nocheck — legacy drawView effect layers (FX, graze arcs, rings, KO beams, texts, impact lines, cracks, waves, inversion), copied verbatim. Not sim code.
+import { FXF } from './fx';
 import { COLS, LCOLS } from '../colors';
 const TAU = 6.2832, T = { HP: 100, GRAZE_R: 27 };
-let ctx, frame, P, FX, TX, RINGS, WAVES, LINES, KOFX, CRACK, GZ, invF, TSTOP, TSO, drawP, fxLow = false, fxOff = false, perfLow = false, YTBG = 0, CVINV = 0;
+let ctx, frame, P, FX, TX, RINGS, WAVES, LINES, KOFX, CRACK, GZ, invF, TSTOP, TSO, drawP, perfLow = false, YTBG = 0, CVINV = 0;
 const hz=(i,k)=>{const x=Math.sin(i*127.1+k*311.7)*43758.5453;return x-Math.floor(x)}; // legacy 2539
 const GLR = null, glRing = null, glDot = null; // legacy WebGL particle path, dead code there (`if(0)`)
 export const ctxViewFx = (c, f) => { ctx = c; frame = f; }; // world items draw magic circles without the full view bind
-export const bindViewFx = (v) => { ({ ctx, frame, P, FX, TX, RINGS, WAVES, LINES, KOFX, CRACK, GZ, invF, TSTOP, TSO, drawP, fxLow } = v); };
+export const bindViewFx = (v) => { ({ ctx, frame, P, FX, TX, RINGS, WAVES, LINES, KOFX, CRACK, GZ, invF, TSTOP, TSO, drawP } = v); };
 function hexHue(c){const m=/^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/i.exec(c||'');if(!m)return 300;const r=parseInt(m[1],16)/255,g=parseInt(m[2],16)/255,b=parseInt(m[3],16)/255,M=Math.max(r,g,b),n=Math.min(r,g,b),d=M-n;if(!d)return 0;let h=M===r?((g-b)/d)%6:M===g?(b-r)/d+2:(r-g)/d+4;return(h*60+360)%360}
-function koBeam(k,w,len,f){const lo=fxLow||perfLow,hu=k.hu!==undefined?k.hu:(k.hu=hexHue(k.c)),hs=(d,l)=>`hsl(${(hu+d+360)%360},100%,${l}%)`,al=Math.min(1,f*3);if(w<1)return;
+function koBeam(k,w,len,f){const lo=FXF.low||perfLow,hu=k.hu!==undefined?k.hu:(k.hu=hexHue(k.c)),hs=(d,l)=>`hsl(${(hu+d+360)%360},100%,${l}%)`,al=Math.min(1,f*3);if(w<1)return;
  const Wd=(x,m,ph)=>w*m*(.45+.55*Math.min(1,x/200))*(1+.09*Math.sin(x*.018-frame*.8+ph)+.05*Math.sin(x*.051+frame*1.2+ph*2)+.03*Math.sin(x*.14-frame*2));
  const band=(m,col,a,ph)=>{ctx.globalAlpha=a*al;ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(0,0);for(let x=0;;x+=40){const X=Math.min(x,len);ctx.lineTo(X,-Wd(X,m,ph));if(X>=len)break}for(let x=len;;x-=40){const X=Math.max(x,0);ctx.lineTo(X,Wd(X,m,ph+1.9));if(X<=0)break}ctx.closePath();ctx.fill()};
  ctx.save();ctx.translate(k.x,k.y);ctx.rotate(k.a);ctx.globalCompositeOperation='lighter';
@@ -29,7 +30,7 @@ function drawCrack(c){const age=c.T-c.t,grow=Math.min(1,age/9),fade=Math.min(1,c
  ctx.restore()}
 export function drawJuiceWorld(L, Tp, R, Bt, vw, vh) {
  if(0){for(const f of FX){if(f.x<L-30||f.x>R+30||f.y<Tp-30||f.y>Bt+30)continue;const a=Math.min(1,f.t/15);if(f.r)GLR.push(glRing(f.c),f.x,f.y,f.r/16,0,a);else GLR.push(glDot(f.c),f.x,f.y,.6+a*.5,0,a)}}
- else for(const f of FX){if(f.x<L-30||f.x>R+30||f.y<Tp-30||f.y>Bt+30)continue;ctx.globalAlpha=Math.min(1,f.t/15);if(f.r){ctx.strokeStyle=f.c;ctx.lineWidth=2;ctx.beginPath();ctx.arc(f.x,f.y,f.r,0,TAU);ctx.stroke()}else{const z=1.4+ctx.globalAlpha*1.6;ctx.fillStyle=f.c;ctx.beginPath();ctx.arc(f.x,f.y,z,0,TAU);ctx.fill();if(!fxLow&&!perfLow){ctx.globalAlpha*=.25;ctx.beginPath();ctx.arc(f.x,f.y,z*2.4,0,TAU);ctx.fill()}}}
+ else for(const f of FX){if(f.x<L-30||f.x>R+30||f.y<Tp-30||f.y>Bt+30)continue;ctx.globalAlpha=Math.min(1,f.t/15);if(f.r){ctx.strokeStyle=f.c;ctx.lineWidth=2;ctx.beginPath();ctx.arc(f.x,f.y,f.r,0,TAU);ctx.stroke()}else{const z=1.4+ctx.globalAlpha*1.6;ctx.fillStyle=f.c;ctx.beginPath();ctx.arc(f.x,f.y,z,0,TAU);ctx.fill();if(!FXF.low&&!perfLow){ctx.globalAlpha*=.25;ctx.beginPath();ctx.arc(f.x,f.y,z*2.4,0,TAU);ctx.fill()}}}
  ctx.strokeStyle='#fff';ctx.lineWidth=2;for(const g of GZ){ctx.globalAlpha=g.t/10;ctx.beginPath();ctx.arc(g.p.x,g.p.y,T.GRAZE_R+10-g.t,g.a-.35,g.a+.35);ctx.stroke()} // arc de graze
  ctx.save();ctx.globalCompositeOperation='lighter';for(const r of RINGS){const u=Math.min(1,r.t/30);ctx.strokeStyle=r.c;ctx.globalAlpha=u*.22;ctx.lineWidth=14*u+2;ctx.beginPath();ctx.arc(r.x,r.y,r.r,0,TAU);ctx.stroke();ctx.globalAlpha=u;ctx.lineWidth=4*u+1;ctx.stroke();ctx.globalAlpha=u*.6;ctx.strokeStyle='#fff';ctx.lineWidth=1.2;ctx.stroke()}ctx.restore()
  const ray=(x,y,a,w,L)=>{ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+Math.cos(a-w)*L,y+Math.sin(a-w)*L);ctx.lineTo(x+Math.cos(a+w)*L,y+Math.sin(a+w)*L);ctx.fill()};
@@ -42,10 +43,10 @@ export function drawJuiceWorld(L, Tp, R, Bt, vw, vh) {
  for(const c of CRACK)if(c.s)drawCrack(c);ctx.globalAlpha=1;
  for(const w of WAVES){const f=w.t/w.T,r=(w.T-w.t)*w.spd,th=w.th*f+3; // ondes (inversion des couleurs si inv)
   ctx.beginPath();ctx.arc(w.x,w.y,r+th,0,TAU);ctx.arc(w.x,w.y,r,0,TAU,true);
-  if(w.inv&&!fxLow){if(YTBG>0){ctx.globalCompositeOperation='destination-over';ctx.fillStyle='#14161f';ctx.fill()}ctx.globalCompositeOperation='difference';ctx.fillStyle='#fff';ctx.fill();ctx.globalCompositeOperation='source-over'}
-  else{ctx.globalAlpha=f*(fxLow?.2:.6);ctx.fillStyle=w.c||'#fff';ctx.fill();ctx.globalAlpha=1}}
- if(invF>0&&!fxLow){if(YTBG>0)CVINV=2;else{ctx.globalCompositeOperation='difference';ctx.fillStyle='#fff';ctx.fillRect(L-60,Tp-60,vw+120,vh+120);ctx.globalCompositeOperation='source-over'}}
- if(TSTOP>0&&!fxOff){if(YTBG>0)CVINV=2;else{ctx.globalCompositeOperation='difference';ctx.fillStyle='#fff';ctx.fillRect(L-60,Tp-60,vw+120,vh+120);ctx.globalCompositeOperation='source-over';drawP(P[TSO])}} // The World : monde gris
+  if(w.inv&&!FXF.low){if(YTBG>0){ctx.globalCompositeOperation='destination-over';ctx.fillStyle='#14161f';ctx.fill()}ctx.globalCompositeOperation='difference';ctx.fillStyle='#fff';ctx.fill();ctx.globalCompositeOperation='source-over'}
+  else{ctx.globalAlpha=f*(FXF.low?.2:.6);ctx.fillStyle=w.c||'#fff';ctx.fill();ctx.globalAlpha=1}}
+ if(invF>0&&!FXF.low){if(YTBG>0)CVINV=2;else{ctx.globalCompositeOperation='difference';ctx.fillStyle='#fff';ctx.fillRect(L-60,Tp-60,vw+120,vh+120);ctx.globalCompositeOperation='source-over'}}
+ if(TSTOP>0&&!FXF.off){if(YTBG>0)CVINV=2;else{ctx.globalCompositeOperation='difference';ctx.fillStyle='#fff';ctx.fillRect(L-60,Tp-60,vw+120,vh+120);ctx.globalCompositeOperation='source-over';drawP(P[TSO])}} // The World : monde gris
 }
 export function drawVignette(v, H, p) {
  for(const q of [p])if(q.state!=='dead'&&q.hp<T.HP*.3){

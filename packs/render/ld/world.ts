@@ -1,11 +1,12 @@
 // @ts-nocheck — legacy drawWorldItems (+ its EDR / Reimu / UFO wrappers) and every entity drawing EDR.*, copied verbatim. Not sim code.
+import { FXF } from './fx';
 import { COLS, LCOLS } from '../colors';
 import { W_ } from './chars';
 import { ifxUnder, ifxOver } from './ifx';
 import { chDraw, chDraw2, chDraw3, chDraw4, chDraw5 } from './themed';
 const TAU = 6.2832, T = { MAP_W: 2000, MAP_H: 1350, BODY_R: 16, BEAM_PARRY: 12 }, RB = ['#ff4a4a', '#ffa63a', '#ffe83a', '#5cff7a', '#4ab3ff', '#c06cff'];
 const FLC = ['#ff4a4a', '#ffa33a', '#ffe83a', '#5cff7a', '#4ab3ff', '#7a5cff', '#ff5cf0'], HEC = ['#4ab3ff', '#ffe88a', '#ff4a6a'], SEAC = ['#ffb0d6', '#ff7a3a', '#ffb04a', '#bfe8ff'];
-let ctx, frame, P, ENT, KOB, HOLES, BUMPS, PHOTO, ZONES, ORBS, FAIRIES, CLOUDS = [], JUDG = [], SLASH = [], IM, CX = {}, bodyR, magicCircle, fxLow = false, perfLow = false;
+let ctx, frame, P, ENT, KOB, HOLES, BUMPS, PHOTO, ZONES, ORBS, FAIRIES, CLOUDS = [], JUDG = [], SLASH = [], IM, CX = {}, bodyR, magicCircle, perfLow = false;
 let B = [], TEST = null; const TRX = {}, FC = [], mtnDraw = () => {}, zigzag = () => {}; // themed-item helpers (lot 3)
 const rainbowCol = () => `hsl(${frame * 6 % 360},100%,65%)`;
 const hz=(i,k)=>{const x=Math.sin(i*127.1+k*311.7)*43758.5453;return x-Math.floor(x)}; // legacy 2539
@@ -21,7 +22,7 @@ function rBorder(e){const sp=Math.min(1,(300-e.t)/8),w=e.w*sp,h=e.h,fl=e.fl&&fra
  ctx.strokeStyle='rgba(200,240,255,.75)';ctx.lineWidth=1.5;ctx.strokeRect(-w+6,-h+5,w*2-12,h*2-10);ctx.strokeRect(-w+11,-h+9,w*2-22,h*2-18); // cadres intérieurs comme la porte
  ctx.strokeStyle='rgba(190,235,255,.35)';ctx.lineWidth=1;for(let x=-w+16;x<w-14;x+=9){ctx.beginPath();ctx.moveTo(x,-h+9);ctx.lineTo(x,h-9);ctx.stroke()}
  const s=(frame*3)%(w*2+60)-w-30;ctx.fillStyle='rgba(255,255,255,.4)';ctx.fillRect(Math.max(-w,s-7),-h,Math.min(14,w-s+7),h*2);ctx.restore()}
-function sparkFX(p){const L=2600,lo=fxLow||perfLow,hw=118+Math.sin(frame*.9)*7; // Master Spark façon Touhou : cœur blanc, flammes orange/rose, runes néon, étoiles
+function sparkFX(p){const L=2600,lo=FXF.low||perfLow,hw=118+Math.sin(frame*.9)*7; // Master Spark façon Touhou : cœur blanc, flammes orange/rose, runes néon, étoiles
  const W=(x,k,ph=0)=>hw*k*(.35+.65*Math.min(1,x/300))*(1+.1*Math.sin(x*.02-frame*.5+ph)+.06*Math.sin(x*.057+frame*.8+ph*2)+.04*Math.sin(x*.13-frame*1.3));
  const band=(k,col,al,ph)=>{ctx.globalAlpha=al;ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(0,0);for(let x=0;x<=L;x+=40)ctx.lineTo(x,-W(x,k,ph));for(let x=L;x>=0;x-=40)ctx.lineTo(x,W(x,k,ph+1.7));ctx.closePath();ctx.fill()};
  ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.spkA);ctx.globalCompositeOperation='lighter';

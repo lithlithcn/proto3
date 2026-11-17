@@ -9,7 +9,7 @@ export interface UiCtx {
   c: CanvasRenderingContext2D; W: number; H: number;
   /** UI clock in seconds (legacy UNOW = performance.now()/1000). */ now: number;
   /** pointer in px (0 = never moved: legacy `MOUSE.x||W/2`) */ mx: number; my: number;
-  fxLow: boolean; hot: Hot[];
+  fxLow: boolean; /** Effects OFF: no full-screen flashes (epilepsy-safe; legacy still flashed in its overlays) */ fxOff?: boolean; hot: Hot[];
   /** accent colour of the current screen (legacy UIC.acc) */ acc: string;
 }
 export function skewRect(c: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, k: number): void {

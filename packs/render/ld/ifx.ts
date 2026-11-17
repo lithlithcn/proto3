@@ -1,8 +1,9 @@
 // @ts-nocheck — legacy item/entity particle layer (IFX: trails, glows, ribbons, emitted particles), copied verbatim. Not sim code.
+import { FXF } from './fx';
 import { COLS, LCOLS } from '../colors';
 import { magicCircleL as magicCircle } from './viewfx';
 const TAU = 6.2832, RB = ['#ff4a4a', '#ffa63a', '#ffe83a', '#5cff7a', '#4ab3ff', '#c06cff'];
-let ctx, frame, P, ENT, ORBS, FAIRIES, CLOUDS = [], SLASH = [], HOLES, BUMPS, ZONES, PHOTO, WARP = 0, VIEW = 0, bodyR, fxLow = false, perfLow = false;
+let ctx, frame, P, ENT, ORBS, FAIRIES, CLOUDS = [], SLASH = [], HOLES, BUMPS, ZONES, PHOTO, WARP = 0, VIEW = 0, bodyR, perfLow = false;
 const ITEMK = {};
 export const bindIfx = (v) => { ({ ctx, frame, P, ENT, ORBS, FAIRIES, HOLES, BUMPS, ZONES, PHOTO, WARP, VIEW, bodyR } = v); };
 const IFX={tr:new WeakMap(),bt:new WeakMap(),rp:[],seen:new Set(),t:0,
@@ -15,7 +16,7 @@ function ifxTr(o,x,y,n,M=IFX.tr){let t=M.get(o);if(!t||frame<t.f){t={f:frame,p:[
 function ifxRib(p,c,w){const n=p.length/2;if(n<2)return;ctx.strokeStyle=c;ctx.lineCap='round';for(let i=1;i<n;i++){const dx=p[i*2]-p[i*2-2],dy=p[i*2+1]-p[i*2-1];if(dx*dx+dy*dy>22500)break;const u=1-i/n;ctx.globalAlpha=u*.55;ctx.lineWidth=w*u+1;ctx.beginPath();ctx.moveTo(p[i*2-2],p[i*2-1]);ctx.lineTo(p[i*2],p[i*2+1]);ctx.stroke()}}
 function ifxGlow(x,y,r,c,a){if(r<1)return;const g=ctx.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,c);g.addColorStop(1,'rgba(0,0,0,0)');ctx.globalAlpha=a;ctx.fillStyle=g;ctx.fillRect(x-r,y-r,r*2,r*2)}
 // émet n particules de style st autour de (x,y) ; R = rayon d'apparition, burst = vitesse multipliée
-function ifxEmit(st,x,y,c1,c2,n,R,burst){const lo=fxLow||perfLow,m=IFX.M[st]||IFX.M.spark;if(lo)n=Math.random()<n/3?1:n/3|0;
+function ifxEmit(st,x,y,c1,c2,n,R,burst){const lo=FXF.low||perfLow,m=IFX.M[st]||IFX.M.spark;if(lo)n=Math.random()<n/3?1:n/3|0;
  for(let i=0;i<n&&IFX.rp.length<1100;i++){const a=Math.random()*TAU,rr=burst?Math.random()*10:R*m[4]*(.4+Math.random()*.6),v=m[0]*(burst?4+Math.random()*4:.4+Math.random()),c=ifxC(Math.random()<.7?c1:c2||c1);
   const p={k:st,x:x+Math.cos(a)*rr,y:y+Math.sin(a)*rr,vx:Math.cos(a)*v,vy:Math.sin(a)*v,t:m[2]*(.6+Math.random()*.7),c,s:m[3]*(.6+Math.random()*.8),g:m[1],r:Math.random()*TAU,vr:(Math.random()-.5)*.3};p.T=p.t;
   if(st==='void'&&!burst){p.cx=x;p.cy=y;p.x=x+Math.cos(a)*R*3;p.y=y+Math.sin(a)*R*3}
@@ -48,7 +49,7 @@ function ifxAura(q,st,c1,c2,R,k){const t=frame;ctx.lineWidth=2;
  else if(st==='note'){ctx.globalAlpha=.35*k;ctx.strokeStyle=c1;for(let i=0;i<5;i++){ctx.beginPath();for(let x=-R*2.5;x<=R*2.5;x+=6)ctx.lineTo(q.x+x,q.y+R*1.6+i*5+Math.sin(x*.05+t*.1)*3);ctx.stroke()}}
  else if(st==='void'||st==='shadow'){ctx.save();ctx.globalCompositeOperation='source-over';ifxGlow(q.x,q.y,R*3.5,st==='void'?'#000':c2||'#000',.45*k);ctx.restore()}
  else if(st==='water'||st==='bubble'){ctx.globalAlpha=.4*k;ctx.strokeStyle=c1;const u=(t%40)/40;ctx.beginPath();ctx.arc(q.x,q.y,R*(1.2+u*1.6),0,TAU);ctx.globalAlpha=.5*(1-u)*k;ctx.stroke()}}
-function ifxUnder(){const lo=fxLow||perfLow,N=lo?6:14;ctx.save();ctx.globalCompositeOperation='lighter';
+function ifxUnder(){const lo=FXF.low||perfLow,N=lo?6:14;ctx.save();ctx.globalCompositeOperation='lighter';
  for(const q of P){if(q.state==='dead')continue;const R=bodyR(q),acts=(q.acts||[]).filter(a=>frame-a.f<a.T&&ITEMK[a.k]);
   for(const a of q.acts||[]){const key=q.id+':'+a.k+':'+a.f;if(frame-a.f<12&&!IFX.seen.has(key)){IFX.seen.add(key);if(IFX.seen.size>300)IFX.seen.clear();const r=IFX.R[a.k]||['spark',(ITEMK[a.k]||{}).c||'#fff','#fff'];
    ifxEmit(r[0],q.x,q.y,r[1],r[2],lo?12:35,R,1);ifxEmit('spark',q.x,q.y,'#fff',r[1],lo?4:10,R,1);IFX.rp.push({k:'ring',x:q.x,y:q.y,t:30,T:30,c:ifxC(r[1]),s:150},{k:'ring',x:q.x,y:q.y,t:22,T:22,c:ifxC(r[2]||'#fff'),s:90})}}

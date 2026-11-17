@@ -15,6 +15,7 @@ Same screens and look as the legacy game: title (warp stars, galaxy, planet, log
 - Controls: `packs/ui/screens/binds/binds.ts` (keys incl. mouse buttons + wheel, pad buttons, Spell = 2-button chord, live test rows, pad test line, mouse-aim toggle `sf_mouse` — the in-fight mouse aim itself is not ported yet).
 - Guide: `packs/ui/screens/info/info.ts` + the 40 legacy pages copied verbatim in `packs/ui/ld/info.ts` (`buildInfo(catalog)`: item pages follow the catalog). `tests/ld-names.test.ts` also checks `packs/ui/ld`.
 - Touch: `packs/ui/input/touch.ts` (floating stick, thumb pad, AUTO fire, pause, results buttons, swipe-to-scroll lists, tap = click, landscape notice, fullscreen on first tap); the touch player is the first human. Pad menu navigation: `packs/ui/input/padnav.ts` (`pollNav`) -> `padEv` in app.ts.
+- Effects tiers: `FXF` (`packs/render/ld/fx.ts`) feeds REDUCED / OFF to every verbatim draw file; OFF also applies `safeView` (`packs/render/juice/state.ts`) to each fight draw (no shake, zoom kick, blur, chroma, brightness, speed lines, inversion, particles, rings, beams, cracks; flashes capped at 0.06) and the overlays skip their full-screen white flashes and the last-stock heartbeat (deliberate: legacy still flashed there, DESIGN §25 R119).
 - Match end: once a winner exists the sim only counts `winT` and ticks the effects (combat `gate`, legacy loop `stepFx();winT++`); the oracle runner does the same.
 - Settings with the legacy storage keys: `packs/ui/settings.ts` (`SET`, `loadSettings`, `saveSettings`).
 ## Tests

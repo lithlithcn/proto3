@@ -13,13 +13,13 @@ export function drawIntro(u: UiCtx, v: FightView): void {
   const txt = go ? 'FIGHT!' : 'READY?', sc = go ? (uu < 0.12 ? 1 + (1 - uu / 0.12) * 1.4 : 1 + 0.04 * Math.sin(uu * 20)) : 0.9 + ein * 0.1, sh = go && uu < 0.2 ? (Math.random() - 0.5) * 14 * (1 - uu / 0.2) : 0;
   c.translate(W / 2 + sh + (go ? eout * W : 0), H / 2 - 20 + sh); c.rotate(-0.04); c.scale(sc, sc); c.font = UFI(Math.min(H * 0.17, W * 0.13)); c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round'; c.lineWidth = 14; c.strokeStyle = '#05060c'; c.globalAlpha = 1 - eout; c.strokeText(txt, 0, 0);
   if (!u.fxLow) { c.fillStyle = '#2df0ff'; c.fillText(txt, -5, 2); c.fillStyle = '#ff2d6a'; c.fillText(txt, 5, -2); } c.fillStyle = '#fff'; c.fillText(txt, 0, 0);
-  if (go && uu < 0.15) { c.globalAlpha = (1 - uu / 0.15) * 0.6; c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = '#fff'; c.fillRect(0, 0, W, H); }
+  if (go && uu < 0.15 && !u.fxOff) { c.globalAlpha = (1 - uu / 0.15) * 0.6; c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = '#fff'; c.fillRect(0, 0, W, H); }
   c.restore();
 }
 /** GAME! : letterbox, white flash, text slamming in, glint. */
 export function drawGameEnd(u: UiCtx, v: FightView): void {
   const { c, W, H } = u, t = v.winT; c.save(); c.setTransform(1, 0, 0, 1, 0, 0); const lb = clamp(t / 10, 0, 1) * H * 0.12; c.fillStyle = '#000'; c.fillRect(0, 0, W, lb); c.fillRect(0, H - lb, W, lb);
-  if (t < 6) { c.globalAlpha = (1 - t / 6) * 0.7; c.fillStyle = '#fff'; c.fillRect(0, 0, W, H); c.globalAlpha = 1; }
+  if (t < 6 && !u.fxOff) { c.globalAlpha = (1 - t / 6) * 0.7; c.fillStyle = '#fff'; c.fillRect(0, 0, W, H); c.globalAlpha = 1; }
   const e = clamp(t / 8, 0, 1), sc = e < 1 ? 3 - 2 * e : 1 + 0.03 * Math.sin(t * 0.3), sh = t < 16 ? (Math.random() - 0.5) * 20 * (1 - t / 16) : 0, wc = v.winner >= 0 ? (v.teams ? TCOL[v.teamA[v.winner]!]! : COLS[v.winner % 8]!) : '#fff';
   c.translate(W / 2 + sh, H / 2 + sh); c.rotate(-0.06); c.globalAlpha = 0.85; c.fillStyle = '#05060c'; skewRect(c, -W * 0.6, -H * 0.11, W * 1.2 * clamp(t / 6, 0, 1), H * 0.22, H * 0.08); c.fill(); c.fillStyle = wc; c.fillRect(-W * 0.6, -H * 0.11, W * 1.2 * clamp(t / 6, 0, 1), 5); c.fillRect(-W * 0.6, H * 0.11 - 5, W * 1.2 * clamp(t / 6, 0, 1), 5); c.globalAlpha = 1;
   c.scale(sc, sc); c.font = UFI(Math.min(H * 0.2, W * 0.15)); c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round'; c.lineWidth = 16; c.strokeStyle = '#05060c'; c.strokeText('GAME!', 0, 0);
@@ -64,9 +64,9 @@ export const lsZoom = (now: number, fxLow: boolean): number => {
 export function drawLastStock(u: UiCtx, v: FightView, P: LsPlayer[]): void {
   if (!LS.on || v.winner >= 0 && v.winT >= 100) return;
   const { c, W, H } = u, t = u.now, d = t - LS.t0, q = P[LS.p]; c.save(); c.setTransform(1, 0, 0, 1, 0, 0);
-  const beat = Math.pow(Math.max(0, Math.sin(t * Math.PI * 2 * 1.1)), 8), vg = c.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, H * 0.95); vg.addColorStop(0, 'rgba(255,0,40,0)'); vg.addColorStop(1, 'rgba(255,0,40,' + (0.12 + 0.16 * beat) + ')'); c.fillStyle = vg; c.fillRect(0, 0, W, H);
+  const beat = u.fxOff ? 0 : Math.pow(Math.max(0, Math.sin(t * Math.PI * 2 * 1.1)), 8), vg = c.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, H * 0.95); vg.addColorStop(0, 'rgba(255,0,40,0)'); vg.addColorStop(1, 'rgba(255,0,40,' + (0.12 + 0.16 * beat) + ')'); c.fillStyle = vg; c.fillRect(0, 0, W, H);
   if (d < 2.6) {
-    if (d < 0.18) { c.globalAlpha = (1 - d / 0.18) * 0.8; c.fillStyle = '#fff'; c.fillRect(0, 0, W, H); c.globalAlpha = 1; }
+    if (d < 0.18 && !u.fxOff) { c.globalAlpha = (1 - d / 0.18) * 0.8; c.fillStyle = '#fff'; c.fillRect(0, 0, W, H); c.globalAlpha = 1; }
     const inn = clamp(d / 0.2, 0, 1), out = clamp((d - 2.1) / 0.5, 0, 1), lb = H * 0.13 * inn * (1 - out); c.fillStyle = '#000'; c.fillRect(0, 0, W, lb); c.fillRect(0, H - lb, W, lb);
     for (let i = 0; i < 5; i++) { const uu = clamp((d - i * 0.05) / 0.35, 0, 1), x = -W + uu * W * 2.6; c.globalAlpha = 0.5 * (1 - out); c.fillStyle = i % 2 ? '#ff2d55' : '#fff'; c.beginPath(); c.moveTo(x, H * (0.2 + i * 0.13)); c.lineTo(x + W * 0.6, H * (0.16 + i * 0.13)); c.lineTo(x + W * 0.6, H * (0.165 + i * 0.13)); c.lineTo(x, H * (0.205 + i * 0.13)); c.fill(); }
     c.globalAlpha = 1;

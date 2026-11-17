@@ -55,3 +55,11 @@ export function crack(j: Juice, x: number, y: number): void {
   for (let i = 0; i < 22; i++) { const a = R() * 6.2832, d = 20 + R() * 260, r = 8 + R() * 26, p: number[] = []; for (let k = 0; k < 3 + (R() * 2 | 0); k++) { const b = k * 6.2832 / 4 + R(); p.push(Math.cos(b) * r, Math.sin(b) * r); } sh.push({ x: x + Math.cos(a) * d, y: y + Math.sin(a) * d, vx: Math.cos(a) * (1 + R() * 3), vy: Math.sin(a) * 2 - 2 - R() * 3, rt: (R() - 0.5) * 0.3, p }); }
   j.CRACK.push({ p: pl, s: sh, x, y, t: 75, T: 75 });
 }
+/** Effects OFF (epilepsy-safe, legacy render wrapper line ~4976): for one draw, no shake / zoom kick / zoom blur / chroma split / brightness /
+ *  speed lines / colour inversion, flashes capped at 0.06, and no particles, rings, KO beams, cracks or speed-line lists. The sim and the stored
+ *  effects are untouched (they come back when the option is turned off). Returns the restore function. */
+export function safeView(j: Juice): () => void {
+  const k = { shake: j.shake, zk: j.zk, zblur: j.zblur, chroma: j.chroma, bright: j.bright, focusL: j.focusL, flashS: j.flashS, invF: j.invF, FX: j.FX, RINGS: j.RINGS, KOFX: j.KOFX, CRACK: j.CRACK, LINES: j.LINES };
+  j.shake = 0; j.zk = 0; j.zblur = 0; j.chroma = 0; j.bright = 0; j.focusL = 0; j.flashS = Math.min(j.flashS, 0.06); j.invF = 0; j.FX = []; j.RINGS = []; j.KOFX = []; j.CRACK = []; j.LINES = [];
+  return () => { Object.assign(j, k); };
+}

@@ -1,13 +1,14 @@
 // @ts-nocheck — legacy drawView (camera, floor, cards, light + heavy bullets, players, world items, effects, tags, indicators) and its helpers, copied verbatim. Not sim code.
+import { FXF } from './fx';
 import { COLS, LCOLS } from '../colors';
 import { drawP } from './layers';
 import { drawWorldItems } from './world';
 import { koBeamL as koBeam, drawCrackL as drawCrack, hexHueL as hexHue } from './viewfx';
 const TAU = 6.2832;
-let ctx, frame, P, B, ENT, CX = {}, cams, MVIEW, T, BGH = [], TIMER = 0, STOCKS = [0], stI = 0, performance = { now: () => 0 }, CARDS = [], ITEMS = [], item = null, hitstop = 0, fxLow = false, perfLow = false, debug = false, GLR = null, WARP = 0, TEAMS = 0, NET = null, fixedMap = 0, TCH = { on: false }, ACC = { shk: 1, ui: 1 };
+let ctx, frame, P, B, ENT, CX = {}, cams, MVIEW, T, BGH = [], TIMER = 0, STOCKS = [0], stI = 0, performance = { now: () => 0 }, CARDS = [], ITEMS = [], item = null, hitstop = 0, perfLow = false, debug = false, GLR = null, WARP = 0, TEAMS = 0, NET = null, fixedMap = 0, TCH = { on: false }, ACC = { shk: 1, ui: 1 };
 let bodyR, coreR, FX, TX, RINGS, WAVES, LINES, KOFX, CRACK, GZ, invF, TSTOP, TSO, shake, kx, ky, zk, bgF, NERV, slow, LS;
 let VIEW = 0, CVINV = 0; // CVINV: canvas invert, only with the YouTube background (YTBG, not ported)
- const CS = 40, CMAP = null, WG = null, TPS = [], OC = null, CTX0 = null, GFX = [], YTBG = 0, fxOff = false, NETNAMES = null, TEAMA = [];
+ const CS = 40, CMAP = null, WG = null, TPS = [], OC = null, CTX0 = null, GFX = [], YTBG = 0, NETNAMES = null, TEAMA = [];
 const shN = (t, k) => Math.sin(t * 1.7 + k) * 0.5 + Math.sin(t * 2.9 + k * 3) * 0.3 + Math.sin(t * 5.3 + k * 7) * 0.2, kV = () => (0.35 + 0.065 * NERV) * ACC.shk, clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const TN = ['FIRE', 'WATER', 'WOOD', 'METAL', 'EARTH'], TC = ['#ff5030', '#3a7fff', '#5cff7a', '#e0e6f0', '#c8a050'];
 const NCOL = [0, '#ffffff', '#ff5a5a', '#ffa63a', '#ffe83a', '#7cff6a', '#3affd0', '#5ab0ff', '#a07cff', '#ff7ce0', 'rainbow'];
@@ -23,12 +24,12 @@ function drawView0(v){
  else{if(p.state!=='dead'){let ox=(o.x-p.x)*.3,oy=(o.y-p.y)*.3;const l=Math.hypot(ox,oy);if(l>220){ox*=220/l;oy*=220/l}
   cam.x+=(p.x+ox-cam.x)*.12;cam.y+=(p.y+oy-cam.y)*.12}
   cam.x=vw>=T.MAP_W?T.MAP_W/2:clamp(cam.x,vw/2,T.MAP_W-vw/2);cam.y=vh>=T.MAP_H?T.MAP_H/2:clamp(cam.y,vh/2,T.MAP_H-vh/2)}
- const fr=(fxLow?.2:1)*kV(),sx=((shake?shN(frame*.9,1.3)*shake*.55:0)+kx)*fr,sy=((shake?shN(frame*.9+77,2.1)*shake*.55:0)+ky)*fr;
+ const fr=(FXF.low?.2:1)*kV(),sx=((shake?shN(frame*.9,1.3)*shake*.55:0)+kx)*fr,sy=((shake?shN(frame*.9+77,2.1)*shake*.55:0)+ky)*fr;
  ctx.save();ctx.beginPath();ctx.rect(v.x,0,v.w,H);ctx.clip();
  ctx.translate(v.x+v.w/2+sx,H/2+sy);ctx.scale(SCv,SCv);ctx.translate(-cam.x,-cam.y);MVIEW[v.i]={ox:v.x+v.w/2,oy:v.y+H/2,sc:SCv,cx:cam.x,cy:cam.y};if(GLR)GLR.view(ctx.getTransform(),v.x,v.y,v.w,v.h||H);
  const L=cam.x-vw/2,Tp=cam.y-vh/2,R=L+vw,Bt=Tp+vh;
  ctx.fillStyle='#14161f';ctx.fillRect(0,0,T.MAP_W,T.MAP_H);
- if(bgF.t>0){ctx.globalAlpha=bgF.t/12*(fxLow?.08:.28);ctx.fillStyle=bgF.c;ctx.fillRect(0,0,T.MAP_W,T.MAP_H);ctx.globalAlpha=1} // le sol réagit aux gros coups
+ if(bgF.t>0){ctx.globalAlpha=bgF.t/12*(FXF.low?.08:.28);ctx.fillStyle=bgF.c;ctx.fillRect(0,0,T.MAP_W,T.MAP_H);ctx.globalAlpha=1} // le sol réagit aux gros coups
  ctx.strokeStyle='#1f2333';ctx.lineWidth=1;ctx.beginPath();
  for(let x=Math.max(0,Math.ceil(L/100)*100);x<=Math.min(T.MAP_W,R);x+=100){ctx.moveTo(x,Math.max(0,Tp));ctx.lineTo(x,Math.min(T.MAP_H,Bt))}
  for(let y=Math.max(0,Math.ceil(Tp/100)*100);y<=Math.min(T.MAP_H,Bt);y+=100){ctx.moveTo(Math.max(0,L),y);ctx.lineTo(Math.min(T.MAP_W,R),y)}
@@ -37,7 +38,7 @@ function drawView0(v){
  ctx.fillRect(0,0,T.MAP_W,E);ctx.fillRect(0,T.MAP_H-E,T.MAP_W,E);ctx.fillRect(0,E,E,T.MAP_H-2*E);ctx.fillRect(T.MAP_W-E,E,E,T.MAP_H-2*E);
  if(WARP<=0){ctx.save();ctx.strokeStyle='#ff2a3c';ctx.globalAlpha=.12+.05*Math.sin(frame*.06);ctx.lineWidth=14;ctx.strokeRect(E,E,T.MAP_W-2*E,T.MAP_H-2*E);ctx.globalAlpha=.55;ctx.lineWidth=2;ctx.setLineDash([22,14]);ctx.lineDashOffset=-frame*.6;ctx.strokeRect(E,E,T.MAP_W-2*E,T.MAP_H-2*E);ctx.restore()}ctx.strokeStyle=WARP>0?'#b5f':'#ff2a3c';ctx.lineWidth=5;ctx.strokeRect(0,0,T.MAP_W,T.MAP_H);for(const f of BGH)f(L,Tp,R,Bt);
  for(const q of P)if(q.state==='spell'&&q.state!=='dead')spellCircle(q);for(const q of P.filter(q=>q.state==='spell').slice(-1)){ctx.fillStyle=q.id?'rgba(255,210,60,.025)':'rgba(255,70,90,.025)';ctx.fillRect(0,0,T.MAP_W,T.MAP_H); // fond de spell : rayons tournants (discrets)
-  ctx.save();ctx.translate(q.x,q.y);ctx.rotate(frame*.01*(q.id?-1:1));ctx.fillStyle=COLS[q.id];ctx.globalAlpha=fxLow?.02:.04;ctx.beginPath();
+  ctx.save();ctx.translate(q.x,q.y);ctx.rotate(frame*.01*(q.id?-1:1));ctx.fillStyle=COLS[q.id];ctx.globalAlpha=FXF.low?.02:.04;ctx.beginPath();
   for(let i=0;i<12;i++){const a=i*TAU/12;ctx.moveTo(0,0);ctx.arc(0,0,1600,a,a+TAU/24)}ctx.fill();ctx.restore();ctx.globalAlpha=1}
  {for(const c of CARDS){item=c;drawItem()}item=CARDS[0]||null}
  const inV=b=>b.x>L-30&&b.x<R+30&&b.y>Tp-30&&b.y<Bt+30;
@@ -50,7 +51,7 @@ function drawView0(v){
  drawMapObj(L,Tp,R,Bt);VIEW=p.id;for(const q of P)drawP(q);mapFG(L,Tp,R,Bt);
  drawWorldItems();drawViewFx(p,L,Tp,vw,vh);
  if(GLR){for(const f of FX){if(f.x<L-30||f.x>R+30||f.y<Tp-30||f.y>Bt+30)continue;const a=Math.min(1,f.t/15);if(f.r)GLR.push(glRing(f.c),f.x,f.y,f.r/16,0,a);else GLR.push(glDot(f.c),f.x,f.y,.6+a*.5,0,a)}}
- else for(const f of FX){if(f.x<L-30||f.x>R+30||f.y<Tp-30||f.y>Bt+30)continue;ctx.globalAlpha=Math.min(1,f.t/15);if(f.r){ctx.strokeStyle=f.c;ctx.lineWidth=2;ctx.beginPath();ctx.arc(f.x,f.y,f.r,0,TAU);ctx.stroke()}else{const z=1.4+ctx.globalAlpha*1.6;ctx.fillStyle=f.c;ctx.beginPath();ctx.arc(f.x,f.y,z,0,TAU);ctx.fill();if(!fxLow&&!perfLow){ctx.globalAlpha*=.25;ctx.beginPath();ctx.arc(f.x,f.y,z*2.4,0,TAU);ctx.fill()}}}
+ else for(const f of FX){if(f.x<L-30||f.x>R+30||f.y<Tp-30||f.y>Bt+30)continue;ctx.globalAlpha=Math.min(1,f.t/15);if(f.r){ctx.strokeStyle=f.c;ctx.lineWidth=2;ctx.beginPath();ctx.arc(f.x,f.y,f.r,0,TAU);ctx.stroke()}else{const z=1.4+ctx.globalAlpha*1.6;ctx.fillStyle=f.c;ctx.beginPath();ctx.arc(f.x,f.y,z,0,TAU);ctx.fill();if(!FXF.low&&!perfLow){ctx.globalAlpha*=.25;ctx.beginPath();ctx.arc(f.x,f.y,z*2.4,0,TAU);ctx.fill()}}}
  ctx.strokeStyle='#fff';ctx.lineWidth=2;for(const g of GZ){ctx.globalAlpha=g.t/10;ctx.beginPath();ctx.arc(g.p.x,g.p.y,T.GRAZE_R+10-g.t,g.a-.35,g.a+.35);ctx.stroke()} // arc de graze
  ctx.save();ctx.globalCompositeOperation='lighter';for(const r of RINGS){const u=Math.min(1,r.t/30);ctx.strokeStyle=r.c;ctx.globalAlpha=u*.22;ctx.lineWidth=14*u+2;ctx.beginPath();ctx.arc(r.x,r.y,r.r,0,TAU);ctx.stroke();ctx.globalAlpha=u;ctx.lineWidth=4*u+1;ctx.stroke();ctx.globalAlpha=u*.6;ctx.strokeStyle='#fff';ctx.lineWidth=1.2;ctx.stroke()}ctx.restore()
  const ray=(x,y,a,w,L)=>{ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+Math.cos(a-w)*L,y+Math.sin(a-w)*L);ctx.lineTo(x+Math.cos(a+w)*L,y+Math.sin(a+w)*L);ctx.fill()};
@@ -63,10 +64,10 @@ function drawView0(v){
  for(const c of CRACK)if(c.s)drawCrack(c);ctx.globalAlpha=1;
  for(const w of WAVES){const f=w.t/w.T,r=(w.T-w.t)*w.spd,th=w.th*f+3; // ondes (inversion des couleurs si inv)
   ctx.beginPath();ctx.arc(w.x,w.y,r+th,0,TAU);ctx.arc(w.x,w.y,r,0,TAU,true);
-  if(w.inv&&!fxLow){if(YTBG>0){ctx.globalCompositeOperation='destination-over';ctx.fillStyle='#14161f';ctx.fill()}ctx.globalCompositeOperation='difference';ctx.fillStyle='#fff';ctx.fill();ctx.globalCompositeOperation='source-over'}
-  else{ctx.globalAlpha=f*(fxLow?.2:.6);ctx.fillStyle=w.c||'#fff';ctx.fill();ctx.globalAlpha=1}}
- if(invF>0&&!fxLow){if(YTBG>0)CVINV=2;else{ctx.globalCompositeOperation='difference';ctx.fillStyle='#fff';ctx.fillRect(L-60,Tp-60,vw+120,vh+120);ctx.globalCompositeOperation='source-over'}}
- if(TSTOP>0&&!fxOff){if(YTBG>0)CVINV=2;else{ctx.globalCompositeOperation='difference';ctx.fillStyle='#fff';ctx.fillRect(L-60,Tp-60,vw+120,vh+120);ctx.globalCompositeOperation='source-over';drawP(P[TSO])}} // The World : monde gris
+  if(w.inv&&!FXF.low){if(YTBG>0){ctx.globalCompositeOperation='destination-over';ctx.fillStyle='#14161f';ctx.fill()}ctx.globalCompositeOperation='difference';ctx.fillStyle='#fff';ctx.fill();ctx.globalCompositeOperation='source-over'}
+  else{ctx.globalAlpha=f*(FXF.low?.2:.6);ctx.fillStyle=w.c||'#fff';ctx.fill();ctx.globalAlpha=1}}
+ if(invF>0&&!FXF.low){if(YTBG>0)CVINV=2;else{ctx.globalCompositeOperation='difference';ctx.fillStyle='#fff';ctx.fillRect(L-60,Tp-60,vw+120,vh+120);ctx.globalCompositeOperation='source-over'}}
+ if(TSTOP>0&&!FXF.off){if(YTBG>0)CVINV=2;else{ctx.globalCompositeOperation='difference';ctx.fillStyle='#fff';ctx.fillRect(L-60,Tp-60,vw+120,vh+120);ctx.globalCompositeOperation='source-over';drawP(P[TSO])}} // The World : monde gris
  if(GLR&&OC)ovl(v,()=>{drawTags(L,R);drawDanger()});else drawTags(L,R);if(debug)drawDebugWorld();
  ctx.restore();
  for(const q of v.fixed?P:[p])if(q.state!=='dead'&&q.hp<T.HP*.3){ // vignette rouge quand la vie est basse
@@ -100,7 +101,7 @@ function dbgProg(){let p=0;if(TIMER>0&&typeof TN!=='undefined'){}const al=P.filt
 function dynBG(L,Tp,R,Bt){if(ENT.some(e=>e.k==='tree'))return;const now=performance.now(),dt=Math.min(50,now-(DBG.t||now));DBG.t=now;
  const sp=P.find(q=>q.state==='spell'),pr=dbgProg();DBG.h=(DBG.h+dt*.024*(1+pr*1.5))%360;DBG.k+=((sp?1:0)-DBG.k)*Math.min(1,dt*.004);if(sp)DBG.sh=hexHue(COLS[sp.id]);
  let h=DBG.h;if(DBG.k>.01&&DBG.sh!==undefined){let d=((DBG.sh-h+540)%360)-180;h=(h+d*DBG.k+360)%360}
- const lo=fxLow||perfLow,t=now*.001,W2=R-L,H2=Bt-Tp,cx=(L+R)/2,cy=(Tp+Bt)/2;ctx.save();
+ const lo=FXF.low||perfLow,t=now*.001,W2=R-L,H2=Bt-Tp,cx=(L+R)/2,cy=(Tp+Bt)/2;ctx.save();
  const g=ctx.createLinearGradient(0,Tp,0,Bt);g.addColorStop(0,`hsla(${h},70%,28%,.30)`);g.addColorStop(.6,`hsla(${(h+40)%360},60%,14%,.12)`);g.addColorStop(1,`hsla(${(h+80)%360},70%,22%,.22)`);ctx.fillStyle=g;ctx.fillRect(L,Tp,W2,H2);
  ctx.globalCompositeOperation='lighter';
  if(!lo)for(let i=0;i<4;i++){const hh=(h+i*35)%360,yb=Tp+H2*(.22+i*.17)+Math.sin(t*.25+i*1.7)*H2*.08,a=Math.max(W2,H2),amp=H2*(.06+.03*i);ctx.fillStyle=`hsla(${hh},90%,60%,${.05+.02*(i%2)})`;ctx.beginPath();
@@ -152,7 +153,7 @@ function miniHUD(q,R,el,er){const hide=CX.anon>0||q.fx&&q.fx.koishi>0,flip=q.y>T
   bar(x,y+37,w,3,(q.pg??100)/100,(q.pg??100)<35?(frame&8?'#6ff':'#244'):'#6ff')}
  ctx.globalAlpha=1}
 function mapFG(L,Tp,R,Bt){if(!CMAP)return;mapLayers(true,L,Tp,R,Bt);const mb=CX.mb;if(mb&&mb.length){ctx.save();for(const b of mb){ctx.fillStyle=b.c;ctx.globalAlpha=.35;ctx.beginPath();ctx.arc(b.x,b.y,b.r*1.8,0,TAU);ctx.fill();ctx.globalAlpha=1;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(b.x,b.y,b.r*.55,0,TAU);ctx.fill();ctx.strokeStyle=b.c;ctx.lineWidth=2;ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,TAU);ctx.stroke()}ctx.restore()}
- const w=CX.mwind;if(w&&!fxLow){ctx.save();ctx.strokeStyle='rgba(220,240,255,.25)';ctx.lineWidth=2;for(let i=0;i<30;i++){const x=L+((i*137+frame*9*Math.cos(w.a))%(R-L+400)+(R-L+400))%(R-L+400)-200,y=Tp+((i*97+frame*9*Math.sin(w.a))%(Bt-Tp+400)+(Bt-Tp+400))%(Bt-Tp+400)-200;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-Math.cos(w.a)*60,y-Math.sin(w.a)*60);ctx.stroke()}ctx.restore()}}
+ const w=CX.mwind;if(w&&!FXF.low){ctx.save();ctx.strokeStyle='rgba(220,240,255,.25)';ctx.lineWidth=2;for(let i=0;i<30;i++){const x=L+((i*137+frame*9*Math.cos(w.a))%(R-L+400)+(R-L+400))%(R-L+400)-200,y=Tp+((i*97+frame*9*Math.sin(w.a))%(Bt-Tp+400)+(Bt-Tp+400))%(Bt-Tp+400)-200;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-Math.cos(w.a)*60,y-Math.sin(w.a)*60);ctx.stroke()}ctx.restore()}}
 const hz=(i,k)=>{const x=Math.sin(i*127.1+k*311.7)*43758.5453;return x-Math.floor(x)};
 function chView(L,Tp,vw,vh){ // voiles plein écran (coordonnées monde)
  if(CX.terr)for(const k of CX.terr.L){ctx.globalAlpha=.06;ctx.fillStyle=TC[k];ctx.fillRect(L,Tp,vw,vh)}ctx.globalAlpha=1;

@@ -1,14 +1,15 @@
 // @ts-nocheck — legacy render() screen layers (border flash, speed lines, banners, flash/brightness, zoom blur, chroma split, spell UI, timer, item line), copied verbatim. Not sim code.
+import { FXF } from './fx';
 import { COLS, LCOLS } from '../colors';
 import { UFI, UF } from '../ui';
 const TAU = 6.2832;
-let SPELLS = [], ULTN = 'Last Word「Prismatic Danmaku Storm」', ctx, cv, frame, P, W, H, T, borderF, focusL, BIG, flashS, flashCol, bright, zblur, chroma, NERV, slow, TSTOP, ITEMS, item, itemT, itemsOn, WARP, FAIRIES, TIMER = 0, TEST = null, TUT = null, CX = {}, bodyR, fxLow = false, perfLow = false, fxOff = false, TCH = { on: false }, ACC = { shk: 1, ui: 1 }, mode = 'game';
+let SPELLS = [], ULTN = 'Last Word「Prismatic Danmaku Storm」', ctx, cv, frame, P, W, H, T, borderF, focusL, BIG, flashS, flashCol, bright, zblur, chroma, NERV, slow, TSTOP, ITEMS, item, itemT, itemsOn, WARP, FAIRIES, TIMER = 0, TEST = null, TUT = null, CX = {}, bodyR, perfLow = false, TCH = { on: false }, ACC = { shk: 1, ui: 1 }, mode = 'game';
 const kV = () => (0.35 + 0.065 * NERV) * ACC.shk, clamp = (v, a, b) => Math.max(a, Math.min(b, v)), RB = ['#ff4a4a', '#ffa63a', '#ffe83a', '#5cff7a', '#4ab3ff', '#c06cff'];
 function skw(x,y,w,h,k){ctx.beginPath();ctx.moveTo(x+k,y);ctx.lineTo(x+w,y);ctx.lineTo(x+w-k,y+h);ctx.lineTo(x,y+h);ctx.closePath()}
 const spD = p => p.ultS ? { name: ULTN } : SPELLS[(p.spI === undefined ? p.id : p.spI) % SPELLS.length] || { name: '' }, spT = p => p.ultS ? T.ULT_T : T.SPELL_T;
 const pname = p => (p.cpu ? 'CPU ' : 'P') + (p.id + 1), xActive = () => false, keyName = c => c, padName = n => 'Button ' + n, pads = () => [], KB = [], PAD = [], TKB = [], ITEMK = {}, MVIEW = {}, NET = null, PREVL = {}, PROPH = [], shortD = it => it.d || '';
 const rainbowCol = () => `hsl(${frame * 6 % 360},100%,65%)`, IE = () => itemsOn ? T.ITEM_EVERY : T.ULT_EVERY;
-export const bindScreen = (v) => { ({ SPELLS, ctx, cv, frame, P, W, H, T, borderF, focusL, BIG, flashS, flashCol, bright, zblur, chroma, NERV, slow, TSTOP, ITEMS, item, itemT, itemsOn, WARP, FAIRIES, bodyR, fxLow } = v); };
+export const bindScreen = (v) => { ({ SPELLS, ctx, cv, frame, P, W, H, T, borderF, focusL, BIG, flashS, flashCol, bright, zblur, chroma, NERV, slow, TSTOP, ITEMS, item, itemT, itemsOn, WARP, FAIRIES, bodyR } = v); };
 function drawPortrait(id,w,h,c){ // portrait temporaire (silhouette) : à remplacer par le vrai art
  const g=ctx.createLinearGradient(0,0,0,h);g.addColorStop(0,c);g.addColorStop(1,'rgba(0,0,0,0)');
  ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(w*.15,h);ctx.lineTo(w*.3,h*.42);ctx.lineTo(w*.7,h*.42);ctx.lineTo(w*.88,h);ctx.fill();
@@ -23,8 +24,8 @@ function drawBanners(){BIG.forEach((b,i)=>{const age=45-b.t,e=clamp(age/7,0,1),o
  const bw=Math.min(W*1.1,tw+120),bh=b.z*sc*1.25,bx=-bw/2*Math.min(1,e*1.6);ctx.globalAlpha=.42*out;ctx.fillStyle='#05060c';skw(bx-10,-bh*.7,bw*Math.min(1,e*1.6)+20,bh,bh*.35);ctx.fill();ctx.globalAlpha=.6*out;ctx.fillStyle=c;ctx.fillRect(bx,-bh*.7,bw*Math.min(1,e*1.6),3);ctx.fillRect(bx,bh*.3-3,bw*Math.min(1,e*1.6),3);
  if(age<5){ctx.globalAlpha=(1-age/5)*.5;ctx.fillStyle='#fff';skw(-bw/2,-bh*.7,bw,bh,bh*.35);ctx.fill()}
  ctx.scale(sc,sc);ctx.font=UFI(b.z);ctx.textAlign='center';ctx.globalAlpha=Math.min(.75,out*.75);ctx.lineJoin='round';ctx.lineWidth=b.z*.16;ctx.strokeStyle='#05060c';ctx.strokeText(b.s,0,0);
- if(!fxLow){ctx.globalAlpha*=.6;ctx.fillStyle='#ff2d6a';ctx.fillText(b.s,-3,0);ctx.fillStyle='#2df0ff';ctx.fillText(b.s,3,0);ctx.globalAlpha=Math.min(.75,out*.75)}ctx.fillStyle=c;ctx.fillText(b.s,0,0);
- if(age>4&&age<22&&!fxLow){ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.5*out;const sx=-tw/sc/2+(age-4)/18*(tw/sc*1.2),gg=ctx.createLinearGradient(sx-40,0,sx+40,0);gg.addColorStop(0,'rgba(255,255,255,0)');gg.addColorStop(.5,'rgba(255,255,255,.9)');gg.addColorStop(1,'rgba(255,255,255,0)');ctx.fillStyle=gg;ctx.fillText(b.s,0,0);ctx.restore()}
+ if(!FXF.low){ctx.globalAlpha*=.6;ctx.fillStyle='#ff2d6a';ctx.fillText(b.s,-3,0);ctx.fillStyle='#2df0ff';ctx.fillText(b.s,3,0);ctx.globalAlpha=Math.min(.75,out*.75)}ctx.fillStyle=c;ctx.fillText(b.s,0,0);
+ if(age>4&&age<22&&!FXF.low){ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.5*out;const sx=-tw/sc/2+(age-4)/18*(tw/sc*1.2),gg=ctx.createLinearGradient(sx-40,0,sx+40,0);gg.addColorStop(0,'rgba(255,255,255,0)');gg.addColorStop(.5,'rgba(255,255,255,.9)');gg.addColorStop(1,'rgba(255,255,255,0)');ctx.fillStyle=gg;ctx.fillText(b.s,0,0);ctx.restore()}
  ctx.restore()})}
 function focusLines(a){ // lignes de vitesse (manga) depuis les bords
  const cx=W/2,cy=H/2,R=Math.hypot(W,H)/2;ctx.strokeStyle='#fff';ctx.globalAlpha=Math.min(1,a)*.9;ctx.lineWidth=2+a*2;ctx.beginPath();
@@ -67,14 +68,14 @@ function drawActs(){if(TEST&&TEST.k)return;const L=[];for(const q of P){const qa
   B.forEach((b,i)=>{const h=hs[i],c=col(b.it);ctx.globalAlpha=.16*b.f;ctx.fillStyle='#000';ctx.fillRect(W/2-w/2,y,w,h);ctx.globalAlpha=.92*b.f;ctx.font='bold '+(fs+1)+'px monospace';tx(b.t,W/2,y+18*sc,c,4);ctx.font='bold '+fs+'px monospace';b.l.forEach((l,j)=>tx(l,W/2,y+(38+j*19)*sc,'#fff',3.5));y+=h+6})}
  ctx.restore()}
 export function drawScreen(){
- if(borderF.t>0){ctx.strokeStyle=borderF.c;ctx.globalAlpha=borderF.t/18*(fxLow?.2:1);ctx.lineWidth=34;ctx.strokeRect(0,0,W,H);ctx.globalAlpha=1}
- if(focusL>.05)focusLines(focusL*(fxLow?.2:1));
+ if(borderF.t>0){ctx.strokeStyle=borderF.c;ctx.globalAlpha=borderF.t/18*(FXF.low?.2:1);ctx.lineWidth=34;ctx.strokeRect(0,0,W,H);ctx.globalAlpha=1}
+ if(focusL>.05)focusLines(focusL*(FXF.low?.2:1));
  drawBanners();
- if(flashS>.02){ctx.fillStyle=flashCol;ctx.globalAlpha=Math.min(1,flashS)*(fxLow?.15:1);
- if(bright>.03&&!fxLow){ctx.globalCompositeOperation='lighter';ctx.globalAlpha=bright*.18;ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);ctx.globalCompositeOperation='source-over'}ctx.globalAlpha=Math.min(.32,flashS*.45)*(fxLow?.15:1);ctx.fillRect(0,0,W,H);ctx.globalAlpha=1}
+ if(flashS>.02){ctx.fillStyle=flashCol;ctx.globalAlpha=Math.min(1,flashS)*(FXF.low?.15:1);
+ if(bright>.03&&!FXF.low){ctx.globalCompositeOperation='lighter';ctx.globalAlpha=bright*.18;ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);ctx.globalCompositeOperation='source-over'}ctx.globalAlpha=Math.min(.32,flashS*.45)*(FXF.low?.15:1);ctx.fillRect(0,0,W,H);ctx.globalAlpha=1}
  {const sv=ctx; // les post-effets restent sur le décor
- if(zblur>.03&&!fxLow&&!perfLow){ctx.globalAlpha=.4;ctx.drawImage(cv,-W*zblur/2,-H*zblur/2,W*(1+zblur),H*(1+zblur));ctx.globalAlpha=1} // flou de zoom
- if(chroma>8&&!fxLow&&!perfLow){ctx.globalCompositeOperation='screen';ctx.globalAlpha=.4;ctx.drawImage(cv,chroma*kV(),chroma*.2*kV());ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1} // dédoublement d'impact
+ if(zblur>.03&&!FXF.low&&!perfLow){ctx.globalAlpha=.4;ctx.drawImage(cv,-W*zblur/2,-H*zblur/2,W*(1+zblur),H*(1+zblur));ctx.globalAlpha=1} // flou de zoom
+ if(chroma>8&&!FXF.low&&!perfLow){ctx.globalCompositeOperation='screen';ctx.globalAlpha=.4;ctx.drawImage(cv,chroma*kV(),chroma*.2*kV());ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1} // dédoublement d'impact
  }
  for(const q of P)if(q.state==='spell')drawSpellUI(q);
 }
@@ -83,4 +84,4 @@ export function drawScreenTop(){
  ctx.textAlign='center';ctx.font='13px monospace';ctx.fillStyle='#f8f';
  if(!TEST&&!(TUT&&!TUT.cards))ctx.fillText((item?ITEMS.find(i=>i.k===item.type).name.toUpperCase()+(item.on?' — grab it!':'…'):'Card in '+Math.ceil((IE()-T.ITEM_WARN-itemT)/60)+'s')+(WARP>0?'  ·  WARP '+Math.ceil(WARP/60)+'s':'')+(FAIRIES.length?'  ·  fairies '+FAIRIES.length:''),W/2,18);
 }
-export function screenFilterOf(){const bf=slow>0&&!fxLow&&!perfLow?'saturate(2.2) contrast(1.3)':'';return TSTOP>0&&!fxOff?((bf?bf+' ':'')+'invert(1)'):bf}
+export function screenFilterOf(){const bf=slow>0&&!FXF.low&&!perfLow?'saturate(2.2) contrast(1.3)':'';return TSTOP>0&&!FXF.off?((bf?bf+' ':'')+'invert(1)'):bf}
