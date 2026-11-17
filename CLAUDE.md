@@ -12,6 +12,18 @@ The original game's code (frozen copy: `legacy/shmup-fighter.html`), copied verb
 - Validate what matters, not more: `node tools/regress.cjs` for gameplay, `node tools/smoke.cjs` when UI/loading changed. No pixel hunts.
 - Log every task in `docs/velocity.md` (one line: what, time spent, result) so speed is measured.
 
+## Decision principle (owner's permanent rule)
+Proto4 exists so Claude develops the GAME as efficiently as possible, now and for years. Tools, architecture, tests and docs are never goals.
+Before any tool/abstraction/doc system answer: which concrete problem, how often, what it costs today, how much it saves, its build + maintenance cost, is there something much simpler? Hypothetical or unmeasurable benefit → don't build it. Never spend more time on tooling around a feature than on the feature. Never claim a speed-up without evidence (velocity.md). Content must become addable by dropping a folder (bosses, story mode, mini-games): that is the engine goal.
+
+## Reflexes learned from Proto3 ("proto3guide": what made it cost a week of credits for 2 %)
+- Never translate working code into another data model. Reuse the code as it is.
+- Before editing a function, `node tools/map.cjs <name>`: the wrapper chain is where behaviour hides (most Proto3 rework came from missed wrappers).
+- Legacy lines are huge: never cat a whole file; grep + `cut -c` / map. Read only what the task needs.
+- Gameplay identity is checked by `npm test`; no pixel/sound exactness hunts.
+- Validate once per batch of changes, not after every edit. A task unexpectedly past ~1 h: stop, write down why, reassess.
+- Context gets summarised: write durable findings at once (one line in the right doc), so they are not re-discovered.
+
 ## How the code runs (read once)
 - `index.html` loads `src/**/*.js` as plain scripts, in its listed order (the order = the original file's order). All files share one global scope.
 - In the original single script every function existed from the start. Split files load one after another, so load-time statements are queued with `DEFER(()=>{...})` and run in the original order by `src/core/boot.js` after every file is loaded. New load-time code: wrap it in `DEFER` too (functions and plain-literal constants don't need it).
