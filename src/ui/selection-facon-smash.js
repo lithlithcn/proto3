@@ -14,7 +14,7 @@ function cssTick(){const S=CS2.sl;for(const d of devList()){const I=cssIn(d),p=C
   else{if(e('p')){s.pg=true;sfx('joined',.8)}else if(e('b')){s.rd=false;sfx('cancel00')}else if(e('s')||e('a')&&d==='k0'&&kd('Enter')){const J=S.filter(s=>s.dev);if(J.every(s=>s.rd)){cssGo();return}}}}
  // playground : la composition change -> on relance la petite partie derrière
  const G=S.map((s,i)=>s.dev&&s.pg?i:-1).filter(i=>i>=0),key=G.map(i=>i+':'+S[i].ty).join(',');
- if(key!==CS2.key){CS2.key=key;if(G.length){nP=G.length;nH=G.length;DEVMAP=G.map(i=>S[i].dev);SELTY=G.map(i=>S[i].ty);mapI=0;const it=itemsOn;start('game');PGM=1;for(const q of P)q.stocks=99;mode='css';CS2.on=true;CS2.acc=0}else CS2.on=false}}
+ if(key!==CS2.key){CS2.key=key;if(G.length){nP=G.length;nH=G.length;DEVMAP=G.map(i=>S[i].dev);SELTY=G.map(i=>S[i].ty);mapI=CS2.pgMap??0;const it=itemsOn;start('game');PGM=1;for(const q of P)q.stocks=99;mode='css';CS2.on=true;CS2.acc=0}else CS2.on=false}}
 function cssGo(){const S=CS2.sl,J=S.filter(s=>s.dev);PGM=0;TEAMS=!!CS2.tb;if(TEAMS){const O=[...J,...S.filter(s=>!s.dev)];O.forEach((s,k)=>{TEAMA[k]=s.tm|0});if(new Set(O.slice(0,Math.max(CS2.nP0,J.length)).map(s=>s.tm|0)).size<2)TEAMS=false}CS2.on=false;nH=J.length;nP=Math.max(CS2.nP0,nH);mapI=CS2.map0;DEVMAP=J.map(s=>s.dev);SELTY=[...J.map(s=>s.ty),...S.filter(s=>!s.dev).map(()=>null)];saveOpts();sfx('title',1);start('game')}
 let PGM=0;
 DEFER(()=>{{const S1=step;step=()=>{S1();if(PGM&&mode==='game'){winner=-1;for(const q of P){if(q.stocks<50)q.stocks=99}}}}});

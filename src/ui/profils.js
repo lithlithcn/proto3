@@ -8,12 +8,12 @@ let DEFB;DEFER(()=>{{const cp=o=>JSON.parse(JSON.stringify(o));DEFB={KB:cp(KB),P
 function applyBinds(){const cp=o=>JSON.parse(JSON.stringify(o));KB=cp(DEFB.KB);PAD=cp(DEFB.PAD);for(let i=0;i<4;i++){const f=profOf(i);if(!f)continue;if(f.kb&&KB[i])Object.assign(KB[i],f.kb);if(f.pad&&PAD[i])Object.assign(PAD[i],f.pad)}}
 DEFER(()=>{saveBinds=()=>{const cp=o=>JSON.parse(JSON.stringify(o));for(let i=0;i<4;i++){const f=profOf(i);if(f){if(KB[i])f.kb=cp(KB[i]);f.pad=cp(PAD[i])}else{if(KB[i])DEFB.KB[i]=cp(KB[i]);DEFB.PAD[i]=cp(PAD[i])}}try{localStorage.setItem('sf_binds3',JSON.stringify(DEFB))}catch(e){}saveProf()};});
 DEFER(()=>{applyBinds();});
-const askName=d=>{const n=((typeof prompt==='function'?prompt('Name (12 characters max)',d):d)||'').trim().slice(0,12);return n||null};
+const askName=d=>{const n=((typeof prompt==='function'?prompt('Name (24 characters max)',d):d)||'').trim().slice(0,24);return n||null};
 const SOUNDM=()=>[['Master volume','master'],['Sound effects','sfx'],['Music','music']].map(([n,k])=>({t:()=>n+': '+Math.round(VOLS[k]*100)+'%  ◀ ▶',lr:d=>{VOLS[k]=clamp(Math.round(VOLS[k]*10+d)/10,0,1);saveVol()}})).concat(MSCRS.map(([k,n])=>({t:()=>'Music · '+n+': '+MUS.filter(t=>t.scr===k).length+' track(s)…',f:()=>openSub('MUSIC · '+n.toUpperCase(),()=>musRows(k))})));
 const PROFM=()=>{const r=[];for(let i=0;i<4;i++)r.push({t:()=>'P'+(i+1)+': '+(profOf(i)?profOf(i).n:'(no profile)')+'  ◀ ▶',lr:d=>{let v=SLOTP[i]+d;if(v<-1)v=PROF.length-1;if(v>=PROF.length)v=-1;SLOTP[i]=v;saveProf();applyBinds()}});
- r.push({t:()=>'+ New profile',f:()=>txtInput('NEW PROFILE NAME','P'+(PROF.length+1),12,n=>{if(n){PROF.push({n,c:0,a:1});profE=PROF.length-1;saveProf()}})});
+ r.push({t:()=>'+ New profile',f:()=>txtInput('NEW PROFILE NAME','P'+(PROF.length+1),24,n=>{if(n){PROF.push({n,c:0,a:1});profE=PROF.length-1;saveProf()}})});
  if(PROF.length){const g=()=>PROF[profE=clamp(profE,0,PROF.length-1)];
-  r.push({t:()=>'Edit: '+g().n+'  ◀ ▶',lr:d=>{profE=(profE+d+PROF.length)%PROF.length},prev:1},{t:()=>'   Rename…',f:()=>{const q=g();txtInput('RENAME PROFILE',q.n,12,n=>{if(n){q.n=n;saveProf()}})},prev:1},
+  r.push({t:()=>'Edit: '+g().n+'  ◀ ▶',lr:d=>{profE=(profE+d+PROF.length)%PROF.length},prev:1},{t:()=>'   Rename…',f:()=>{const q=g();txtInput('RENAME PROFILE',q.n,24,n=>{if(n){q.n=n;saveProf()}})},prev:1},
    {t:()=>'   Name color: '+NCN[g().c]+'  ◀ ▶',lr:d=>{g().c=(g().c+d+NCOL.length)%NCOL.length;saveProf()},prev:1},{t:()=>'   Animation: '+NANIM[g().a]+'  ◀ ▶',lr:d=>{g().a=(g().a+d+NANIM.length)%NANIM.length;saveProf()},prev:1},
    {t:()=>'   Controls (saved in the profile of P1/P2…)',f:()=>{mode='binds';bind.wait=false}},{t:()=>'   Delete this profile',f:()=>{PROF.splice(profE,1);SLOTP=SLOTP.map(v=>v===profE?-1:v>profE?v-1:v);profE=0;saveProf();applyBinds()}})}
  return r};

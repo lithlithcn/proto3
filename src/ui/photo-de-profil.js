@@ -5,7 +5,7 @@ function picImg(p){if(!p||p.cpu)return null;const v=NET?PICS[p.id]:(p.id===0?MYP
 function picPick(){const f=document.createElement('input');f.type='file';f.accept='image/*';f.onchange=()=>{const F=f.files&&f.files[0];if(!F)return;if(F.size>1048576){big('PICTURE TOO BIG (1 MB MAX)','#ff6060',30);return}
  const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=c.height=96;const g=c.getContext('2d'),s=Math.min(im.width,im.height);g.drawImage(im,(im.width-s)/2,(im.height-s)/2,s,s,0,0,96,96);
   MYPIC=c.toDataURL('image/jpeg',.75);try{localStorage.setItem('sf_pic',MYPIC)}catch(e){}if(ONL&&ONL.conn&&ONL.conn.open)try{ONL.conn.send({t:'pic',v:MYPIC})}catch(e){}if(NET&&ONL)PICS[NET.L]=MYPIC;sfx('ok00')};im.src=r.result};r.readAsDataURL(F)};f.click()}
-function nickEdit(){txtInput('YOUR NAME (seen by everyone)',nickOf(),12,v=>{if(v){NICK=v;try{localStorage.setItem('sf_nick',v)}catch(e){}if(ONL&&ONL.conn&&ONL.conn.open)try{ONL.conn.send({t:'nick',n:v})}catch(e){}if(NET&&NETNAMES){NETNAMES[NET.L]=v}}})}
+function nickEdit(){txtInput('YOUR NAME (seen by everyone)',nickOf(),24,v=>{if(v){NICK=v;try{localStorage.setItem('sf_nick',v)}catch(e){}if(ONL&&ONL.conn&&ONL.conn.open)try{ONL.conn.send({t:'nick',n:v})}catch(e){}if(NET&&NETNAMES){NETNAMES[NET.L]=v}}})}
 DEFER(()=>{{const R0=render;render=(...a)=>{if(BRET&&mode!=='binds'&&mode!=='sub'){if(NET)mode='game';BRET=0}return R0(...a)}}});
 DEFER(()=>{setInterval(()=>{if(!NET||!ONL||mode==='game')return;try{if(ONL.id===0)onlBcast({t:'hb'});else if(ONL.conn&&ONL.conn.open)ONL.conn.send({t:'hb'})}catch(e){}},1000);}); // signe de vie hors partie (menus) : personne n'est retiré
 

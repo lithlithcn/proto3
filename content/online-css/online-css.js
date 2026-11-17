@@ -48,5 +48,20 @@ function ocsHostList() { OCS.lastB = performance.now(); const my = CS2.onl && CS
 { const I0 = onlItems; onlItems = () => { const L = I0(), s = ONL && ONL.st; if (s !== 'lobby' && s !== 'lobbyc') return L;
   return L.map(it => it.f === onlStart ? { t: it.t.replace('START THE MATCH', 'CHOOSE FIGHTERS'), f: () => { if (!ONL.cl.some(k => k.ok)) return; onlBcast({ t: 'gocss' }); cssOnline(); } }
     : /^YOUR FIGHTER/.test(it.t) ? { t: 'CHOOSE YOUR FIGHTER: ' + CHR[myCh() - CH0].name, f: cssOnline } : it); }; }
-// results: the FIGHTER entry opens the same character select (with the playground)
-{ const R0 = onlResItems; onlResItems = () => R0().map(it => /^FIGHTER/.test(it.t) ? { t: 'CHOOSE YOUR FIGHTER', f: cssOnline } : it); }
+// results: the FIGHTER entry shows the character grid OVER the results (owner: no other screen), playtest behind it;
+// players who stay on the results keep their fighter and count as ready with REMATCH; everyone ready -> the real match, the playtest stops.
+{ const R0 = onlResItems; onlResItems = () => R0().map(it => /^FIGHTER/.test(it.t) ? { t: 'CHOOSE YOUR FIGHTER', f: ocsFromRes } : it); }
+function ocsFromRes() { let snap = null;
+  try { const cv = ctx.canvas; snap = document.createElement('canvas'); snap.width = cv.width; snap.height = cv.height; snap.getContext('2d').drawImage(cv, 0, 0); } catch (e) { snap = null; }
+  OCS.res = { mode, winner, NET, st: ONL.st, rdy: !!(ONL.rdy && ONL.rdy.has(ONL.id)), snap, pg: false }; OCS.map0 = mapI; cssOnline(); }
+/** Playtest map: Screen (fixed camera), Large above 8 players; the room's map setting is put back right after. */
+{ const T0 = cssTick; cssTick = () => { if (!CS2.onl) return T0(); CS2.pgMap = ocsPlayers().length > 8 ? 0 : 1; const m = mapI; if (OCS.map0 == null) OCS.map0 = m;
+    try { T0(); } finally { if (PGM) mapI = OCS.map0; CS2.pgMap = undefined; } if (CS2.on && OCS.res) OCS.res.pg = true; }; }
+// grid over the results: the results picture replaces the animated background (only while no playtest runs)
+{ const B0 = uiBG; uiBG = (...a) => { const R = mode === 'css' && CS2.onl && !CS2.on && OCS.res && OCS.res.snap; if (!R) return B0(...a);
+    const c = ctx; c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.drawImage(R, 0, 0); c.fillStyle = 'rgba(5,6,12,.55)'; c.fillRect(0, 0, c.canvas.width, c.canvas.height); c.restore(); }; }
+// BACK from the grid: back to the results if no playtest replaced the match state, else to the lobby (as before)
+{ const E0 = ocsExit; ocsExit = () => { const R = OCS.res; OCS.res = null; if (OCS.map0 != null) { mapI = OCS.map0; OCS.map0 = null; }
+    if (!R || R.pg || !ONL) return E0(); for (const s of CS2.sl) s.pg = false; CS2.on = false; CS2.onl = false; PGM = 0;
+    mode = R.mode; winner = R.winner; NET = R.NET; if (NET) NET.ended = false; ONL.st = R.st; sfx('cancel00'); }; }
+{ const G2 = onlGo; onlGo = m => { OCS.res = null; if (OCS.map0 != null) { mapI = OCS.map0; OCS.map0 = null; } return G2(m); }; }
