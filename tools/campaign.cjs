@@ -20,12 +20,13 @@ function runJob(job) {
   const o = host.eval('labNetOpts(__c)'), peers = [host, ...Array.from({ length: n - 1 }, (_, i) => createSandbox([DRV], job.seed + i + 1))], Q = [], lat = job.latT || 4;
   let tick = 0; const issues = [];
   peers.forEach((p, i) => { if (job.inject) p.eval(INJECT[job.inject]); p.g.__o = o; p.g.__send = m => { for (let j = 0; j < n; j++) if (j !== i) Q.push({ at: tick + lat + (tick * 7 + i * 3 + j) % 3, to: j, m: JSON.parse(JSON.stringify(m)) }); }; p.eval(`labNetBoot(__o,${i},m=>__send(m),${job.seed + i * 7919})`); });
-  let st = [], still = 0, last = -1;
+  let st = [], still = 0, last = -1, endT = 0;
   for (; tick < (job.frames || 3600) * 2; tick++) {
     for (let k = Q.length - 1; k >= 0; k--) if (Q[k].at <= tick) { const q = Q.splice(k, 1)[0]; peers[q.to].g.__m = q.m; try { peers[q.to].eval('netRecv(__m)'); } catch (e) { issues.push({ type: 'crash', msg: String(e.message), at: 'netRecv' }); } }
     st = peers.map(p => p.eval('labNetTick()')); for (const s of st) issues.push(...s.issues);
     const f = Math.min(...st.map(s => s.f)); if (f === last) still++; else { still = 0; last = f; }
-    if (st.some(s => s.winner >= 0) || f >= (job.frames || 3600)) break;
+    if (st.every(s => s.winner >= 0) || f >= (job.frames || 3600)) break;
+    if (st.some(s => s.winner >= 0)) { if (++endT > 900) { issues.push({ type: 'desync', msg: 'match over for some peers only (winner differs: ' + st.map(s => s.winner).join('/') + ')', at: '' }); break; } } // the real game keeps sending after the end: the others must reach the same end
     if (still > 1500) { issues.push({ type: 'stall', msg: 'online match stuck (no frame progress for 1500 ticks)', at: '' }); break; }
   }
   return { frames: Math.min(...st.map(s => s.f)), rules: o.rules, issues };
