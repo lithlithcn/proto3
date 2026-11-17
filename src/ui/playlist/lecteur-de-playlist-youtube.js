@@ -293,7 +293,7 @@ let lw=0;const loop=()=>{requestAnimationFrame(loop);const m=mode,hub=m==='menu'
  const show=!Y.gone&&Y.on&&Y.v.length&&m!=='maker'&&(Y.st===1||Y.st===3||Y.st===2),ing=m==='game';N.classList.toggle('off',!show);N.classList.toggle('dim',ing&&now-(Y.nowT||0)>6000);
  const top=!hub&&!ing&&m!=='title',pos=top?'auto|14px|8px|auto':(hub&&!cls?sbw+16:14)+'px|auto|auto|'+(hub?Math.round(innerHeight*.07)+8:10)+'px';if(N._p!==pos){const q=pos.split('|');N._p=pos;N.style.left=q[0];N.style.right=q[1];N.style.top=q[2];N.style.bottom=q[3]}
  const hostN=typeof ONL!=='undefined'&&ONL&&ONL.id===0;R.classList.toggle('host',!!hostN);
- const mv=m==='title'||m==='maker'||!Y.on||Y.gone?'off':Y.bgv?'bg':!cls&&hub&&Y.curN?'card':'off';if(mv!==Y.vmo){if(Y.vmo&&mv!=='off'&&Y.vmo!=='off'){VW.classList.add('mv');clearTimeout(Y.mvt);Y.mvt=setTimeout(()=>VW.classList.remove('mv'),900)}Y.vmo=mv;VW.classList.toggle('bg',mv==='bg');VW.classList.toggle('off',mv==='off')}
+ const mv=m==='maker'||!Y.on||Y.gone?'off':Y.bgv?'bg':!cls&&hub&&Y.curN?'card':'off';if(mv!==Y.vmo){if(Y.vmo&&mv!=='off'&&Y.vmo!=='off'){VW.classList.add('mv');clearTimeout(Y.mvt);Y.mvt=setTimeout(()=>VW.classList.remove('mv'),900)}Y.vmo=mv;VW.classList.toggle('bg',mv==='bg');VW.classList.toggle('off',mv==='off')}
  const LO=lockd()&&Y.hop!=null,eop=LO?Y.hop:Y.op,ebl=LO?Y.hbl:Y.bl;if((m!=='game'||winner>=0)&&m!=='css'&&typeof pads==='function'&&Y.ready&&Y.on){const g=pads()[0],ax=g?g.axes[2]||0:0,d=ax>.5?1:ax<-.5?-1:0;
   // second stick = flèches de YouTube : 5 s par appui ; maintenu 1 s -> répète toutes les 100 ms
   if(d!==Y.skd){Y.skd=d;if(d){Y.skT=now+1000;ySeek(d)}}else if(d&&now>=Y.skT){Y.skT=now+100;ySeek(d)}}

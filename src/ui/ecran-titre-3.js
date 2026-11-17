@@ -2,7 +2,7 @@
 // ---- écran titre : espace en particules (Tetris Effect) + horizon lumineux et braises (FFXVI)
 let TSTAR,TGAL,TEMB;DEFER(()=>{TSTAR=[...Array(700)].map(()=>({x:Math.random()*2-1,y:Math.random()*2-1,z:Math.random()}));TGAL=[...Array(1500)].map((_,i)=>{const arm=i%3,r=Math.pow(Math.random(),.65);return{arm,r,a:arm*TAU/3+Math.log(.06+r)*2.4+(Math.random()-.5)*(.25+.5*(1-r)),o:(Math.random()-.5)*.08,s:1+Math.random()*2.2,ph:Math.random()*TAU}});TEMB=[...Array(90)].map(()=>({x:Math.random(),y:Math.random(),s:.015+Math.random()*.04,w:Math.random()*TAU,r:.8+Math.random()*2.2}))});
 function titleBG(t){const c=ctx,lo=fxLow,mx=((MOUSE.x||W/2)/W-.5),my=((MOUSE.y||H/2)/H-.5),dt=Math.min(.05,t-(titleBG.lt||t));titleBG.lt=t;
- c.save();c.setTransform(1,0,0,1,0,0);let g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,'#02030a');g.addColorStop(.55,'#070a22');g.addColorStop(1,'#1a0c34');c.fillStyle=g;c.fillRect(0,0,W,H);
+ c.save();c.setTransform(1,0,0,1,0,0);let g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,'#02030a');g.addColorStop(.55,'#070a22');g.addColorStop(1,'#1a0c34');c.fillStyle=g;if(YTBG>0){c.clearRect(0,0,W,H);c.globalAlpha=1-YTBG*.8}c.fillRect(0,0,W,H);c.globalAlpha=1;
  c.globalCompositeOperation='lighter';
  // étoiles en 3D, avec un départ en vitesse lumière
  const warp=Math.max(0,1-t/1.4),sp=.025+warp*2.2,f=H*.9,cx=W/2-mx*40,cy=H*.42-my*30;
