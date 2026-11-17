@@ -34,10 +34,10 @@ function tJoy(t){const j=TCH.joy,R=tU()*1.1;let dx=t.clientX-j.x0,dy=t.clientY-j
 function fsTry(){try{const d=document.documentElement;if(!document.fullscreenElement&&d.requestFullscreen)d.requestFullscreen().then(()=>{try{screen.orientation.lock('landscape').catch(()=>{})}catch(e){}}).catch(()=>{})}catch(e){}}
 DEFER(()=>{addEventListener('touchstart',e=>{TCH.on=true;unlock();e.preventDefault();
  for(const t of e.changedTouches){const x=t.clientX,y=t.clientY;if(TCH.joy&&t.identifier===TCH.joy.id||TCH.ids.has(t.identifier))continue;
-  if(mode!=='game'){if(mode==='binds'&&bind.wait)continue;TCH.sy=y;if(mode!=='info'&&uiTS(t))continue;const h=hotAt(x,y);if(h){h.hover();h.click(x,y);fsTry()}continue}
+  if(mode!=='game'&&!(MODEX[mode]&&MODEX[mode].touch)){if(mode==='binds'&&bind.wait)continue;TCH.sy=y;if(mode!=='info'&&uiTS(t))continue;const h=hotAt(x,y);if(h){h.hover();h.click(x,y);fsTry()}continue}
   if(paused&&TEST&&TEST.train){uiTS(t);continue}
   if(mode==='game'&&paused&&typeof hot!=='undefined'&&hot.length){const h=hot.find(r=>x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h);if(h){if(h.hover)h.hover();h.click();continue}}
-  if(tOver()){const o=tOvB().find(r=>x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h);if(o)nav(o.ev);continue}
+  if(mode==='game'&&tOver()){const o=tOvB().find(r=>x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h);if(o)nav(o.ev);continue}
   {const pk=!NET&&PICKR.find(r=>x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h);if(pk){const q=P[pk.p];if(q&&q.pick){if(pk.it){if(pk.it!=='mamizou')q.pick.go=pk.it}else{q.pick.tab=pk.tab;q.pick.i=0}}continue}} // menu de Mamizou au toucher
   const b=tHit(x,y);
   if(b&&b.tog){if(b.k==='shot'){TCH.auto=!TCH.auto;sfx('move',.6)}else padEv('start');continue}
@@ -50,7 +50,7 @@ DEFER(()=>{addEventListener('touchend',tEnd);});DEFER(()=>{addEventListener('whe
 function tDraw(){if(!TCH.on)return;const u=tU(),me=P.find(p=>!p.cpu);ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';
  if(H>W){ctx.fillStyle='rgba(0,0,0,.85)';ctx.fillRect(0,0,W,H);ctx.fillStyle='#fff';ctx.font='bold 22px monospace';ctx.fillText('↻ Turn your phone sideways',W/2,H/2);ctx.restore();return}
  if(mode==='game'&&tOver()){for(const r of tOvB()){ctx.fillStyle='rgba(255,255,255,.15)';ctx.fillRect(r.x,r.y,r.w,r.h);ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.strokeRect(r.x,r.y,r.w,r.h);ctx.fillStyle='#fff';ctx.font='bold '+(u*.38|0)+'px monospace';ctx.fillText(r.l,r.x+r.w/2,r.y+r.h/2)}}
- else if(mode==='game'&&!paused){
+ else if((mode==='game'||MODEX[mode]&&MODEX[mode].touch)&&!paused){
   const j=TCH.joy,bx=j?j.x0:1.8*u,by=j?j.y0:H-1.9*u,R=u*1.1;ctx.globalAlpha=j?.4:.13;ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(bx,by,R,0,TAU);ctx.stroke(); // joystick
   ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(bx+TCH.jx*R,by+TCH.jy*R,R*.45,0,TAU);ctx.fill();
   for(const b of tBtns()){const on=b.tog?b.k==='shot'&&TCH.auto:TCH.b[b.k];ctx.globalAlpha=on?.45:.13;ctx.fillStyle=b.c;ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,TAU);ctx.fill();

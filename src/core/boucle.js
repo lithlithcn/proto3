@@ -23,7 +23,7 @@ function loop(now){
     if(cb&&!bind.combo.includes(n))bind.combo.push(n);
     if(!cb||bind.combo.length===2){PAD[bind.col-2][a]=cb?bind.combo.slice():n;bind.wait=false;saveBinds();sfx('ok00')}}
    bind.pv=now}}
- let n=0;while(acc>=STEP&&n<5){try{if(mode==='game'&&(!paused||NET)){if(winner<0){if(NET)netTick();else{step();if(CX.mer&&winner<0)step()}}else{if(NET)netTick();stepFx();winT++}}}catch(e){errRep('step',e)}acc-=STEP;n++;tapQ.clear()}
+ let n=0;while(acc>=STEP&&n<5){try{if(MODEX[mode]){if(!paused&&MODEX[mode].step)MODEX[mode].step()}else if(mode==='game'&&(!paused||NET)){if(winner<0){if(NET)netTick();else{step();if(CX.mer&&winner<0)step()}}else{if(NET)netTick();stepFx();winT++}}}catch(e){errRep('step',e)}acc-=STEP;n++;tapQ.clear()}
  if(acc>STEP)acc=STEP;
  try{render()}catch(e){errRep('render',e);try{ctx=CTX0;ctx.restore();ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over'}catch(x){}}errDraw();requestAnimationFrame(loop)}
 const ERRS=[];let errV=0;function errRep(w,e){const st=((e&&e.stack)||'').split('\n').slice(1,5).map(l=>l.trim().replace(/^at /,'').replace(/\(?(file|https?):[^)]*\/([^/:]+):(\d+):(\d+)\)?/,'@$3:$4')).join(' < '),m=w+' · '+((e&&e.message)||e)+' · '+st;const o=ERRS.find(x=>x.m===m);if(o){o.n++;return}

@@ -65,6 +65,7 @@ function pollNav(){const g=pads()[0];if(!g)return;const now=performance.now(),bt
   if(s[k]&&!padNav.prev[k]){if(dir)padNav.next=now+380;padEv(k)}else if(s[k]&&dir&&now>=padNav.next){padNav.next=now+140;padEv(k)}}
  padNav.prev=s}
 function padEv(k){
+ if(MODEX[mode]){nav(k);return} // declared modes (engine/modes.js) get every pad/touch event
  if(mode==='binds'&&bind.wait)return;
  if(k==='start'&&mode==='items'){testItem(ITEMS[itemSel].k);return}
  if(k==='start'||k==='sel'){if(mode==='menu'){sfx('ok00');start('game')}else if(mode!=='binds'){if(winner>=0){if(winT>=100)start(mode)}else{paused=!paused;sfx(paused?'cancel00':'ok00')}}return}

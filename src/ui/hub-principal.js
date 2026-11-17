@@ -16,7 +16,7 @@ const RDESC={Mode:'CASUAL = your own rules. COMPETITIVE = 4 lives, 5 minutes, no
 // placement : grande carte à gauche, deux cartes à droite, ruban de petites cartes en bas
 function hubLayout(){const SB=YTSB||0,m=Math.min(W-SB,H*1.9),x0=SB+(W-SB)/2-m*.47,y0=H*.17,ch=H*.5,R=[];
  R.push({i:0,x:x0,y:y0,w:m*.52,h:ch,rot:-.035,big:1});R.push({i:1,x:x0+m*.55,y:y0,w:m*.39,h:ch*.48,rot:.025});R.push({i:2,x:x0+m*.53,y:y0+ch*.53,w:m*.39,h:ch*.47,rot:-.02});
- const n=5,bw=m*.94/n;for(let j=0;j<n;j++)R.push({i:3+j,x:x0+j*bw+(j%2?6:0),y:y0+ch+H*.05+(j%2?H*.018:0),w:bw-14,h:H*.13,rot:(j%2?.03:-.03)});return R}
+ const n=HUB.length-3,bw=m*.94/n;for(let j=0;j<n;j++)R.push({i:3+j,x:x0+j*bw+(j%2?6:0),y:y0+ch+H*.05+(j%2?H*.018:0),w:bw-14,h:H*.13,rot:(j%2?.03:-.03)});return R}
 function hubIcon(k,x,y,s,c){ctx.save();ctx.translate(x,y);ctx.strokeStyle=c;ctx.fillStyle=c;ctx.lineWidth=Math.max(2,s*.09);ctx.lineCap='round';
  if(k==='fight'){for(const sg of[-1,1]){ctx.beginPath();ctx.moveTo(-s*.45*sg,-s*.45);ctx.lineTo(s*.4*sg,s*.4);ctx.stroke();ctx.beginPath();ctx.moveTo(s*.22*sg,s*.42);ctx.lineTo(s*.42*sg,s*.22);ctx.stroke()}}
  else if(k==='online'){ctx.beginPath();ctx.arc(0,0,s*.42,0,TAU);ctx.stroke();ctx.beginPath();ctx.ellipse(0,0,s*.18,s*.42,0,0,TAU);ctx.stroke();ctx.beginPath();ctx.moveTo(-s*.42,0);ctx.lineTo(s*.42,0);ctx.stroke()}

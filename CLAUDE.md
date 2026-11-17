@@ -29,6 +29,7 @@ Before any tool/abstraction/doc system answer: which concrete problem, how often
 - In the original single script every function existed from the start. Split files load one after another, so load-time statements are queued with `DEFER(()=>{...})` and run in the original order by `src/core/boot.js` after every file is loaded. New load-time code: wrap it in `DEFER` too (functions and plain-literal constants don't need it).
 - Many functions are REPLACED by later files: `{const S0=step;step=()=>{...;S0()}}` (step 31×, render 19×, ...). Before changing a function run `node tools/map.cjs <name>`: it lists the base definition and every wrapper in order (the last one runs first).
 - Characters: `src/characters/<name>.js` (one kit each, pushed into `CHR7`; Reimu = base kit in combat/joueurs + characters/reimu-yinyang). Items: by legacy batch in `src/items/`. Find any word: `node tools/map.cjs <word>` / grep.
+- New content = a folder `content/<name>/*.js` + `node tools/content.cjs` (adds its scripts to index.html, after the game and `src/engine/`). A mini-game / boss fight / story chapter: `defMode({...})` (contract at the top of `src/engine/modes.js`: 60 Hz step, render, nav events, `modeInput(slot)` for keyboard/pad/phone, hub tile EXTRAS). Content runs after boot: no DEFER needed. `npm run smoke` opens every declared mode automatically.
 - Where is what: `PROJECT_MAP.md` (regenerate with `node tools/map.cjs` after adding/renaming files).
 
 ## Commands
