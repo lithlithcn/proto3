@@ -48,9 +48,9 @@ const items: SystemDef = { id: 'items', phase: 'sim', after: ['bullets'], run(w)
 const itemWorld: SystemDef = { id: 'item-world', phase: 'sim', after: ['ko-beam'], run(w) { const s = combatOf(w); if (!s.skip) updateItemWorld(w, s); } };
 const status: SystemDef = { id: 'status', phase: 'sim', after: ['item-world'], run(w) { const s = combatOf(w); if (s.skip) return; if (rulesOwnPre(w)) { for (const r of rulesOf(w)) r.pre?.(w, s); } else tickFx(w, s); } }; // legacy chPre..chPre5 (themed rules) or the bare status countdown
 /** Legacy end of the base `step` (where `stepFx` runs, also on hit-stop frames): presentation listeners tick their effects here; every later wrapper and `chStep` happen after it. */
-const baseEnd: SystemDef = { id: 'base-end', phase: 'sim', after: ['bullet-motion', 'item-world', 'status'], run(w) { const s = combatOf(w); w.emit('combat:fx-tick', { gf: s.gf, wt: s.winner >= 0 ? s.winT : 0 }); } };
-const itemLate: SystemDef = { id: 'item-late', phase: 'sim', after: ['base-end'], run(w) { const s = combatOf(w); if (!s.skip) { for (let p = 0; p < s.n; p++) if (s.state[p] !== PS.dead) updateClone(s, p); driftBumpers(s); updateFreezeQueue(s); updateTimeStop(w, s); } } };
-/** Every legacy `step` wrapper (clone soak, bumpers, freeze queue, The World knives) runs AFTER the base step, bullet motion included -> item-late follows bullet-motion (this fixes the shared-rng draw order vs fn() callbacks). */
+const baseEnd: SystemDef = { id: 'base-end', phase: 'sim', after: ['input-buffer', 'item-world', 'status'], run(w) { const s = combatOf(w); w.emit('combat:fx-tick', { gf: s.gf, wt: s.winner >= 0 ? s.winT : 0, sk: s.skip }); } };
+const itemLate: SystemDef = { id: 'item-late', phase: 'sim', after: ['bullet-motion'], run(w) { const s = combatOf(w); if (!s.skip) { for (let p = 0; p < s.n; p++) if (s.state[p] !== PS.dead) updateClone(s, p); driftBumpers(s); updateFreezeQueue(s); updateTimeStop(w, s); } } };
+/** Every legacy `step` wrapper runs AFTER the base step (which ends with stepFx = base-end): bullet motion first (wrapper line 2119, so its juice lands after the effects tick), then clone soak, bumpers, freeze queue, The World knives (item-late; this fixes the shared-rng draw order vs fn() callbacks). */
 /** Legacy chStep: rays, per-bullet modifiers and entity handlers of characters, after every character hook. */
 /** Legacy chStep entity loop: every entity (rays and character kinds alike) runs in creation order; entities spawned meanwhile run this same frame. */
 const chars = (w: World): CharacterDef[] => characters(w).map(c => c[1]);
@@ -64,7 +64,7 @@ function entityPass(w: World, s: CombatState, post = false): void {
 }
 const rayStep: SystemDef = { id: 'ray-step', phase: 'sim', after: ['char-tick'], run(w) { const s = combatOf(w); if (s.skip) return; entityPass(w, s); bulletMods(s); entityPass(w, s, true); for (let p = 0; p < s.n; p++) if (s.state[p] !== PS.dead) charOf(w, s, p).post?.(w, s, p); waveBullets(s); for (let p = 0; p < s.n; p++) s.spP[p] = s.spirit[p]!; } };
 const beams: SystemDef = { id: 'ko-beam', phase: 'sim', after: ['items'], run(w) { const s = combatOf(w); if (!s.skip) updateBeams(w, s); } };
-const ents: SystemDef = { id: 'entities', phase: 'sim', after: ['status'], run(w) { const s = combatOf(w); if (!s.skip) updateEnts(s); } };
+const ents: SystemDef = { id: 'entities', phase: 'sim', after: ['status'], run(w) { const s = combatOf(w); if (!s.skip) updateEnts(w, s); } };
 const buffer: SystemDef = { id: 'input-buffer', phase: 'sim', after: ['entities'], run(w) { const s = combatOf(w); if (!s.skip) bufferInputs(w, s); } };
-const motionStep: SystemDef = { id: 'bullet-motion', phase: 'sim', after: ['input-buffer'], run(w) { const s = combatOf(w); if (!s.skip) motion(s, w); } };
+const motionStep: SystemDef = { id: 'bullet-motion', phase: 'sim', after: ['base-end'], /* legacy step wrapper line 2119: after the base step's stepFx */ run(w) { const s = combatOf(w); if (!s.skip) motion(s, w); } };
 export const systems: SystemDef[] = [spiritBegin, gate, players, phys, bullets, items, beams, itemWorld, status, ents, buffer, baseEnd, itemLate, motionStep, charTick, rayStep, spiritEnd];

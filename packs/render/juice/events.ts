@@ -1,5 +1,5 @@
 import type { HookDef } from '@kernel';
-import { PS, T, charOf, combatOf } from '@pack/combat/api';
+import { CARD_ULT, PS, T, charOf, combatOf, itemActive, itemPool } from '@pack/combat/api';
 import { COLS, LCOLS } from '../colors';
 import { big, burst, crack, flash, juiceOf, tickJuice, txt, type Juice } from './state';
 
@@ -36,18 +36,21 @@ function endK(j: Juice, e: { pw: number[]; hp: number[]; tm: number }): void {
   let n = 0, last = true, mh: number = T.HP; for (let p = 0; p * 2 < e.pw.length; p++) { const st = e.pw[p * 2 + 1]!; if (st <= 0) continue; n++; if (st !== 1) last = false; mh = Math.min(mh, e.hp[p]!); }
   const tg = !e.tm && n === 2 && last ? 1 + 0.05 * Math.min(1, Math.max(0, (40 - mh) / 40)) : 1; j.endk += (tg - j.endk) * 0.02;
 }
-H['combat:fx-tick'] = ((j: Juice, e: { gf: number; wt: number; tr: number[]; pos: number[]; cn: string[]; pw: number[]; hp: number[]; tm: number }) => {
+H['combat:fx-tick'] = ((j: Juice, e: { gf: number; wt: number; sk: number; ia: number[]; tr: number[]; pos: number[]; cn: string[]; pw: number[]; hp: number[]; tm: number }) => {
   for (let p = 0; p * 2 < e.pw.length; p++) { const pw = e.pw[p * 2]!, st = e.pw[p * 2 + 1]!, o = j.pw[p]; if (pw >= 0) { if (o && Math.floor(pw + 1e-9) > Math.floor(o[0] + 1e-9)) snd(j, e.gf, 'bonus', 0.7); if (o && st > o[1]) snd(j, e.gf, 'bonus', 0.8); j.pw[p] = [pw, st]; } } // wrapper line 2735
   { const k = e.gf + e.wt * 1e7; if (k === j.lastGf) return; j.lastGf = k; } // after the match ends gf stops but the effects keep ticking (winT counts)
   if (e.gf === 1) snd(j, e.gf, 'ready', 0.9); else if (e.gf === 55) { snd(j, e.gf, 'se_cardget', 0.8); snd(j, e.gf, 'ok00', 0.7); } // match intro (legacy drawIntro, line 3990)
-  tickJuice(j); endK(j, e);
+  tickJuice(j, !e.sk); endK(j, e);
+  if (!e.sk) { j.ia = e.ia; j.SMR = j.SMR.filter(m => --(m['t'] as number) > 0); } // legacy SMR tick (step wrapper, line 2289)
+  if (!e.sk) e.ia.forEach((a, p) => { const l = j.acts[p]; if (l?.length) j.acts[p] = l.filter(x => a >= 0 && e.gf - x.f < x.T + 30 && !(e.gf - x.f > 90 && !a)); }); // legacy actsPrune (step wrapper, line 2828)
   for (let p = 0; p * 2 < e.pos.length; p++) if ((j.nds[p] ?? 0) > e.gf && e.cn[p] === 'Nue' && e.gf % 2 === 0 && j.FX.length < 480) j.FX.push({ x: e.pos[p * 2]!, y: e.pos[p * 2 + 1]!, vx: 0, vy: 0, t: 18, c: '#1a1028' }); // Nue dash shadow (tick, line 4458)
   for (let p = 0; p * 2 < e.pos.length; p++) { const c = j.cc[p] ?? 0; if (c && e.gf - j.ccF[p]! > 18) { if (c >= 5) txt(j, e.pos[p * 2]!, e.pos[p * 2 + 1]! - 52, 'CANCEL x' + c, '#ffd23a', c >= 20 ? 18 : 14); j.cc[p] = 0; } } // step wrapper line 2398, after stepFx
 }) as never;
 const onTick: HookDef<{ gf: number }> = { id: 'juice-tick', event: 'combat:fx-tick', phase: 'after', run(w, ev) {
   const s = combatOf(w), tr: number[] = [];
   const pos: number[] = [], cn: string[] = [], pw: number[] = [], hp: number[] = []; for (let p = 0; p < s.n; p++) { pos.push(s.x[p]!, s.y[p]!); cn.push(charOf(w, s, p).name); pw.push(s.state[p] === PS.dead ? -1 : s.power[p]!, s.stocks[p]!); hp.push(s.state[p] === PS.dead ? T.HP : s.hp[p]!); }
-  jq(w).push({ ev: 'combat:fx-tick', gf: ev.payload.gf, wt: (ev.payload as { wt?: number }).wt ?? 0, tr, pos, cn, pw, hp, tm: s.teams } as never);
+  const sk = (ev.payload as { sk?: number }).sk ?? 0, ia: number[] = []; if (!sk) for (let p = 0; p < s.n; p++) ia.push(s.state[p] === PS.dead ? -1 : itemActive(w, s, p) ? 1 : 0);
+  jq(w).push({ ev: 'combat:fx-tick', gf: ev.payload.gf, wt: (ev.payload as { wt?: number }).wt ?? 0, sk, ia, tr, pos, cn, pw, hp, tm: s.teams } as never);
 } };
 type Pp = { p: number; px: number; py: number; pa: number; pcpu: number };
 const onGraze = on<Pp & { x: number; y: number; k: number; streak: number }>('juice-graze', 'combat:graze', (j, e) => {
@@ -109,6 +112,7 @@ const onFx = on<{ op: string; a: (number | string)[]; gf: number }>('juice-fx', 
     case 'trail': { const k = a[2] as number; j.FX.push(k >= 0 ? { x: a[0] as number, y: a[1] as number, vx: 0, vy: 0, t: 12, c: col(k), r: T.BODY_R } : { x: a[0] as number, y: a[1] as number, vx: 0, vy: 0, t: 18, c: '#999' }); break; }
     case 'camsnap': j.camSnap.push(a[0] as number); break;
     case 'brk': if (e.gf - (j.sl['brk'] ?? -99) > 4) { j.sl['brk'] = e.gf; snd(j, e.gf, 'se_enep00', 0.6); } break; // legacy brk(): big bullet destroyed
+    case 'mir': if (e.gf - (j.sl['mir'] ?? -99) > 3) { j.sl['mir'] = e.gf; snd(j, e.gf, 'tan02', 0.3); } break; // legacy mirrorRef sMir throttle
     case 'kira': if (e.gf - (j.sl['kira'] ?? -99) > 40) { j.sl['kira'] = e.gf; snd(j, e.gf, 'se_kira00', 0.7); } break;
     case 'sfxk': snd(j, e.gf, a[1] as string, a[2] as number, 1, a[0] as string); break; // keyed: a later sfxstop with the same key cuts it
     case 'sfxstop': j.stop.push(a[0] as string); break;
@@ -116,6 +120,7 @@ const onFx = on<{ op: string; a: (number | string)[]; gf: number }>('juice-fx', 
     case 'sfxr': snd(j, e.gf, (a[0] as string) + ((a[3] as number) + (j.rnd() * (a[1] as number) | 0)), a[2] as number); break;
     case 'sfxdmg': { if (e.gf - (j.sl['dmg'] ?? -99) < 3) break; j.sl['dmg'] = e.gf; const f = 1 - Math.min(1, Math.max(0, (a[0] as number) / T.HP)); snd(j, e.gf, 'damage00', 0.3 + (1.3 - 0.3) * f, 1 + 0.1 * f); /* legacy T.SFX_DMG_MIN/MAX */ break; }
     case 'crack': crack(j, a[0] as number, a[1] as number); break;
+    case 'pushc': { const L = (j as unknown as Record<string, unknown[]>)[a[0] as string]!; if (L.length >= (a[1] as number)) break; const o: Record<string, unknown> = {}; for (let i = 2; i + 1 < a.length; i += 2) o[a[i] as string] = a[i + 1]; L.push(o); break; } // push only while the list is shorter than the cap (legacy `if(FX.length<480)FX.push`)
     case 'push': { const o: Record<string, unknown> = {}; for (let i = 1; i + 1 < a.length; i += 2) o[a[i] as string] = a[i + 1]; (j as unknown as Record<string, unknown[]>)[a[0] as string]!.push(o); break; }
   }
 });
@@ -126,7 +131,7 @@ const onClash = on<{ x: number; y: number }>('juice-clash', 'combat:clash', (j, 
   j.shake = Math.min(40, j.shake + 16); j.invF = Math.max(j.invF, 4); txt(j, x, y - 30, 'CLASH!', '#fff', 20);
 });
 const onChip = on<Pp & { dmg: number }>('juice-spell-chip', 'combat:spell-chip', (j, e) => { txt(j, e.px, e.py - 40, '-' + Math.round(e.dmg), '#f8f', 14); snd(j, e.gf, 'hit1', 0.5); });
-const onKo = on<Pp & { why: string; x: number; y: number }>('juice-ko', 'combat:ko', (j, e) => { j.koN++; // legacy ko (lines 709-715)
+const onKo = on<Pp & { why: string; x: number; y: number }>('juice-ko', 'combat:ko', (j, e) => { j.koN++; j.acts[e.p] = []; // legacy ko (lines 705-715): the activation list empties
   const x = e.x, y = e.y, why = e.why || 'K.O.', c = col(e.p);
   snd(j, e.gf, 'charge', 0.8); snd(j, e.gf, 'aimreal', 1.7); snd(j, e.gf, 'se_pldead00');
   big(j, why, '#fff', why.length > 6 ? 72 : 110); if (!e.pcpu) big(j, 'AIM YOUR KO BEAM!', c, 30, 'kb' + e.p);
@@ -148,7 +153,18 @@ const onRefl = on<{ p: number; o: number; dep: number; x: number; y: number; a: 
   j.KOFX.push({ x: e.x, y: e.y, a: e.a, t: 70, c, edge: d0 ? bedge[e.o] ?? null : null, len: e.len }); big(j, d0 ? 'REFLECTED x' + (d0 + 1) + '!' : 'BEAM PARRIED!', '#6ff', 50);
   bcol[e.p] = c; bedge[e.p] = col(e.p);
 });
-const onItem = on<{ p: number; kind: number }>('juice-item', 'combat:item', (j, e) => { j.gives.push({ p: e.p, kind: e.kind }); if (j.gives.length > 64) j.gives.splice(0, 32); });
+/** Legacy give0 (line 838): pickup feedback (sounds, NAME! banner, ring, flash, the item's own sound) before the item's effect. Name / colour / sound are journaled here (the handler has no world). */
+const onItem0 = on<{ p: number; kind: number; nm: string; c: string; sf: string; px: number; py: number; ik: string; iT: number; iht: number }>('juice-item', 'combat:item', (j, e) => {
+  j.gives.push({ p: e.p, kind: e.kind }); if (j.gives.length > 64) j.gives.splice(0, 32);
+  if (e.ik) { const l = (j.acts[e.p] ?? []).filter(a => a.k !== e.ik); l.push({ k: e.ik, f: e.gf, T: e.iT, ht: !!e.iht }); j.acts[e.p] = l; } // legacy give0 wrapper (line 1979): the item activation list
+  const u = e.kind === CARD_ULT, c = u ? '#fff' : e.c;
+  snd(j, e.gf, 'se_cardget'); snd(j, e.gf, 'se_changeitem', 0.7); big(j, e.nm.toUpperCase() + '!', u ? '#ffe83a' : e.c, 52); j.RINGS.push({ x: e.px, y: e.py, r: 0, m: 140, t: 30, c }); flash(j, 0.25, c);
+  if (e.sf) snd(j, e.gf, e.sf, 0.7);
+});
+const onItem: HookDef = { ...onItem0, run(w, ev) {
+  const p = ev.payload as { p: number; kind: number }, d = p.kind === CARD_ULT ? null : itemPool(w)[p.kind], id = d ? w.registry.list<typeof d>('item').find(e => e[1] === d)![0] : 'rainbow', m = /(\d+(?:\.\d+)?) ?s\b/.exec(d ? d.desc ?? '' : 'Every 35 s, takes 3 s to grab. Unlocks your LAST WORD: press Spell.');
+  onItem0.run(w, { ...ev, payload: { ...p, nm: d ? d.name : 'Last Word', c: d ? d.color : '', sf: d?.sfx ?? '', ik: id.split(':').pop()!, iT: m ? Math.round(+m[1]! * 60) : 420, iht: m ? 1 : 0 } as never });
+} };
 export const juiceHooks: HookDef[] = [onItem, onFire, onRefl, onSB, onBeamCancel, onRespawn, onKo, onChip, onCancel, onClash, onReady, onFx, onPivot, onCancelB, onCd, onKick, onGlide, onGrab, onHeavy, onBClash, onLight, onSpell, onCapture, onTick, onHit, onBreak, onPip, onGraze, onPower, onRefused, onParry];
 export { on as juiceHook };
 export function runJuiceEvent(j: Juice, e: { ev: string }): void { (H[e.ev] as ((j: Juice, e: unknown) => void) | undefined)?.(j, e); }

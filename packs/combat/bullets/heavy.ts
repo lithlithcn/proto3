@@ -28,7 +28,7 @@ function reflect(w: World, s: CombatState, i: number, t: number): void {
 export function heavyContact(w: World, s: CombatState, i: number, t: number, d: number): void {
   const r = s.br[i]!, f = s.bflags[i]!, owner = s.bowner[i]!, parrying = s.state[t] === PS.parry;
   if (f & BF.breaker) { if (parrying && d < r + T.PARRY_R) { s.bflags[i] = f | BF.dead; shieldBreak(w, s, t); } return; }
-  if (s.mirror[t]! > 0 && d < bodyR(s, t) + r) { mirrorRef(s, i, t); return; }
+  if (s.mirror[t]! > 0 && d < bodyR(s, t) + r) { mirrorRef(w, s, i, t); return; }
   if (parrying && d < r + T.PARRY_R && !(f & BF.np)) { reflect(w, s, i, t); return; }
   const armed = s.bdist[i]! >= s.barm[i]!;
   if (armed && s.inv[t]! <= 0 && d < r * 0.82 + coreR(s, t)) {

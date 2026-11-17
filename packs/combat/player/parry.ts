@@ -7,6 +7,9 @@ import { BTN } from '@kernel';
 
 const bufParry = 31 - Math.clz32(BTN.parry);
 
+/** Legacy parryOn: parrying (Momiji's auto-guard status joins here when ported). Items whose hit is parryable test this. */
+export const parryOn = (s: CombatState, p: number): boolean => s.state[p] === PS.parry;
+
 /** Successful parry feedback + bonuses (legacy parryFx): chain count, dash charge, damage streak, hit-stop and slow-motion growing with the chain. */
 export function parryFx(w: World, s: CombatState, p: number, rk = 0): void {
   s.bufF[p * NBTN + bufParry] = 0; // no phantom re-parry from the buffer

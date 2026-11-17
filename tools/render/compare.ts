@@ -1,4 +1,4 @@
-/* pnpm render compare [a,b] [frames=900] [seed=1] — visual/HUD/audio parity, the same way the oracle campaign checks the sim.
+/* pnpm render compare [a,b] [frames=900] [seed=1] (env PLAN=item@frame/player,... forces item gives, e.g. PLAN=rin@100/0) — visual/HUD/audio parity, the same way the oracle campaign checks the sim.
  * Plays a bot match on legacy + port, calls the legacy render() every frame (camera easing needs it), and at sample frames:
  *   - splits the legacy op stream into per-draw-function blocks (drawHUD, drawP, drawHeavy, drawItem, drawView...), each with the ctx state at entry;
  *   - re-draws the same thing with the PORT renderer from that state and diffs the op streams (identical / first differing op);
@@ -9,12 +9,12 @@ import type { World } from '@kernel';
 import type { CombatState } from '@pack/combat/api';
 import { BF } from '@pack/combat/api';
 import { drawBullet } from '@pack/render/actors';
-import { RENDER_CLOCK, drawPlayerL, drawWorldItemsL } from '@pack/render/ld/bind';
+import { RENDER_CLOCK, drawActsL, drawPlayerL, drawWorldItemsL } from '@pack/render/ld/bind';
 import { drawCard } from '@pack/render/cards';
 import { HUDS, drawHudPanel } from '@pack/render/hud';
 import { camLoad, camOf, camSnap, camStart, drawView, renderViews, viewsOf } from '@pack/render/view';
 import { juiceOf, syncJuice } from '@pack/render/juice/state';
-import { IFXOPT } from '@pack/render/ld/ifx';
+import { ifxLoad, ifxSnap } from '@pack/render/ld/ifx';
 import { session } from '../parity/session';
 
 const { makeRecorder, diffOps, isMarker } = createRequire(import.meta.url)('../parity/recorder.cjs') as { makeRecorder(): Rec; diffOps(a: Op[], b: Op[], tol?: number): { i: number; a: Op | null; b: Op | null; who: string } | null; isMarker(o: Op): boolean };
@@ -23,7 +23,7 @@ interface Block { name: string; snap: Record<string, unknown>; ops: Op[] }
 
 const arg = (i: number, d: string): string => process.argv[i] && !process.argv[i]!.startsWith('--') ? process.argv[i]! : d;
 const [a, b] = arg(3, 'reimu,marisa').split(','), FR = +arg(4, '900'), SEED = +arg(5, '1'), STEP = 150;
-const ss = session(a!, b!, SEED, []), k = ss.k, ev = (s: string): unknown => k.legacy.eval(s);
+const ss = session(a!, b!, SEED, [], process.env['PLAN'] ?? ''), k = ss.k, ev = (s: string): unknown => k.legacy.eval(s);
 ev("globalThis.__SFX=[];globalThis.__SFL=[];{const s0=sfx;sfx=function(n,v,r){__SFX.push(n);(globalThis.__SFV||=[]).push(n+'|'+(+(v===undefined?1:v)).toFixed(3)+'|'+(+(r===undefined?1:r)).toFixed(3));const L=[...new Error().stack.matchAll(/legacy:(\\d+)/g)].map(m=>m[1]);__SFL.push(n+'@'+(L.find(x=>!['217','26','2275','219','220','221','222'].includes(x))||'?'));return s0.apply(this,arguments)}}");
 const sink = makeRecorder(), W = k.world as World, S = k.s as CombatState;
 
@@ -82,25 +82,27 @@ for (let f = 1; f <= FR; f++) {
   ev(WRAP); ss.pre(f); const [i0, i1] = ss.inputs(f); k.step([() => i0, () => i1], f);
   const ops = k.legacy.render() as Op[];
   juiceCheck(f); soundCheck(f); // before the port draw (which drains the juice journal)
-  const camPre = camSnap();
+  const camPre = camSnap(), ifx0 = ifxSnap();
   renderViews(sink.screenCtx as unknown as CanvasRenderingContext2D, W, S, +ev('W')!, +ev('H')!); sink.take(); // advances the port camera exactly like the browser does
   const hudPre = f % STEP === 0 ? structuredClone([...HUDS]) : [];
   for (let n = 0; n < S.n; n++) drawHudPanel(sink.screenCtx as unknown as CanvasRenderingContext2D, W, S, n, 0, false, 0, 0, () => 0.5); sink.take(); // legacy HUDS animates every frame (harness clock VT = 0)
   if (f % STEP) continue;
+  const ifx1 = ifxSnap(), IZ = [ifx0]; // port re-draws of view n start from the item-FX state legacy had there: pre-frame + what views 0..n-1 emitted
   const bl = blocks(ops), WW = +ev('W')!, HH = +ev('H')!, hk = Math.min(1, WW / 1280 + 0.1), view = ev('JSON.stringify(MVIEW[0])') as string;
   void view;
   const cnt = new Map<string, number>(); const nth = (n: string): number => { const c = cnt.get(n) ?? 0; cnt.set(n, c + 1); return c; };
-  // heavy bullets in legacy draw order: per view, the ones inside that view (camera + zoom of the port, which match the legacy ones)
+  // heavy bullets in legacy draw order (dead ones too: legacy B still holds them until the next updBullets, e.g. after the match ends): per view, the ones inside that view (camera + zoom of the port, which match the legacy ones)
   const heavies: number[] = [], jz = juiceOf(W).zk;
   for (const v of viewsOf(S, WW, HH)) { const sc = v.h / 600 * (v.q ? 1.2 : 1) * (1 + jz), cm = camOf(v.i), ww = v.w / sc, hh = v.h / sc, L = cm.x - ww / 2, Tp = cm.y - hh / 2;
-    for (let i = 0; i < S.nb; i++) if (!(S.bflags[i]! & BF.dead) && (S.bflags[i]! & BF.heavy) && S.bx[i]! > L - 30 && S.bx[i]! < L + ww + 30 && S.by[i]! > Tp - 30 && S.by[i]! < Tp + hh + 30) heavies.push(i); }
+    for (let i = 0; i < S.nb; i++) if ((S.bflags[i]! & BF.heavy) && S.bx[i]! > L - 30 && S.bx[i]! < L + ww + 30 && S.by[i]! > Tp - 30 && S.by[i]! < Tp + hh + 30) heavies.push(i); }
   for (const x of bl) {
     const n = nth(x.name), want = x.ops.filter(o => !isMarker(o));
     let got: Op[] | null = null;
     if (x.name === 'drawHUD' && n < S.n) got = portOps(x.snap, c => { HUDS[n] = structuredClone(hudPre[n]!); drawHudPanel(c, W, S, n, (n % 2 ? WW - 12 : 12) / hk, n % 2 === 1, (n < 2 ? 30 : HH - 100) / hk, 0, () => 0.5); });
     else if (x.name === 'drawP') got = portOps(x.snap, c => drawPlayerL(c, W, S, n % S.n, () => 0.5)); // one block per player per view
-    else if (x.name === 'drawWorldItems') got = portOps(x.snap, c => drawWorldItemsL(c, W, S));
+    else if (x.name === 'drawWorldItems') got = portOps(x.snap, c => { ifxLoad(IZ[n] ?? ifx0); drawWorldItemsL(c, W, S); IZ[n + 1] = ifxSnap(); });
     else if (x.name === 'drawHeavy' && heavies[n] !== undefined) got = portOps(x.snap, c => drawBullet(c, S, heavies[n]!));
+    else if (x.name === 'drawActs') got = portOps(x.snap, c => drawActsL(c, W, S, WW, HH));
     else if (x.name === 'drawItem' && n < S.ncard) got = portOps(x.snap, c => drawCard(c, W, S, n));
     if (got) { if (x.name === 'drawHUD' || ((x.name === 'drawP' || x.name === 'drawWorldItems') && S.hitstop > 0)) { const t = (a: Op[]): Op[] => { const i = a.findIndex(o => o[0] === 'translate'); return a.filter((_, j) => j !== i); }; want.splice(0, want.length, ...t(want)); got = t(got); } /* HUD shake uses Math.random: not comparable */ const d = diffOps(canon(want), canon(got), 1e-6);
       if (d && process.env['DIFFCTX'] === x.name && !(globalThis as { __dc?: 1 }).__dc) { (globalThis as { __dc?: 1 }).__dc = 1; const W = (a: Op[]): string => a.slice(Math.max(0, d.i - 8), d.i + 4).map((o, k) => `   ${Math.max(0, d.i - 8) + k}: ${fmt(o)}`).join('\n'); console.log(`DIFFCTX ${x.name} f${f} #${n}\n legacy:\n${W(canon(want))}\n port:\n${W(canon(got))}`); }
@@ -109,10 +111,10 @@ for (let f = 1; f <= FR; f++) {
   }
   // drawView: the whole legacy block (camera, floor, cards, bullets, players, items, effects, tags, indicators), one per view; cameras replayed from their pre-frame state
   const vs = viewsOf(S, WW, HH), camPost = camSnap(); let vi = 0;
-  for (const dv of bl.filter(x => x.name === 'drawView')) { const v = vs[vi++]; if (!v) break; camLoad(camPre); const got = portOps(dv.snap, c => drawView(c, W, v)), want = dv.ops.filter(o => !isMarker(o)), d = diffOps(canon(want), canon(got), 1e-5); /* floats derived through the camera/zoom chain drift ~1e-6 */
+  for (const dv of bl.filter(x => x.name === 'drawView')) { const v = vs[vi++]; if (!v) break; camLoad(camPre); ifxLoad(IZ[vi - 1] ?? ifx0); const got = portOps(dv.snap, c => drawView(c, W, v)), want = dv.ops.filter(o => !isMarker(o)), d = diffOps(canon(want), canon(got), 1e-5); /* floats derived through the camera/zoom chain drift ~1e-6 */
     if (d && process.env['DIFFCTX'] === 'drawView' && !(globalThis as { __dv?: 1 }).__dv) { (globalThis as { __dv?: 1 }).__dv = 1; const Wn = (a: Op[]): string => a.slice(Math.max(0, d.i - 8), d.i + 4).map((o, k) => `   ${Math.max(0, d.i - 8) + k}: ${fmt(o)}`).join('\n'); console.log(`DIFFCTX drawView f${f}\n legacy:\n${Wn(canon(want))}\n port:\n${Wn(canon(got))}`); }
     mark('drawView', !d, d ? `f${f} view ${vi - 1} op ${d.i}/${want.length}: legacy ${fmt(d.a)} | port ${fmt(d.b)}` : ''); }
-  camLoad(camPost);
+  camLoad(camPost); ifxLoad(ifx1);
 }
 for (const n of (ev('__SFX') as string[])) sfxSeen.set(n, (sfxSeen.get(n) ?? 0) + 1);
 
@@ -124,5 +126,11 @@ for (const b of sndBad) console.log('  ' + b);
 console.log(`\nJUICE STATE (per frame, ${juiceN} frames; first divergence per variable): ${juiceBad.size ? '' : 'all identical'}`);
 for (const [n, w] of juiceBad) console.log(`  ${n} ${w}`);
 console.log(`\nNOT PORTED visual (legacy draw functions with no port counterpart, instances over the samples): ${[...unported].sort((x, y) => y[1] - x[1]).map(([n, c]) => `${n}x${c}`).join(' ') || 'none'}`);
-console.log(`NOT PORTED audio (legacy sfx() names triggered; the port has no audio pack): ${[...sfxSeen].sort((x, y) => y[1] - x[1]).map(([n, c]) => `${n}x${c}`).join(' ') || 'none'}`);
+console.log(`legacy sfx() names triggered (compared per frame above): ${[...sfxSeen].sort((x, y) => y[1] - x[1]).map(([n, c]) => `${n}x${c}`).join(' ') || 'none'}`);
 console.log('NOT COMPARED: light bullets (legacy draws cached sprites; compare by pixels), everything legacy draws outside a named draw function (floor FX, post effects), animation timing between samples.');
+// STRICT=a,b,... (block names, plus `sounds` / `juice`): exit 1 when one of them differs (gate --items runs it per themed item)
+const strict = process.env['STRICT']?.split(',').filter(Boolean) ?? [];
+if (strict.length) {
+  const bad = strict.filter(n => n === 'sounds' ? sndBad.length > 0 : n === 'juice' ? juiceBad.size > 0 : (tally.get(n)?.bad ?? 0) > 0);
+  console.log(bad.length ? `\nRENDER STRICT FAIL: ${bad.join(', ')}` : '\nRENDER STRICT OK'); if (bad.length) process.exit(1);
+}

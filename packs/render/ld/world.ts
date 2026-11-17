@@ -10,7 +10,7 @@ let ctx, frame, P, ENT, KOB, HOLES, BUMPS, PHOTO, ZONES, ORBS, FAIRIES, CLOUDS =
 let B = [], TEST = null; const TRX = {}, FC = [], mtnDraw = () => {}, zigzag = () => {}; // themed-item helpers (lot 3)
 const rainbowCol = () => `hsl(${frame * 6 % 360},100%,65%)`;
 const hz=(i,k)=>{const x=Math.sin(i*127.1+k*311.7)*43758.5453;return x-Math.floor(x)}; // legacy 2539
-export const bindWorld = (v) => { ({ ctx, frame, P, B, ENT, KOB, HOLES, BUMPS, PHOTO, ZONES, ORBS, FAIRIES, IM, bodyR, magicCircle } = v); };
+export const bindWorld = (v) => { ({ ctx, frame, P, CX, B, ENT, KOB, HOLES, BUMPS, PHOTO, ZONES, ORBS, FAIRIES, IM, bodyR, magicCircle } = v); };
 const EDR = {};
 function rYY(x,y,r,a,al){ctx.globalAlpha=al;const c=Math.cos(a)*r/2,s=Math.sin(a)*r/2;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(x,y,r,0,TAU);ctx.fill();ctx.fillStyle='#e8243a';ctx.beginPath();ctx.arc(x,y,r,a,a+Math.PI);ctx.fill();
  ctx.beginPath();ctx.arc(x+c,y+s,r/2,0,TAU);ctx.fill();ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(x-c,y-s,r/2,0,TAU);ctx.fill();ctx.beginPath();ctx.arc(x+c,y+s,r/6,0,TAU);ctx.fill();ctx.fillStyle='#e8243a';ctx.beginPath();ctx.arc(x-c,y-s,r/6,0,TAU);ctx.fill();

@@ -21,6 +21,9 @@ export interface RulesDef {
   speed?(w: World, s: CombatState, p: number): number;
   kill?(w: World, s: CombatState, v: number): void;
   /** an item state (eaten / cocoon / pray) for one frame */ state?(w: World, s: CombatState, p: number): boolean;
+  /** legacy updEnt switch: one item entity for one frame (after its timer ticked, owner alive) */ ent?(w: World, s: CombatState, i: number): void;
+  /** legacy xActive: an item global of this rule set owned by `p` is running (CX.x.o === p, CX.anon, GFX, p.pick...) */ active?(w: World, s: CombatState, p: number): boolean;
+  /** entity kinds that do not keep an item active (legacy xActive exclusion list) */ quiet?: number[];
   /** wall contact (legacy wall: spit / spin branches first); true = handled */ wall?(w: World, s: CombatState, p: number, ax: number): boolean;
 }
 const cache = new WeakMap<World, RulesDef[]>();
@@ -30,4 +33,5 @@ export const rulesOwnPre = (w: World): boolean => rulesOf(w).some(r => !!r.pre);
 export const bulletRule = (w: World, s: CombatState, i: number, t: number): boolean => { for (const r of rulesOf(w)) if (r.bullet?.(w, s, i, t)) return true; return false; };
 export const meleeRule = (w: World, s: CombatState, p: number): boolean => { for (const r of rulesOf(w)) if (r.melee?.(w, s, p)) return true; return false; };
 export const stateRule = (w: World, s: CombatState, p: number): boolean => { for (const r of rulesOf(w)) if (r.state?.(w, s, p)) return true; return false; };
+export const entRule = (w: World, s: CombatState, i: number): void => { for (const r of rulesOf(w)) r.ent?.(w, s, i); };
 export const wallRule = (w: World, s: CombatState, p: number, ax: number): boolean => { for (const r of rulesOf(w)) if (r.wall?.(w, s, p, ax)) return true; return false; };

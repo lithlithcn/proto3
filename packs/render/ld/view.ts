@@ -18,7 +18,7 @@ let profOf = () => null; export const setProfOf = (f) => { profOf = f; }; // pla
 const mapLayers = () => {}, drawDebugWorld = () => {}, glShape = () => {}, glRing = () => {}, glHeavy = () => {}, glDot = () => {}, glBul = () => {}; // no profiles / maps / WebGL yet
 let H = 720, SCv = 1;
 const SPRC = new Map(), document = globalThis.document ?? { createElement: () => ({ getContext: () => new Proxy({}, { get: () => () => {} }) }) };
-export const bindView = (v) => { ({ ctx, frame, P, B, ENT, cams, MVIEW, T, CARDS, performance, STOCKS, stI, ITEMS, item, hitstop, FX, TX, RINGS, WAVES, LINES, KOFX, CRACK, GZ, invF, TSTOP, TSO, shake, kx, ky, zk, bgF, NERV, slow, WARP, TEAMS, H, SCv, bodyR, coreR } = v); };
+export const bindView = (v) => { ({ ctx, frame, P, CX, B, ENT, cams, MVIEW, T, CARDS, performance, STOCKS, stI, ITEMS, item, hitstop, FX, TX, RINGS, WAVES, LINES, KOFX, CRACK, GZ, invF, TSTOP, TSO, shake, kx, ky, zk, bgF, NERV, slow, WARP, TEAMS, H, SCv, bodyR, coreR } = v); };
 function drawView0(v){
  const sw=CX.swap,vi=sw&&sw.a===v.i?sw.b:sw&&sw.b===v.i?sw.a:v.i,p=P[vi]||P[v.i],o=p.tgt||P[(v.i+1)%P.length],cam=cams[v.i],vw=v.w/SCv,vh=H/SCv;
  if(v.fixed){cam.x=T.MAP_W/2;cam.y=T.MAP_H/2}

@@ -2,12 +2,12 @@
 import { COLS, LCOLS } from '../colors';
 const TAU = 6.2832;
 let ctx, frame, P, ENT = [], B = [], CX = {}, bodyR;
-const T = { MAP_W: 2000, MAP_H: 1350, BODY_R: 16, HP: 100 }, RB = ['#ff4a4a', '#ffa63a', '#ffe83a', '#5cff7a', '#4ab3ff', '#c06cff'], clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+let T = { MAP_W: 2000, MAP_H: 1350, BODY_R: 16, HP: 100 }, SMR = []; const RB = ['#ff4a4a', '#ffa63a', '#ffe83a', '#5cff7a', '#4ab3ff', '#c06cff'], clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 const rainbowCol = () => `hsl(${frame * 6 % 360},100%,65%)`;
 // themed-item helpers / data: real versions arrive with lot 3 (until then their CX/ENT state never exists, so these are never reached)
-const nop = () => {}, TUT = null, TSTEPS = [], TEAMS = 0, TEAMA = [], TCOL = [], ITEMS = [], UFC = [], STC = [], ELC9 = [], ELN9 = [], ELC2 = [], TC = [], SMR = [], RDK = [];
+const nop = () => {}, TUT = null, TSTEPS = [], TEAMS = 0, TEAMA = [], TCOL = [], ITEMS = [], UFC = [], STC = [], ELC9 = [], ELN9 = [], ELC2 = [], TC = [], RDK = [];
 const yinYang = nop, xDrawGap = nop, xFour = () => [], tutZ = nop, nearFoe = () => null, laserFX = nop, drawYTrain = nop, drawUnzan = nop, drawTails = nop, drawMech = nop, drawFist = nop, drawDragon = nop, auraOf = () => null;
-export const bindThemed = (v) => { ({ ctx, frame, P, ENT, B, bodyR } = v); };
+export const bindThemed = (v) => { ({ ctx, frame, P, CX, ENT, B, bodyR, T, SMR } = v); };
 function chDraw(){const al=P.filter(q=>q.state!=='dead');ctx.textAlign='center';
  if(CX.wall){const w=CX.wall;ctx.fillStyle='#3a2a1a';ctx.fillRect(w.x-10,0,20,T.MAP_H);ctx.fillStyle='#3fbf6f';for(let y=0;y<T.MAP_H;y+=60)ctx.fillRect(w.x-14,y,28,8)}
  for(const e of ENT){switch(e.k){

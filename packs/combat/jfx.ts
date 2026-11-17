@@ -18,6 +18,8 @@ export const addJ = (w: World, name: string, v: number, cap = 0): void => jfx(w,
 export const maxJ = (w: World, name: string, v: number): void => jfx(w, 'max', name, v);
 /** Pushes `{ x, y, ...kv }` on a list (RINGS/WAVES/LINES/FX/KOFX): `kv` alternates key, value. */
 export const pushJ = (w: World, list: string, ...kv: JfxArg[]): void => jfx(w, 'push', list, ...kv);
+/** Same, only while the list holds fewer than `cap` entries (legacy `if(FX.length<480)FX.push(...)`). */
+export const pushJc = (w: World, list: string, cap: number, ...kv: JfxArg[]): void => jfx(w, 'pushc', list, cap, ...kv);
 /** Legacy sfx(name, vol, rate) at its exact site (the audio player applies SFXG gain, ALIAS and the time-stop reverb). */
 export const sfx = (w: World, n: string, v = 1, r = 1): void => jfx(w, 'sfx', n, v, r);
 /** Legacy `sfx(base + (1 + Math.random() * k | 0), v)` (random variant, cosmetic). `from` = first index. */

@@ -12,7 +12,7 @@ const require_ = createRequire(import.meta.url);
 const { createLegacy } = require_('../../tools/parity/legacy.cjs') as { createLegacy(o: object): Legacy };
 
 interface LegacyInput { x?: number; y?: number; b?: Record<string, boolean> }
-interface Legacy { step(i: LegacyInput[]): void; obs(): { f: number; ts: number; P: LP[]; C: { x: number; y: number; on: number; age: number; type: string; cp: number[] }[]; E: { k: number; t: number; x: number; y: number; vx: number; vy: number; g: number; a: number; w?: number; r?: number }[]; K: { o: number; x: number; y: number; a: number; t: number; dep: number }[]; B: LB[] }; eval(c: string): unknown }
+interface Legacy { step(i: LegacyInput[]): void; obs(): { f: number; ts: number; P: LP[]; C: { x: number; y: number; on: number; age: number; type: string; cp: number[] }[]; E: { k: number; t: number; x: number; y: number; vx: number; vy: number; g: number; a: number; w?: number; h?: number; r?: number }[]; K: { o: number; x: number; y: number; a: number; t: number; dep: number }[]; B: LB[] }; eval(c: string): unknown }
 interface LP { rifle: number; cam: number; clone: number; cHP: number; spk: number; elx: number; imm: number; mirror: number; giant: number; x: number; y: number; vx: number; vy: number; hp: number; state: string; t: number; boost: number; spirit: number; power: number; graze: number; inv: number; run: boolean; slide: number; shotCd: number; aim: number; stocks: number; kos: number; sd: number; pips: number; spit: number }
 interface LB { x: number; y: number; vx: number; vy: number; r: number; owner: number; dmg?: number; life: number; fz: number; heavy?: number; mult?: number; dist?: number; refl: number; gr?: number; home?: number; wav?: number; ph?: number; fake?: number }
 
@@ -23,6 +23,8 @@ export type Script = (f: number) => FrameIn;
 
 const q = (v: number | undefined): number => Math.max(-127, Math.min(127, Math.round((v ?? 0) * 127)));
 /** Legacy player fields deliberately NOT auto-compared (each with its reason; DESIGN §25). */
+/** Themed columns whose unset value is not 0 (legacy field absent). */
+const THEMED_UNSET: Record<string, number> = { eatBy: -1 };
 const AUTO_SKIP = new Set([
   'burst', // legacy `burst` is dead (removed feature, value 0.08); the port's `burst` is the live burst gauge: name collision
   'spP', // spirit at frame start: stored by a different wrapper layer in legacy; the resulting spirit IS compared
@@ -42,7 +44,7 @@ export function makePair(chars: string[], seed = 1, opt: PairOpt = {}) {
   if (opt.items) legacy.eval(`ITEMS.forEach(i=>itemOn[i.k]=i.k==='rainbow'||${JSON.stringify(opt.items)}.includes(i.k));maxC=${opt.maxCards ?? 1}`);
   const world = new World({
     packs: process.env['PARITY_RENDER'] ? [combat, touhou, themed, render, touhoufx] : [combat, touhou, themed], seed, players: chars.length, sanitize: true, strict: true, diag: 2,
-    world: { players: chars.map(c => ({ char: `touhou:${c}` })), ...(opt.items ? { items: true, itemSet: opt.items.map(i => `touhou:${i}`), maxCards: opt.maxCards ?? 1 } : { items: false }) },
+    world: { players: chars.map(c => ({ char: `touhou:${c}` })), ...(opt.items ? { items: true, itemSet: opt.items.flatMap(i => [`touhou:${i}`, `themed:${i}`]), maxCards: opt.maxCards ?? 1 } : { items: false }) },
   });
   const s = world.slice<CombatState>('combat'), KIND = kindMap(world);
   legacy.eval(`SPELLS.length=${spellPool(world).length}`); // legacy holds every character's card: keep exactly the ported ones, in the same order
@@ -79,11 +81,14 @@ export function makePair(chars: string[], seed = 1, opt: PairOpt = {}) {
       eq(s.tstop, o.ts, `${tag} f${o.f} time stop`);
       eq(s.nent, o.E.length, `${tag} f${o.f} entity count`);
       const idx = [...Array(s.nent).keys()].sort((a, b) => s.ek[a]! - s.ek[b]! || a - b); // legacy keeps one list per kind
-      o.E.forEach((le, i) => { const j = idx[i]!; eq(s.ek[j], le.k, `${tag} f${o.f} E${i}.kind`); near(s.et[j]!, le.t, `E${i}.t`); near(s.ex[j]!, le.x, `E${i}.x`); near(s.ey[j]!, le.y, `E${i}.y`); near(s.evx[j]!, le.vx, `E${i}.vx`); near(s.evy[j]!, le.vy, `E${i}.vy`); eq(s.eg[j], le.g, `${tag} f${o.f} E${i}.g`); if (le.k === 2 || le.k === 10) near(s.ea[j]!, le.a, `E${i}.a`); if (le.k === 104) { near(s.ew[j]!, le.w!, `E${i}.hp`); near(s.er[j]!, le.r!, `E${i}.loot`); } });
+      o.E.forEach((le, i) => { const j = idx[i]!; eq(s.ek[j], le.k, `${tag} f${o.f} E${i}.kind`); near(s.et[j]!, le.t, `E${i}.t`); near(s.ex[j]!, le.x, `E${i}.x`); near(s.ey[j]!, le.y, `E${i}.y`); near(s.evx[j]!, le.vx, `E${i}.vx`); near(s.evy[j]!, le.vy, `E${i}.vy`); eq(s.eg[j], le.g, `${tag} f${o.f} E${i}.g`); if (le.k === 2 || le.k === 10 || le.k >= 300) near(s.ea[j]!, le.a, `E${i}.a`); if (le.k >= 300) { near(s.ew[j]!, le.w!, `E${i}.w`); near(s.eh[j]!, le.h!, `E${i}.h`); } if (le.k === 104) { near(s.ew[j]!, le.w!, `E${i}.hp`); near(s.er[j]!, le.r!, `E${i}.loot`); } });
       eq(s.nkb, o.K.length, `${tag} f${o.f} KO beam count`);
       o.K.forEach((lk, i) => { eq(s.kbO[i], lk.o, `${tag} f${o.f} K${i}.o`); near(s.kbX[i]!, lk.x, `K${i}.x`); near(s.kbY[i]!, lk.y, `K${i}.y`); near(s.kbA[i]!, lk.a, `K${i}.a`); near(s.kbT[i]!, lk.t, `K${i}.t`); eq(s.kbDep[i], lk.dep, `${tag} f${o.f} K${i}.dep`); });
       eq(s.nb, o.B.length, `${tag} f${o.f} bullet count`);
       o.B.forEach((lb, i) => { eq(s.bflags[i]! & 32 ? 1 : 0, lb.fz, `${tag} f${o.f} B${i}.frozen`); near(s.bx[i]!, lb.x, `B${i}.x`); near(s.by[i]!, lb.y, `B${i}.y`); near(s.bvx[i]!, lb.vx, `B${i}.vx`); near(s.bvy[i]!, lb.vy, `B${i}.vy`); if (lb.heavy) { near(s.bmult[i]!, lb.mult!, `B${i}.mult`); near(s.bdist[i]!, lb.dist!, `B${i}.dist`); eq(s.brefl[i], lb.refl, `${tag} f${o.f} B${i}.refl`); near(s.br[i]!, lb.r, `B${i}.r`); } else near(s.bdmg[i]!, lb.dmg!, `B${i}.dmg`); near(s.blife[i]!, lb.life, `B${i}.life`); eq(s.bowner[i], lb.owner, `B${i}.owner`); eq((s.bflags[i]! & 4) ? 1 : 0, lb.gr ?? 0, `${tag} f${o.f} B${i}.grazed`); near(s.bhome[i]!, lb.home ?? 0, `B${i}.home`); near(s.bwav[i]!, lb.wav ?? 0, `B${i}.wav`); near(s.bph[i]!, lb.ph ?? 0, `B${i}.ph`); eq((s.bflags[i]! & 1024) ? 1 : 0, lb.fake ?? 0, `${tag} f${o.f} B${i}.fake`); });
+      // THEMED: every per-player column of the themed slice vs the legacy player field of the same name (legacy `undefined` = the column's unset value)
+      { const th = world.slice<Record<string, unknown> | undefined>('themed'); if (th) { const ks = Object.keys(th).filter(k => ArrayBuffer.isView(th[k]) && (th[k] as unknown as ArrayLike<number>).length === 32); if (ks.length) { const lv = JSON.parse(legacy.eval(`JSON.stringify(P.map(p=>${JSON.stringify(ks)}.map(k=>{const v=p[k];return typeof v==='boolean'?+v:(typeof v==='number'&&isFinite(v)?v:null)})))`) as string) as (number | null)[][];
+        lv.forEach((row, i) => row.forEach((v, j) => { const k = ks[j]!; near(Number((th[k] as ArrayLike<number>)[i]), v ?? (THEMED_UNSET[k] ?? 0), `P${i}.${k} (themed)`); })); } } }
       // AUTO: every numeric/boolean legacy player field that has a same-name per-player array in the port is compared too (exhaustive by name)
       const auto = autoKeys(); if (auto.length) { const lv = JSON.parse(legacy.eval(`JSON.stringify(P.map(p=>${JSON.stringify(auto)}.map(k=>{const v=p[k];return typeof v==='boolean'?+v:(typeof v==='number'&&isFinite(v)?v:null)})))`) as string) as (number | null)[][]; const sa = s as unknown as Record<string, ArrayLike<number>>; lv.forEach((row, i) => row.forEach((v, j) => { if (v !== null) near(Number(sa[auto[j]!]![i]), v, `P${i}.${auto[j]}`); })); }
       return out;

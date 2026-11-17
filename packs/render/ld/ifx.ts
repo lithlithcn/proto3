@@ -4,8 +4,8 @@ import { COLS, LCOLS } from '../colors';
 import { magicCircleL as magicCircle } from './viewfx';
 const TAU = 6.2832, RB = ['#ff4a4a', '#ffa63a', '#ffe83a', '#5cff7a', '#4ab3ff', '#c06cff'];
 let ctx, frame, P, ENT, ORBS, FAIRIES, CLOUDS = [], SLASH = [], HOLES, BUMPS, ZONES, PHOTO, WARP = 0, VIEW = 0, bodyR, perfLow = false;
-const ITEMK = {};
-export const bindIfx = (v) => { ({ ctx, frame, P, ENT, ORBS, FAIRIES, HOLES, BUMPS, ZONES, PHOTO, WARP, VIEW, bodyR } = v); };
+let ITEMK = {}, performance = globalThis.performance;
+export const bindIfx = (v) => { ({ ITEMK, performance, ctx, frame, P, ENT, ORBS, FAIRIES, HOLES, BUMPS, ZONES, PHOTO, WARP, VIEW, bodyR } = v); };
 const IFX={tr:new WeakMap(),bt:new WeakMap(),rp:[],seen:new Set(),t:0,
  R:{},E:{},
  M:{spark:[2,0,25,3,1],star:[1,0,40,5,1.6],petal:[.6,.03,80,5,2.6],snow:[.5,.02,90,4,2.6],flame:[.8,-.07,30,7,1],note:[.8,-.03,60,6,1.8],bolt:[0,0,7,6,1.3],bubble:[.5,-.04,50,5,1.5],leaf:[.6,.025,90,6,2.6],smoke:[.4,-.01,60,11,1.2],coin:[1.5,.08,50,5,1.5],water:[1.5,.07,35,3,1.2],blood:[1,.1,45,3,1],shard:[2,0,35,6,1.4],ghost:[.4,-.04,60,6,1.6],shadow:[.5,0,50,9,1.6],void:[0,0,40,4,3],glitch:[0,0,10,9,2],rune:[1,0,40,4,1.8],clock:[1,0,40,4,1.8]}};
@@ -82,5 +82,8 @@ function ifxOver(){const now=performance.now(),dt=Math.min(3,(now-(IFX.t||now))/
  L.length=w;ctx.restore();ctx.globalAlpha=1}
 /** Parity probes switch the random particle layer off on both sides (`pnpm render compare`). */
 export const IFXOPT = { off: false };
+/** Test hook (render compare re-draws a frame several times): particles, seen-keys and clock are the only state a draw accumulates (trails are once per frame). */
+export const ifxSnap = () => ({ rp: IFX.rp.map(p => ({ ...p })), seen: new Set(IFX.seen), t: IFX.t });
+export const ifxLoad = (z) => { IFX.rp = z.rp.map(p => ({ ...p })); IFX.seen = new Set(z.seen); IFX.t = z.t; };
 const ifxU = () => { if (!IFXOPT.off) ifxUnder(); }, ifxO = () => { if (!IFXOPT.off) ifxOver(); };
 export { ifxU as ifxUnder, ifxO as ifxOver };

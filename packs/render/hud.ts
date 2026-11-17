@@ -1,6 +1,7 @@
 import { T, charOf, type CombatState } from '@pack/combat/api';
 import type { World } from '@kernel';
 import { COLS, LCOLS } from './colors';
+import { cxOf } from './ld/cx';
 import { UF, UFI, clamp, hexA, lerp, sbar, skw } from './ui';
 
 /** Per-player HUD animation state (legacy HUDS): lagging HP trail, lost-stock sparks, hit/heal flashes. Presentation only; `now` is seconds (legacy UNOW). */
@@ -9,8 +10,9 @@ export const HUDS: HudS[] = [];
 export const resetHud = (): void => { HUDS.length = 0; };
 
 /** Legacy final drawHUD (the animated skewed panel): name, stock diamonds (+ loss sparks), trailing HP bar, spirit bar with ticks/shine, dash charges, wall pips, shot/power line, item status line.
- *  Not yet: team colours, Last-Stock pulse, profile names/pictures, the `wsA` inverted-HP mode, KO-hidden HUD while anonymous/Koishi (needs those statuses). */
+ *  Not yet: team colours, Last-Stock pulse, profile names/pictures, the `wsA` inverted-HP mode, HUD hidden under Koishi (needs that status). */
 export function drawHudPanel(c: CanvasRenderingContext2D, w: World, s: CombatState, p: number, x: number, right: boolean, y: number, now: number, rnd: () => number = Math.random): void {
+  if (cxOf(w)['anon']) return; // legacy: no HUD while anonymous (Rin)
   const f = s.gf, S = (HUDS[p] ??= { hp: s.hp[p]!, tr: s.hp[p]!, trT: 0, st: s.stocks[p]!, lost: [], hit: 0, f0: f });
   if (f < S.f0 || f - S.f0 > 100000) { S.hp = S.tr = s.hp[p]!; S.st = s.stocks[p]!; S.f0 = f; S.lost = []; }
   const hpN = Math.max(0, s.hp[p]!);

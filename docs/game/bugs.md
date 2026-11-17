@@ -55,3 +55,28 @@ Written by `pnpm parity keep ... --cause ... [--attempts "tried X: failed"]`; re
 - Cause: `@ts-nocheck` verbatim files hide unresolved names until runtime.
 - Fix in: `packs/render/ld/viewfx.ts`, `packs/render/ld/world.ts`, `packs/render/ld/view.ts`
 - Not detected earlier because: render compare only reaches the frames its seed plays. New detector: `tests/ld-names.test.ts` (type-checks the ld files for unresolved names only).
+
+## Item pickup feedback missing (every item)
+- Symptom: taking a card played no `se_cardget`/`se_changeitem`, no "NAME!" banner, ring, flash nor the item's own sound (legacy ISFX); render compare with a forced give showed the sounds missing at the give frame.
+- Cause: the juice `combat:item` hook only recorded the give for the records screen; legacy `give0` (line 838) feedback was never ported.
+- Fix in: `packs/render/juice/events.ts` (onItem: feedback + activation list), `ItemDef.sfx` (legacy ISFX) in item content.
+- Not detected earlier because: the render compare never forced item gives. New: `PLAN=item@frame/player pnpm render compare …`.
+
+## Item activation list / item auras / statuses invisible to legacy draws
+- Symptom: no activation banner (drawActs), no item aura trails (ifx), Rumia's darkness ring never drawn.
+- Cause: legacy `p.acts` (give0 wrapper line 1979, actsPrune line 2828, xActive line 805) not ported; `ITEMK` empty in ifx/screen; `q.fx.<key>` proxy looked statuses up by HUD label (`DARKNESS`) instead of the legacy key (`eat`).
+- Fix in: `packs/render/juice/events.ts` + `state.ts` (acts, ia), `packs/combat/items/active.ts` (itemActive = xActive), `packs/render/ld/bind.ts` (acts, ITEMK, FXS-keyed fx proxy, CX view `ld/cx.ts`), `ld/screen.ts` (shortD).
+
+## 10-text cap applied on hit-stop frames
+- Symptom: juice TX list one text shorter than legacy during hit-stop (render compare f171 "GRAZE x20").
+- Cause: legacy caps TX in a `step` wrapper (line 2381) that hit-stop / slow-motion frames skip (line 4138); the port capped in every effects tick.
+- Fix in: `packs/render/juice/state.ts` (`tickJuice(j, cap)`), fx-tick payload `sk`.
+
+## Mirror Aura bounce silent
+- Symptom: no `katanazeroreflect` / `tan02` and no spark when a bullet bounced off the mirror.
+- Fix in: `packs/combat/bullets/mirror.ts` (jfx sfx + spark + throttled `mir`).
+
+## Juice of bullet behaviours ticked one frame early
+- Symptom: render compare drawView f600: a flea-burst particle one tick older than legacy (alpha .6 vs .667).
+- Cause: legacy runs bullet behaviours (rot/drg/acc/fn) in a step wrapper (line 2119) after the base step's stepFx; the port ran `bullet-motion` before `base-end` (the effects tick).
+- Fix in: `packs/combat/systems.ts` (base-end → bullet-motion → item-late). Sim order unchanged (base-end only emits the tick).

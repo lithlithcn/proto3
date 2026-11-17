@@ -6,7 +6,8 @@ import { PS, type CombatState } from '../state';
 import { ko } from './ko';
 import { wallRule } from '../rules';
 
-/** Wall contact (legacy `wall`). ax: 0 = x axis, 1 = y axis. */
+/** Wall contact (legacy `wall`). ax: 0 = x axis, 1 = y axis. Items that add walls (Meiling's gate) call it as `wallHit`. */
+export function wallHit(w: World, s: CombatState, p: number, ax: number): void { wall(w, s, p, ax); }
 function wall(w: World, s: CombatState, p: number, ax: number): void {
   if (wallRule(w, s, p, ax)) return; // legacy xSpitWall (spit 1/3) and spinning items, before the beam push
   if (s.spit[p] === 2) { // pushed to the edge by a parried KO beam: costs a wall pip, then free

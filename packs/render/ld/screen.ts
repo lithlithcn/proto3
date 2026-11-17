@@ -7,9 +7,10 @@ let SPELLS = [], ULTN = 'Last Word「Prismatic Danmaku Storm」', ctx, cv, frame
 const kV = () => (0.35 + 0.065 * NERV) * ACC.shk, clamp = (v, a, b) => Math.max(a, Math.min(b, v)), RB = ['#ff4a4a', '#ffa63a', '#ffe83a', '#5cff7a', '#4ab3ff', '#c06cff'];
 function skw(x,y,w,h,k){ctx.beginPath();ctx.moveTo(x+k,y);ctx.lineTo(x+w,y);ctx.lineTo(x+w-k,y+h);ctx.lineTo(x,y+h);ctx.closePath()}
 const spD = p => p.ultS ? { name: ULTN } : SPELLS[(p.spI === undefined ? p.id : p.spI) % SPELLS.length] || { name: '' }, spT = p => p.ultS ? T.ULT_T : T.SPELL_T;
-const pname = p => (p.cpu ? 'CPU ' : 'P') + (p.id + 1), xActive = () => false, keyName = c => c, padName = n => 'Button ' + n, pads = () => [], KB = [], PAD = [], TKB = [], ITEMK = {}, MVIEW = {}, NET = null, PREVL = {}, PROPH = [], shortD = it => it.d || '';
+const pname = p => (p.cpu ? 'CPU ' : 'P') + (p.id + 1), keyName = c => c, padName = n => 'Button ' + n, pads = () => [], KB = [], PAD = [], TKB = [], MVIEW = {}, NET = null, PREVL = {}, PROPH = [], SDC = {}, shortD = it => SDC[it.k] || (SDC[it.k] = (() => { let r = it.d.trim().replace(/^\d+(\.\d+)? ?s ?: ?/, ''); r = r[0].toUpperCase() + r.slice(1); if (r.length > 150) { r = r.slice(0, 148); r = r.slice(0, r.lastIndexOf(' ')) + '…'; } return r; })());
 const rainbowCol = () => `hsl(${frame * 6 % 360},100%,65%)`, IE = () => itemsOn ? T.ITEM_EVERY : T.ULT_EVERY;
-export const bindScreen = (v) => { ({ SPELLS, ctx, cv, frame, P, W, H, T, borderF, focusL, BIG, flashS, flashCol, bright, zblur, chroma, NERV, slow, TSTOP, ITEMS, item, itemT, itemsOn, WARP, FAIRIES, bodyR } = v); };
+let xActive = () => false, ITEMK = {};
+export const bindScreen = (v) => { ({ SPELLS, CX, xActive, ITEMK, ctx, cv, frame, P, W, H, T, borderF, focusL, BIG, flashS, flashCol, bright, zblur, chroma, NERV, slow, TSTOP, ITEMS, item, itemT, itemsOn, WARP, FAIRIES, bodyR } = v); };
 function drawPortrait(id,w,h,c){ // portrait temporaire (silhouette) : à remplacer par le vrai art
  const g=ctx.createLinearGradient(0,0,0,h);g.addColorStop(0,c);g.addColorStop(1,'rgba(0,0,0,0)');
  ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(w*.15,h);ctx.lineTo(w*.3,h*.42);ctx.lineTo(w*.7,h*.42);ctx.lineTo(w*.88,h);ctx.fill();
@@ -79,6 +80,7 @@ export function drawScreen(){
  }
  for(const q of P)if(q.state==='spell')drawSpellUI(q);
 }
+export const drawActsOnly = () => drawActs();
 export function drawScreenTop(){
  drawTimer();drawActs();
  ctx.textAlign='center';ctx.font='13px monospace';ctx.fillStyle='#f8f';

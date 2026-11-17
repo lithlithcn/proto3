@@ -40,7 +40,7 @@
     {
       "id": "themed-items-115",
       "status": "not-ported",
-      "area": "115 themed items: 1/115 ported and validated (rumia); rule framework in place (packs/combat/rules.ts, packs/themed). Remaining 114, four-way echo (FQ/xFour), ITEMEL/ENTEL not ported",
+      "area": "115 themed items: 4/115 ported and validated (rumia, daiyousei, rin, meiling; sim + render per item); rule framework in place (packs/combat/rules.ts incl. entity hook, packs/themed). Remaining 111, four-way echo (FQ/xFour), ITEMEL/ENTEL not ported",
       "see": "docs/game/items/themed-plan.md"
     },
     {
