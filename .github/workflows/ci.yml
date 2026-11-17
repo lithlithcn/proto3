@@ -12,7 +12,11 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
       - run: node tools/regress.cjs
-      - run: mkdir _site && cp -r index.html src music sfx _site/
+      - run: mkdir _site && cp -r index.html src content music sfx _site/
+      # cache busting: after a deploy the browser must never mix old and new scripts
+      - run: sed -i -E "s#<script src=\"([^\"?]+)\"#<script src=\"\\1?v=${GITHUB_SHA::8}\"#g" _site/index.html && grep -c "?v=" _site/index.html
+      # every script the page loads must exist in the published site (a missing folder once hid GRAZE RUSH)
+      - run: grep -oE 'src="[^"?]+' _site/index.html | cut -c6- | while read f; do test -f "_site/$f" || { echo "MISSING $f"; exit 1; }; done
       - uses: actions/upload-pages-artifact@v3
         if: github.ref == 'refs/heads/main'
         with: { path: _site }

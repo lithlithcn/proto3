@@ -37,7 +37,7 @@ Before any tool/abstraction/doc system answer: which concrete problem, how often
 `tools/headless.cjs` runs the game without rendering (for tests, bug repro, mass simulations).
 
 ## After every push
-Check CI (`gh run list --limit 1`). A red CI e-mails the owner; never leave main red.
+Check CI (`gh run list --limit 1`). The published site is the `_site` copy made in `.github/workflows/ci.yml`: a new top-level folder must be added to its `cp` line (CI fails if index.html loads a missing file). A red CI e-mails the owner; never leave main red.
 
 ## Knowledge from Proto3
 `docs/proto3-notes/`: mechanic/character/item sheets (rules + legacy line refs; their "port files" paths are in branch proto3-archive) and `bugs.md` (real legacy bugs found during the rewrite; not yet applied here).
