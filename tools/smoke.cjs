@@ -15,7 +15,7 @@ server.listen(0, async () => {
   const ids = await pg.evaluate(() => Object.values(MODEX).map(m => m.id));
   for (const id of ids) {
     await focusGame(); await pg.evaluate(i => openMode(i), id); await pg.keyboard.down('KeyD'); await pg.waitForTimeout(2000); await pg.keyboard.up('KeyD');
-    await pg.screenshot({ path: path.join(OUT, `smoke-mode-${id}.png`) }); await pg.keyboard.press('Escape'); await pg.waitForTimeout(300);
+    await pg.screenshot({ path: path.join(OUT, `smoke-mode-${id}.png`) }); await focusGame(); await pg.keyboard.press('Escape'); await pg.waitForTimeout(300);
     const m = await pg.evaluate(() => mode); if (m !== 'menu' && m !== 'sub') errs.push(`mode ${id}: Escape did not go back (mode=${m}, focus=${await pg.evaluate(() => document.activeElement && document.activeElement.tagName)})`);
   }
   console.log(`modes checked: ${ids.join(', ') || 'none'}`);
