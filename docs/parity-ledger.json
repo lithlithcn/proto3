@@ -46,7 +46,7 @@
     {
       "id": "modes-maps-teams-cpu-online",
       "status": "not-ported",
-      "area": "game modes, maps/walls, teams, CPU AI, online, lab, i18n, menus",
+      "area": "game modes, maps/walls, teams, CPU AI, online, lab, i18n",
       "see": "docs/INVENTORY.md"
     },
     {
@@ -64,6 +64,14 @@
       "evidence": "pnpm render compare <a,b> 1500 SOUNDS: 1500/1500 frames identical on reimu,marisa / flandre,hecatia / nue,okina / nazrin,aya",
       "limit": "name|volume|rate per frame only (not the Web Audio graph); ENDK and team groups untested; manual oracle, not in pnpm gate",
       "see": "docs/game/mechanics/audio.md"
+    },
+    {
+      "id": "ui-menus",
+      "status": "diverging",
+      "area": "menus: title + hub op-identical to legacy (pnpm ui, 8 scenarios); character select, sub-menus, items list, controls, guide, pause, results, training, online lobby, map maker, YouTube sidebar, touch layer and pad navigation not ported yet",
+      "evidence": "pnpm ui (tests/parity/ui.test.ts)",
+      "limit": "fixed states x clock instants; 1280x720 only",
+      "see": "docs/game/mechanics/ui.md"
     },
     {
       "id": "long-horizon",

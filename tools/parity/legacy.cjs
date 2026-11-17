@@ -34,6 +34,8 @@ function createLegacy(opts = {}) {
   R(`readHuman=i=>{const v=__in[i]||{};return{x:v.x||0,y:v.y||0,b:Object.assign({},v.b)}}`);
   return {
     g, eval: R, rec,
+    /** Sets the harness clock (performance.now() in ms; UI animations read it). */
+    clock(ms) { VT = ms; },
     /** Draws one frame (the legacy `render()`, 2D path) and returns the recorded op stream. Draw functions are wrapped once so the stream carries who-drew-what markers. */
     render() { if (!g.__wrapped) { g.__wrapped = 1; g.__mk = (n, e) => rec.mark(n, e); R(`for(const k of Object.getOwnPropertyNames(globalThis)){const f=globalThis[k];if(typeof f==='function'&&/^(draw[A-Z]|tDraw$|shB$|uiBG$)/.test(k)&&!f.__w){const w=function(...a){__mk(k,1);try{return f.apply(this,a)}finally{__mk(k,0)}};w.__w=1;globalThis[k]=w}}`); } rec.take(); rec.reset(); R('render()'); return rec.take(); },
     /** Advance one frame with inputs per player: {x,y,b:{shot,heavy,melee,dash,parry,burst,spell,focus,prev,next}} */

@@ -50,6 +50,7 @@ Everything gameplay-related will live under `packs/<id>/` (see DESIGN §2.2, §1
 | spec / knowledge architecture | `docs/DESIGN.md` §27, `tools/spec/` |
 | finish a lot of work | `pnpm gate` (`tools/gate.ts`; baseline `docs/coverage.baseline.json`) |
 | measure how good the detectors are | `pnpm mutate` (`tools/parity/mutate.ts` → `docs/MUTATION.generated.md`) |
+| menus / screens (title, hub, ...) | `packs/ui/app.ts` (router) -> `packs/ui/screens/<id>/`; settings `packs/ui/settings.ts`; parity `pnpm ui` (`tools/ui/compare.ts`); sheet `docs/game/mechanics/ui.md` |
 | sounds (sites, player, gains) | sites `packs/combat/jfx.ts` (`sfx`) -> `packs/render/juice/events.ts` (`snd`) -> `packs/audio/player.ts`; files `tools/audio/extract.ts`; sheet `docs/game/mechanics/audio.md` |
 | compare / look at what the legacy draws | `tools/parity/recorder.cjs`, `tools/render/{cli,raster}.ts`, `pnpm render legacy a,b <frames> out.png` |
 | "which checks does my diff need?" | `tools/affected.ts` (`pnpm affected`) |

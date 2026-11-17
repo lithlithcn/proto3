@@ -615,12 +615,14 @@ No other runtime network dependency is allowed without an entry here.
 | R115 | Stun-repeat reduction is keyed by the hit-data OBJECT in legacy; the port keyed by move name, so a character's own override (e.g. Nue's dashatk) shared a counter with the default dashatk. Overrides now get their own source id (64 + char*8 + move). | closed |
 | R116 | Random bots almost never reached wall bounces, hits at the edge of invulnerability, combos or clashes (mutation testing: `wall-bounce-damp` needed 48 games x 2400 f, `inv-threshold` survived). `fuzzbot` now has 4 personas (random, brawler, zoner, corner-driver) selected by seed; they exposed 6 real divergences at once. Keep adding personas/scenarios whenever mutation testing shows a survivor. | open (ongoing) |
 | R117 | Float association/order drifts of 1 ulp that accumulate (found by the personas via exact-bit comparison, not tolerance): damage factors were multiplied together first then by the raw damage (legacy multiplies the raw damage one wrapper at a time, outermost first); bullet acceleration `vx*n/l` vs legacy `vx*=n/l`. Rule: when porting an expression keep the legacy operation order EXACTLY; verify with the bit-exact drift probe when a gradual-drift signature appears. | closed |
+| R118 | Menus are drawn on the canvas (packs/ui, typed rewrite of the legacy screens), not Svelte/DOM as §8 planned: the legacy look is canvas code, and drawing through a Ctx2D lets `pnpm ui` prove each screen op-identical to the legacy one (gradient ids, OC overlay clear and the legacy 'WebGL unavailable — 2D mode' notice excluded: the port has no WebGL layer). Screen interface stays framework-agnostic (draw/nav). | closed |
 | R66 | Stun-repeat reduction is a wrapper around `hit` that records the hit even when the victim is invulnerable and the hit is rejected | `hit()` computes it before the invulnerability return |
 
 ## 26. Owner decisions log
 - 2026-11-14: legacy `.sfmap.json` maps do NOT need importing into Proto3.
 - 2026-11-14: maps received over the network that contain code (scripts) show a consent warning before running (R58).
 - 2026-11-14: the tutorial becomes a folder pack (`packs/tutorial/`, one file per lesson) instead of a hard-coded step list.
+- 2026-11-17: lot 3 UI = clean typed rewrite with the same look (owner: "beaucoup de menus" will change later), verified op by op against legacy.
 - 2026-11-14: build order = skeleton (kernel, tests, CI, docs) first, then Reimu alone, then the others.
 
 ## 26. Diagnostics & observability (decisions)

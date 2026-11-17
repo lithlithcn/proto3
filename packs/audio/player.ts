@@ -32,6 +32,10 @@ export function initAudio(baseUrl: string): void {
   for (const e of ['pointerdown', 'keydown', 'touchstart']) addEventListener(e, go, { passive: true });
 }
 
+/** True until the browser allowed audio (first gesture). */
+export const audioLocked = (): boolean => !AC || AC.state !== 'running';
+/** Plays one menu sound right away (UI: not part of a fight batch). */
+export const uiSound = (n: string, v = 1, r = 1): void => playSounds([{ n, v, r }], [], false, 1);
 /** Plays one frame batch. `tstop`: reverb send (legacy: in game while TSTOP>0); `endk`: legacy ENDK swell. Missing/undecoded sounds are skipped like legacy. */
 export function playSounds(list: readonly Sound[], stops: readonly string[], tstop: boolean, endk: number): void {
   if (AC && AC.state === 'running') play(list, tstop, endk);

@@ -28,7 +28,8 @@
     "investigate": "tsx tools/parity/investigate.ts",
     "metrics": "tsx tools/metrics.ts",
     "affected": "tsx tools/affected.ts",
-    "match": "tsx tools/sim/match.ts"
+    "match": "tsx tools/sim/match.ts",
+    "ui": "tsx tools/ui/compare.ts"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
