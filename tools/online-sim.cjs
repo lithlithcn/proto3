@@ -18,14 +18,17 @@ const FAKE_PEER = () => {
 async function openRoom(n = 2, opts = {}) {
   await new Promise(r => server.listening ? r() : server.listen(0, r));
   const b = await chromium.launch(), ctx = await b.newContext({ viewport: { width: 1280, height: 720 } }), pages = [], errs = [];
-  for (let i = 0; i < n; i++) { const pg = await ctx.newPage(); pg.on('pageerror', e => errs.push(`tab${i}: ${e.message}`)); await pg.addInitScript(FAKE_PEER);
+  const tab = async i => { const pg = await ctx.newPage(); pg.on('pageerror', e => errs.push(`tab${i}: ${e.message}`)); await pg.addInitScript(FAKE_PEER);
     await pg.goto(`http://localhost:${server.address().port}/index.html`); await pg.waitForTimeout(1200);
-    await pg.evaluate(([i, pic]) => { Peer = FakePeer; onlIce = async () => []; try { localStorage.setItem('sf_nick', 'Tab' + (i + 1)); } catch (e) {} if (pic) MYPIC = pic; }, [i, opts.pics ? opts.pics[i] : null]); pages.push(pg); }
+    await pg.evaluate(([i, pic]) => { Peer = FakePeer; onlIce = async () => []; try { localStorage.setItem('sf_nick', 'Tab' + (i + 1)); } catch (e) {} if (pic) MYPIC = pic; }, [i, opts.pics ? opts.pics[i] : null]); pages.push(pg); return pg; };
+  for (let i = 0; i < n; i++) await tab(i);
   await pages[0].evaluate(() => { mode = 'menu'; onlOpen(); onlHost(); }); await pages[0].waitForTimeout(400);
   const code = await pages[0].evaluate(() => ONL.code);
-  for (let i = 1; i < n; i++) { await pages[i].evaluate(c => { mode = 'menu'; onlOpen(); onlJoin2(c); }, code); await pages[i].waitForTimeout(600); }
+  const join = async pg => { await pg.evaluate(c => { mode = 'menu'; onlOpen(); onlJoin2(c); }, code); await pg.waitForTimeout(600); };
+  for (let i = 1; i < n; i++) await join(pages[i]);
   await pages[0].waitForTimeout(1500);
-  return { pages, code, errs, shot: (i, name) => pages[i].screenshot({ path: path.join(__dirname, '../reports', `online-${name}.png`) }), close: async () => { await b.close(); server.close(); } };
+  return { pages, code, errs, /** a new tab that joins now (e.g. during a match) */ addTab: async () => { const pg = await tab(pages.length); await join(pg); return pg; },
+    shot: (i, name) => pages[i].screenshot({ path: path.join(__dirname, '../reports', `online-${name}.png`) }), close: async () => { await b.close(); server.close(); } };
 }
 module.exports = { openRoom };
 if (require.main === module) (async () => {
