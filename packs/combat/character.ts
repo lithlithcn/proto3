@@ -22,6 +22,8 @@ export interface CharacterDef {
   /** Position in the legacy roster (selects the order of the spell pool: shared cards, then each character's own). */
   order: number;
   color: string;
+  /** Menu texts (character select): one-line role and the move summary (legacy `role` / `d`). */
+  role?: string; desc?: string;
   /** Movement multiplier (legacy `spd`). */
   spd: number;
   /** Damage taken / dealt multipliers (legacy `din` / `dout`). */

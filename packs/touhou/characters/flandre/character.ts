@@ -14,6 +14,7 @@ import { flandreTick } from './tick';
 const frenzy = (w: World, s: CombatState, p: number): boolean => w.slice<TouhouState>('touhou').fFr[p]! > s.gf;
 /** Flandre Scarlet — berserker: rainbow shotgun, Focus melee crushes heavy shots, boomerang / trap heavies, clones and Frenzy. */
 export const flandre: CharacterDef = {
+  role: "Berserker · Eye of destruction + shotgun", desc: "FOCUS: see the eye of things, focus melee = CRUSH (crit, destroys heavy shots). SHOT: rainbow shotgun. HEAVY: Starbow Break / Laevatein boomerang (toward) / Cranberry Trap (away). DASH chains speed up. SKILL 2: Four of a Kind. SKILL 1: Frenzy.",
   name: 'Flandre', order: 2, color: '#ff3030', spd: 1.02, din: 1.05, dout: 1, cd: 13,
   shot: flandreShot, dash: flandreDash, melee: flandreMelee, heavy: flandreHeavy, tick: flandreTick, ents: flandreEnts, entKinds: [6, 9], skill1: flandreClones, skill2: flandreFrenzy, spell: flandreSpell,
   doutM: (w, s, a, _v, heavy) => (!heavy && s.focus[a] ? 1.6 : 1) * (frenzy(w, s, a) ? 1.35 : 1),

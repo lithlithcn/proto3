@@ -68,7 +68,7 @@
     {
       "id": "ui-menus",
       "status": "diverging",
-      "area": "menus: title + hub op-identical to legacy (pnpm ui, 8 scenarios); character select, sub-menus, items list, controls, guide, pause, results, training, online lobby, map maker, YouTube sidebar, touch layer and pad navigation not ported yet",
+      "area": "menus: title, hub and character select op-identical to legacy (pnpm ui, 12 scenarios); sub-menus, items list, controls, guide, pause, results, training, online lobby, map maker, YouTube sidebar, touch layer, pad menu navigation not ported yet; CPU fighters stand still (AI = lot 4)",
       "evidence": "pnpm ui (tests/parity/ui.test.ts)",
       "limit": "fixed states x clock instants; 1280x720 only",
       "see": "docs/game/mechanics/ui.md"

@@ -10,6 +10,9 @@ import { UISUB, UIT } from '@pack/ui/trans';
 import { UIDOTS } from '@pack/ui/bg';
 import { HUBP } from '@pack/ui/screens/hub/deco';
 import { UIHUB } from '@pack/ui/screens/hub/hub';
+import { CS2, CSA, cssOpen } from '@pack/ui/screens/css/state';
+import type { CharacterDef } from '@pack/combat/api';
+import touhou from '@pack/touhou/pack';
 
 const req = createRequire(import.meta.url);
 const { createLegacy } = req('../parity/legacy.cjs') as { createLegacy(o: object): Legacy };
@@ -41,9 +44,13 @@ const SC: Sc[] = [
   { name: 'title->menu-trans', ms: 7200, legacy: "mode='title';UITITLE.t0=2;UIT.key='menu';UIT.t0=7;UIT.lab='MENU'", port: () => { APP.mode = 'title'; TITLE.t0 = 2; UIT.key = 'menu'; UIT.t0 = 7; UIT.lab = 'MENU'; } },
   ...[0, 3, 6].map(sel => ({ name: `hub-${sel}`, ms: 9000, legacy: `mode='menu';UIHUB.sel=${sel};UIHUB.a={};UIHUB.desc='';UISUB.t0=8.2;UIT.key='menu';UIT.t0=-9`, port: () => { APP.mode = 'menu'; UIHUB.sel = sel; UIHUB.a = {}; UIHUB.desc = ''; UISUB.t0 = 8.2; UIT.key = 'menu'; UIT.t0 = -9; } })),
   { name: 'hub-enter', ms: 9100, legacy: "mode='menu';UIHUB.sel=0;UIHUB.a={};UIHUB.desc='';UISUB.t0=9;UIT.key='menu';UIT.t0=-9", port: () => { APP.mode = 'menu'; UIHUB.sel = 0; UIHUB.a = {}; UIHUB.desc = ''; UISUB.t0 = 9; UIT.key = 'menu'; UIT.t0 = -9; } },
+  ...([['css-empty', ''], ['css-joined', 'S[0].dev="k0";S[0].ty=CH0+3'], ['css-ready', 'S[0].dev="k0";S[0].ty=CH0+3;S[0].rd=true;S[1].dev="k1";S[1].ty=CH0+6'], ['css-teams', 'CS2.tb=true;S[0].dev="k0";S[0].tm=2']] as const).map(([name, js]) => ({ name, ms: 20000,
+    legacy: `mode='menu';cssOpen();CSA.t0=18;UIT.key='css';UIT.t0=-9;{const S=CS2.sl;${js}}`,
+    port: () => { APP.mode = 'css'; cssOpen({ ...host, pads: [], go() {}, back() {} } as never, 0); CSA.t0 = 18; UIT.key = 'css'; UIT.t0 = -9; const S = CS2.sl; const CH0 = 0; void CH0; new Function('S', 'CH0', 'CS2', js)(S, 0, CS2); } })),
 ];
 const want = process.argv.slice(2).filter(a => !a.startsWith('-'));
-const host: UiHost = { sfx() {}, audioLocked: () => false, nowMs: () => 0, sb: 0, touch: false, music: false, open() {} };
+const roster = [touhou].flatMap(p => Object.entries((p.content?.['character'] ?? {}) as Record<string, CharacterDef>).map(([k, d]) => ({ id: `${p.id}:${k}`, key: k, name: d.name, col: d.color, role: d.role ?? '', desc: d.desc ?? '', o: d.order }))).sort((a, b) => a.o - b.o);
+const host: UiHost = { sfx() {}, audioLocked: () => false, nowMs: () => 0, sb: 0, touch: false, music: false, open() {}, roster, keys: new Set<string>(), pads: () => [], frame: () => +ev('frame')!, start() {}, playground() {}, drawPlayground() {} };
 let bad = 0;
 for (const s of SC.filter(x => !want.length || want.some(w => x.name.startsWith(w)))) {
   L.clock(s.ms); ev(s.legacy); const lo = canon(L.render());

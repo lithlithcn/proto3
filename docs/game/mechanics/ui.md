@@ -1,15 +1,17 @@
 # UI (menus and screens)
 ## Rule
-Same screens and look as the legacy game: title (warp stars, galaxy, planet, logo that shakes on directional input, sound-unlock veil), hub (8 skewed tiles, graph navigation, chips with the current rules, description bar, player card with level from XP = wins*3 + KOs + games), 0.55 s oblique-band transition between screens. Keyboard, pointer (hover/click regions), pad and touch all reduce to nav events (up/down/left/right/ok/back/reset/tabL/tabR/start/sel).
+Same screens and look as the legacy game: title (warp stars, galaxy, planet, logo that shakes on directional input, sound-unlock veil), hub (8 skewed tiles, graph navigation, chips with the current rules, description bar, player card with level from XP = wins*3 + KOs + games), 0.55 s oblique-band transition between screens. Character select: every keyboard / pad joins with Attack, moves on the grid, Attack = ready, Parry = try the fighter in a live arena behind the menu (playground), Start / Enter when everyone is ready = fight; nobody joined = CPU BATTLE; FREE FOR ALL / TEAM BATTLE toggle with team flags per card. CPU fighters get character (seed + 3i) % roster. Keyboard, pointer (hover/click regions), pad and touch all reduce to nav events (up/down/left/right/ok/back/reset/tabL/tabR/start/sel).
 ## Legacy
 `function drawTitle`, `function titleBG`, `function uiBG`, `function uiTrans`, `const HUB=`, `function drawMenu` (+ its wrappers: hubFX/hubProfile, HUBG graph `hubMove=`), `function ornFrame`, `function nav(` / `function onKey(` wrapper chains, `saveOpts`/`loadOpts`. Oddities: the FIGHT tile text is overridden by the character-select wrapper; `Digit1` = ok on the hub.
 ## Port
 - Router: `packs/ui/app.ts` (`renderUi`, `nav`, `onKey`, `APP.mode`); shell `src/main.ts` (pointer hot regions, first gesture only unlocks audio).
 - Screens: `packs/ui/screens/title/title.ts`, `packs/ui/screens/title/bg.ts`, `packs/ui/screens/hub/hub.ts`, `packs/ui/screens/hub/deco.ts`, `packs/ui/screens/hub/icons.ts`; shared `packs/ui/core.ts` (UiCtx, fonts, skewRect, ornFrame), `packs/ui/bg.ts`, `packs/ui/trans.ts`.
+- Character select: `packs/ui/screens/css/state.ts` (`cssOpen`, `cssTick`, `cssGo`, `cssTapTile`), `packs/ui/screens/css/draw.ts`; character art through `packs/render/ld/portrait.ts` (`drawCharArt`); roster texts = `role` / `desc` of each character content file.
+- Devices + bindings: `packs/ui/input/devices.ts` (`devIn` menu reading, `readDev` fight reading with pad chords), `packs/ui/input/binds.ts` (`sf_binds3`). The shell keeps a one-frame tap buffer (legacy tapQ) so a press shorter than a frame still counts.
 - Settings with the legacy storage keys: `packs/ui/settings.ts` (`SET`, `loadSettings`, `saveSettings`).
 ## Tests
 `pnpm ui [scenario]` (`tools/ui/compare.ts`): legacy render() vs port per scenario (state + clock), op diff; run by `tests/parity/ui.test.ts`. Random decorations are copied legacy -> port, later Math.random pinned to 0.5.
 ## Bugs
-(none yet)
+- Legacy pad reading in the character select overwrote the vertical stick with the Y button (`I.y=bt(3)`): pads could not move up/down and Y moved down. Port keeps the team-flag button apart (`t`) — deliberate fix.
 ## Not ported yet
-Character select, sub-menus (rules/options/help/sound/profiles/teams), items list, controls, guide, pause, results, intro/GAME!, last stock banner, training, online lobby, map maker, YouTube sidebar (`sb` = 0), touch layer, pad polling.
+Sub-menus (rules/options/help/sound/profiles/teams), items list, controls, guide, pause, results, intro/GAME!, last stock banner, training, online lobby, map maker, YouTube sidebar (`sb` = 0), touch layer, pad menu polling (pollNav), CPU AI (CPUs stand still until lot 4), profiles' per-player bindings.

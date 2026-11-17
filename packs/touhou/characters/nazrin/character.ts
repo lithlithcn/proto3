@@ -12,6 +12,7 @@ import { nazrinTick } from './tick';
 
 /** Nazrin — mouse boss: sentinel mice, pendulums, dowsing mark, spell-gauge thief (lunge), dig for a random bonus. */
 export const nazrin: CharacterDef = {
+  role: "Mouse boss · Sentinels, pendulum, thief", desc: "SHOT: mice that stay on the ground as sentinels (max 6) and bite. FOCUS: the pendulum points, sentinels rush there. HEAVY: Nazrin Pendulum (launches sentinels it hits) / detection cone marks the foe (toward) / Pendulum Guard (away). TOWARD+MELEE: steal spell gauge. SKILL 2: dig up a bonus (1 s, vulnerable). SKILL 1: recall every mouse.",
   name: 'Nazrin', order: 6, color: '#a0a0b0', spd: 1.02, din: 1, dout: 1, cd: 11,
   shot: nazrinShot, melee: nazrinMelee, heavy: nazrinHeavy, inp: nazrinInp, tick: nazrinTick, ents: nazrinEnts, post: nazrinPost, entKinds: [209, 213], skill1: nazrinDig, skill2: nazrinRecall, spell: nazrinSpell,
   spdM: (w, s, p) => (w.slice<TouhouState>('touhou').nSpd[p]! > s.gf ? 1.3 : 1),

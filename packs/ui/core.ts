@@ -30,3 +30,15 @@ export function ornFrame(c: CanvasRenderingContext2D, x: number, y: number, w: n
   for (const [sx, sy] of [[0, 0], [1, 0], [0, 1], [1, 1]] as const) { const px = sx ? x + w - 4 : x + 4, py = sy ? y + h - 4 : y + 4, dx = sx ? -1 : 1, dy = sy ? -1 : 1; c.beginPath(); c.moveTo(px + dx * (k + L), py); c.lineTo(px + dx * k, py); c.moveTo(px, py + dy * k); c.lineTo(px, py + dy * (k + L)); c.stroke(); }
   c.fillStyle = col; c.beginPath(); c.moveTo(x + w / 2, y - 5); c.lineTo(x + w / 2 + 7, y + 1); c.lineTo(x + w / 2, y + 7); c.lineTo(x + w / 2 - 7, y + 1); c.fill(); c.restore();
 }
+export const eob = (u: number): number => { u = Math.max(0, Math.min(1, u)); const c1 = 1.7, c3 = c1 + 1; return 1 + c3 * Math.pow(u - 1, 3) + c1 * Math.pow(u - 1, 2); };
+/** Word wrap with the current font (legacy wrapT). */
+export function wrapT(c: CanvasRenderingContext2D, str: string, mw: number): string[] {
+  const out: string[] = []; let cur = '';
+  for (const wd of str.split(' ')) { const t = cur ? cur + ' ' + wd : wd; if (c.measureText(t).width > mw && cur) { out.push(cur); cur = wd; } else cur = t; }
+  if (cur) out.push(cur); return out;
+}
+/** Character shown by the menus (built by the shell from the `character` content). `key` = legacy id (reimu...). */
+export interface RosterEntry { id: string; key: string; name: string; col: string; role: string; desc: string }
+/** Player colours P1..P8 (legacy COLS) and team colours (TCOL). */
+export { COLS } from '@pack/render/colors';
+export const TCOL = ['#ff4a4a', '#4a8aff', '#ffd23a', '#5cff8a'];
