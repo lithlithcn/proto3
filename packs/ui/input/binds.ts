@@ -21,3 +21,12 @@ export function loadBinds(s: Store): void {
   } catch { /* corrupt: defaults */ }
 }
 export function saveBinds(s: Store): void { try { s.setItem('sf_binds3', JSON.stringify(BINDS)); } catch { /* quota */ } }
+/** Row labels (legacy ACT_FR). */
+export const ACT_LABEL: Record<Act, string> = { up: 'Up', down: 'Down', left: 'Left', right: 'Right', shot: 'Shot', heavy: 'Heavy', melee: 'Melee', dash: 'Dash', parry: 'Parry', burst: 'Skill 2', spell: 'Spell card', focus: 'Focus', prev: 'Skill 1', next: 'Skill 2 (alt)' };
+/** Layout-aware key labels (navigator.keyboard layout map when the browser has it; legacy LBL). */
+export const LBL: Record<string, string> = {};
+export const keyName = (c: string): string => LBL[c] || ({ Mouse0: 'Mouse L', Mouse1: 'Mouse M', Mouse2: 'Mouse R', Mouse3: 'Mouse 4', Mouse4: 'Mouse 5', WheelUp: 'Wheel ↑', WheelDown: 'Wheel ↓', Space: 'Space', ShiftLeft: 'L Shift', ShiftRight: 'R Shift', ControlLeft: 'L Ctrl', ControlRight: 'R Ctrl', ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→', Enter: 'Enter', Tab: 'Tab' } as Record<string, string>)[c] || c.replace(/^Key|^Digit/, '').replace('Numpad', 'Num ');
+const PADN = ['A', 'B', 'X', 'Y', 'LB', 'RB', 'LT', 'RT', 'Select', 'Start', 'L3', 'R3', '↑', '↓', '←', '→'], PADNS = ['✕', '○', '□', '△', 'L1', 'R1', 'L2', 'R2', 'Share', 'Options', 'L3', 'R3', '↑', '↓', '←', '→'];
+export const isPS = (ps: Gamepad[]): boolean => ps.some(g => /054c|sony|playstation|dualshock|dualsense|wireless controller/i.test(g.id));
+export const padName = (n: number, ps: Gamepad[]): string => (isPS(ps) ? PADNS : PADN)[n] || ('Button ' + n);
+export const padOn = (g: Gamepad): number[] => g.buttons.map((b, n) => b && (b.pressed || b.value > 0.3) ? n : -1).filter(n => n >= 0);

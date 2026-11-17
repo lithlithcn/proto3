@@ -12,15 +12,18 @@ import { SET, saveStats } from './settings';
 import { SUB, drawSub, type Row } from './screens/sub/draw';
 import { helpRows, optionRows, ruleRows, type MenuHost } from './screens/sub/menus';
 import { clamp } from './core';
+import { BIND, bindKey, bindPadTick, bindsNav, drawBinds, type BindsHost } from './screens/binds/binds';
+import { GUIDE, drawInfo, infoNav } from './screens/info/info';
+import { IM, drawItems, itemsNav, type CatItem, type ItemsHost } from './screens/items/items';
 
 /** UI router (legacy `mode` + the render()/nav()/onKey() wrapper chains, flattened). 'game' is drawn by the render pack. */
-export type Mode = 'title' | 'menu' | 'css' | 'sub' | 'game';
+export type Mode = 'title' | 'menu' | 'css' | 'sub' | 'items' | 'binds' | 'info' | 'game';
 export type NavEv = 'up' | 'down' | 'left' | 'right' | 'ok' | 'back' | 'reset' | 'tabL' | 'tabR' | 'start' | 'sel';
 export interface UiHost {
   sfx(n: string, v?: number, r?: number): void; audioLocked(): boolean; nowMs(): number;
   /** width of the music sidebar (0 = hidden) */ sb: number; touch: boolean; music: boolean;
   /** hub tile chosen other than FIGHT (online, training...) — the shell opens it */ open(k: HubKey): void;
-  roster: RosterEntry[]; keys: Keys; pads(): Gamepad[]; /** frame counter the character art animates with */ frame(): number;
+  roster: RosterEntry[]; /** item catalog in legacy order */ items: CatItem[]; keys: Keys; pads(): Gamepad[]; /** frame counter the character art animates with */ frame(): number;
   /** start the match: device per human, character per fighter (-1 = default) */ start(devs: string[], chars: number[]): void;
   /** live arena behind the select (empty = stop) */ playground(devs: string[], chars: number[]): void; drawPlayground(c: CanvasRenderingContext2D): void;
   /** same line-up, new match */ restart(): void; /** persist the settings */ save(): void; fullscreen(): boolean; toggleFullscreen(): void;
@@ -28,14 +31,16 @@ export interface UiHost {
 export const APP = { mode: 'title' as Mode, paused: false };
 
 const titleGo = (h: UiHost): void => { if (APP.mode !== 'title') return; if (h.audioLocked()) { TITLE.agn = h.nowMs(); return; } APP.mode = 'menu'; h.sfx('titleclick', 1); };
-const hubHost = (h: UiHost, now: number): HubHost => ({ sb: h.sb, touch: h.touch, music: h.music, audioLocked: h.audioLocked(), sfx: h.sfx, go: k => { if (k === 'fight') { APP.mode = 'css'; cssOpen(cssHost(h), now); } else if (k === 'rules') openSub('RULES', () => ruleRows(menuHost(h))); else if (k === 'opt') openSub('OPTIONS', () => optionRows(menuHost(h))); else if (k === 'help') openSub('HOW TO PLAY', () => helpRows(menuHost(h))); else soon(({ online: 'ONLINE', train: 'TRAINING', items: 'ITEMS', maps: 'MAP MAKER' } as Record<string, string>)[k] ?? k); }, pic() {}, nick() {} });
+const hubHost = (h: UiHost, now: number): HubHost => ({ sb: h.sb, touch: h.touch, music: h.music, audioLocked: h.audioLocked(), sfx: h.sfx, go: k => { if (k === 'fight') { APP.mode = 'css'; cssOpen(cssHost(h), now); } else if (k === 'rules') openSub('RULES', () => ruleRows(menuHost(h))); else if (k === 'opt') openSub('OPTIONS', () => optionRows(menuHost(h))); else if (k === 'help') openSub('HOW TO PLAY', () => helpRows(menuHost(h))); else if (k === 'items') { APP.mode = 'items'; IM.sel = 0; } else soon(({ online: 'ONLINE', train: 'TRAINING', maps: 'MAP MAKER' } as Record<string, string>)[k] ?? k); }, pic() {}, nick() {} });
 const cssHost = (h: UiHost): CssHost => ({ roster: h.roster, keys: h.keys, pads: h.pads(), touch: h.touch, sfx: h.sfx, go: (d, c) => { APP.mode = 'game'; h.start(d, c); }, back: () => { APP.mode = 'menu'; h.playground([], []); }, playground: h.playground });
 
 /** Sub-menu stack (legacy openSub: nested sub-menus remember where you were). */
 function openSub(title: string, rows: () => Row[]): void { if (APP.mode === 'sub') SUB.stack.push([SUB.rows!, SUB.title, SUB.sel]); else SUB.stack = []; SUB.rows = rows; SUB.title = title; SUB.sel = 0; APP.mode = 'sub'; }
 /** Screens still being ported open an honest placeholder instead of a dead button. */
 const soon = (what: string): void => openSub(what, () => [{ t: () => 'Coming soon: this screen is being ported', f: () => {} }]);
-const menuHost = (h: UiHost): MenuHost => ({ open: openSub, title: () => { APP.mode = 'title'; TITLE.t0 = h.nowMs() / 1000; }, controls: () => soon('CONTROLS'), guide: () => soon('GUIDE'), tutorial: () => soon('HOW TO PLAY (TUTORIAL)'), fullscreen: h.fullscreen, toggleFullscreen: h.toggleFullscreen, soon });
+const itemsHost = (h: UiHost, now: number): ItemsHost => ({ items: h.items, frame: h.frame(), sfx: h.sfx, nav: ev => nav(ev, h, now), test: () => soon('TRAINING') });
+const bindsHost = (h: UiHost, now: number): BindsHost => ({ keys: h.keys, pads: h.pads(), mouseOn: SET.mouse, sfx: h.sfx, nav: ev => nav(ev, h, now), togMouse: () => { SET.mouse = !SET.mouse; h.save(); h.sfx('se_select00', 0.6); }, save: h.save });
+const menuHost = (h: UiHost): MenuHost => ({ open: openSub, title: () => { APP.mode = 'title'; TITLE.t0 = h.nowMs() / 1000; }, controls: () => { APP.mode = 'binds'; BIND.wait = false; }, guide: () => { APP.mode = 'info'; GUIDE.p = 0; GUIDE.scr = 0; }, tutorial: () => soon('HOW TO PLAY (TUTORIAL)'), fullscreen: h.fullscreen, toggleFullscreen: h.toggleFullscreen, soon });
 /** Draws the current screen (not 'game'). Returns false when the caller must draw the fight. */
 export function renderUi(u: UiCtx, h: UiHost): boolean {
   if (APP.mode === 'game') return false;
@@ -45,7 +50,10 @@ export function renderUi(u: UiCtx, h: UiHost): boolean {
     const ch = cssHost(h); if (!cssTick(ch, u.now)) return renderUi(u, h); // the screen was left this frame
     if (CS2.on) { h.drawPlayground(c); c.setTransform(1, 0, 0, 1, 0, 0); c.globalAlpha = 1; } else { c.globalAlpha = 1; c.fillStyle = '#000'; c.fillRect(0, 0, u.W, u.H); }
     drawCss(u, ch, h.frame());
-  } else if (APP.mode === 'sub') { c.fillStyle = '#000'; c.fillRect(0, 0, u.W, u.H); drawSub(u, ev => nav(ev, h, u.now), h.sfx); }
+  } else if (APP.mode === 'info') { c.fillStyle = '#000'; c.fillRect(0, 0, u.W, u.H); drawInfo(u, { nav: ev => nav(ev, h, u.now), test: () => soon('TRAINING'), items: h.items, frame: h.frame() }, u.now); }
+  else if (APP.mode === 'binds') { const bh = bindsHost(h, u.now); bindPadTick(bh); c.fillStyle = '#000'; c.fillRect(0, 0, u.W, u.H); drawBinds(u, bh); }
+  else if (APP.mode === 'items') { c.fillStyle = '#000'; c.fillRect(0, 0, u.W, u.H); drawItems(u, itemsHost(h, u.now)); }
+  else if (APP.mode === 'sub') { c.fillStyle = '#000'; c.fillRect(0, 0, u.W, u.H); drawSub(u, ev => nav(ev, h, u.now), h.sfx); }
   else { c.fillStyle = '#000'; c.fillRect(0, 0, u.W, u.H); drawHub(u, hubHost(h, u.now)); }
   uiTrans(u, APP.mode === 'sub' ? 'sub:' + SUB.title : APP.mode, APP.mode === 'sub' ? SUB.title.toUpperCase() : LABELS[APP.mode] ?? '');
   if (APP.mode === 'title' && h.audioLocked()) drawSoundLock(u, h.nowMs());
@@ -55,6 +63,9 @@ export function renderUi(u: UiCtx, h: UiHost): boolean {
 export function nav(ev: NavEv, h: UiHost, now: number): void {
   if (APP.mode === 'title') { if (ev === 'up' || ev === 'down' || ev === 'left' || ev === 'right' || ev === 'tabL' || ev === 'tabR') { titleShake(0.7); h.sfx('se_select00', 0.35, 0.8 + Math.random() * 0.4); return; } titleGo(h); return; }
   if (APP.mode === 'css') return; // character select reads the devices itself (cssTick)
+  if (APP.mode === 'info') { if (infoNav(ev, h.sfx, h.items)) APP.mode = SUB.rows ? 'sub' : 'menu'; return; }
+  if (APP.mode === 'binds') { if (bindsNav(ev, bindsHost(h, now))) APP.mode = SUB.rows ? 'sub' : 'menu'; return; }
+  if (APP.mode === 'items') { if (itemsNav(ev, itemsHost(h, now))) APP.mode = 'menu'; h.save(); return; }
   if (APP.mode === 'sub') {
     const L = SUB.rows!(); SUB.sel = clamp(SUB.sel, 0, L.length - 1); const it = L[SUB.sel]!;
     if (ev === 'up' || ev === 'down') { SUB.sel = (SUB.sel + (ev === 'up' ? L.length - 1 : 1)) % L.length; h.sfx('se_select00', 0.6); }
@@ -76,6 +87,8 @@ const KEYEV: Record<string, NavEv> = { ArrowUp: 'up', ArrowDown: 'down', ArrowLe
 /** Raw key (KeyboardEvent.code) outside the fight. */
 export function onKey(code: string, h: UiHost, now: number): void {
   if (APP.mode === 'title') { if (/^(Arrow|Key[WASDQE]$)/.test(code)) { nav(({ ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' } as Record<string, NavEv>)[code] ?? 'left', h, now); return; } if (!/^F\d+$/.test(code)) titleGo(h); return; }
+  if (APP.mode === 'binds' && bindKey(code, bindsHost(h, now))) return;
+  if (APP.mode === 'items' && code === 'KeyT') { nav('start', h, now); return; }
   const ev = KEYEV[code]; if (ev) nav(ev, h, now);
 }
 

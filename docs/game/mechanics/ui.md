@@ -11,6 +11,9 @@ Same screens and look as the legacy game: title (warp stars, galaxy, planet, log
 - Fight overlays: `packs/ui/screens/fight/overlays.ts` (`drawIntro` READY?/FIGHT!, `drawGameEnd` GAME!, `drawPause` + menu with quit confirm, `PZ`), routed by `renderFightUi` / `fightKey` in `packs/ui/app.ts`; auto-pause on blur / hidden tab / pad unplugged (shell).
 - Results: `packs/ui/screens/fight/results.ts` (`rankList`, `resAwards` titles, podium + art, stats panel, MATCH FLOW curve sampled every 30 frames by the shell, confetti); hub stats (`sf_stats`) counted at results start. LAST STOCK! banner + camera punch-in: `lsCheck` / `drawLastStock` / `lsZoom` in overlays.ts, zoom applied through `VIEWZ` (`packs/render/view.ts`, also carries the reduced-effects zoom factor).
 - Sub-menus: `packs/ui/screens/sub/draw.ts` (`drawSub`, `splitRow`, `RDESC`, stack `SUB`), rows in `packs/ui/screens/sub/menus.ts` (RULES, OPTIONS, HOW TO PLAY, TEAMS, SOUND); settings saved after each change (legacy only saved at match start). Screens not ported yet open an honest 'Coming soon' sub-menu instead of a dead button. Rules reach the match: lives, items, cards at once, tempo, teams, COMPETITIVE (4 lives, no items); timer + map choice wait for lot 4.
+- Item list: `packs/ui/screens/items/items.ts` (catalog = item content in legacy order, per-item ON/OFF -> match `itemSet`, `sf_opts.itemOn`). Item `name` / `color` / `desc` / `ch` now carry the legacy strings.
+- Controls: `packs/ui/screens/binds/binds.ts` (keys incl. mouse buttons + wheel, pad buttons, Spell = 2-button chord, live test rows, pad test line, mouse-aim toggle `sf_mouse` — the in-fight mouse aim itself is not ported yet).
+- Guide: `packs/ui/screens/info/info.ts` + the 40 legacy pages copied verbatim in `packs/ui/ld/info.ts` (`buildInfo(catalog)`: item pages follow the catalog). `tests/ld-names.test.ts` also checks `packs/ui/ld`.
 - Match end: once a winner exists the sim only counts `winT` and ticks the effects (combat `gate`, legacy loop `stepFx();winT++`); the oracle runner does the same.
 - Settings with the legacy storage keys: `packs/ui/settings.ts` (`SET`, `loadSettings`, `saveSettings`).
 ## Tests
@@ -18,4 +21,4 @@ Same screens and look as the legacy game: title (warp stars, galaxy, planet, log
 ## Bugs
 - Legacy pad reading in the character select overwrote the vertical stick with the Y button (`I.y=bt(3)`): pads could not move up/down and Y moved down. Port keeps the team-flag button apart (`t`) — deliberate fix.
 ## Not ported yet
-Replay (V), profiles, records, items list, controls, guide, training, online lobby, map maker, YouTube sidebar (`sb` = 0), touch layer, pad menu polling (pollNav), CPU AI (CPUs stand still until lot 4), profiles' per-player bindings.
+Replay (V), profiles, records, mouse aim in fight, training, online lobby, map maker, YouTube sidebar (`sb` = 0), touch layer, pad menu polling (pollNav), CPU AI (CPUs stand still until lot 4), profiles' per-player bindings.

@@ -1,5 +1,5 @@
 /** Shared UI context + drawing primitives (legacy UF/UFI/skewRect/strokeTxt, line ~3821). Every screen draws through `u.c` (a Ctx2D). */
-import { hexA } from '@pack/render/ui';
+import { UF, UFI, hexA } from '@pack/render/ui';
 export { UF, UFI, clamp, hexA, lerp } from '@pack/render/ui';
 export const TAU = 6.2832; // legacy constant (op parity: arcs end at 6.2832, not 2π)
 
@@ -42,3 +42,14 @@ export interface RosterEntry { id: string; key: string; name: string; col: strin
 /** Player colours P1..P8 (legacy COLS) and team colours (TCOL). */
 export { COLS } from '@pack/render/colors';
 export const TCOL = ['#ff4a4a', '#4a8aff', '#ffd23a', '#5cff8a'];
+/** Screen header plate (legacy uiHeader, line ~4007). */
+export function uiHeader(u: UiCtx, t: string, sub?: string): void {
+  const { c, W, H } = u; c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.textAlign = 'left'; c.fillStyle = '#05060c'; skewRect(c, -20, H * 0.03, Math.max(W * 0.36, t.length * H * 0.032 + W * 0.1), H * 0.075, H * 0.03); c.fill();
+  c.fillStyle = u.acc; c.fillRect(0, H * 0.03 + H * 0.075 - 4, Math.max(W * 0.34, t.length * H * 0.032 + W * 0.08), 4); c.font = UFI(H * 0.045); strokeTxt(c, t, W * 0.05, H * 0.088, 6, '#05060c', '#fff');
+  if (sub) { c.font = UF(800, H * 0.016); c.fillStyle = u.acc; c.fillText(sub, W * 0.05, H * 0.025); } c.restore();
+}
+/** ◀ BACK link (legacy backBtn v3). */
+export function backBtn(u: UiCtx, back: () => void): void {
+  const { c, W, H } = u; c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.textAlign = 'left'; c.font = UF(900, 15); c.fillStyle = '#fff'; c.fillText('◀ BACK', W * 0.05, H * 0.15); c.restore();
+  u.hot.push({ x: W * 0.04, y: H * 0.125, w: 110, h: 30, hover: () => {}, click: back });
+}

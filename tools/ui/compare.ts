@@ -8,6 +8,11 @@ import { TEMB, TGAL, TSTAR } from '@pack/ui/screens/title/bg';
 import { TITLE } from '@pack/ui/screens/title/title';
 import { UISUB, UIT } from '@pack/ui/trans';
 import { SUB } from '@pack/ui/screens/sub/draw';
+import { IM } from '@pack/ui/screens/items/items';
+import { BIND } from '@pack/ui/screens/binds/binds';
+import { GUIDE } from '@pack/ui/screens/info/info';
+import { SET } from '@pack/ui/settings';
+import type { ItemDef } from '@pack/combat/api';
 import { optionRows, ruleRows, soundRows, teamRows } from '@pack/ui/screens/sub/menus';
 import { UIDOTS } from '@pack/ui/bg';
 import { HUBP } from '@pack/ui/screens/hub/deco';
@@ -30,6 +35,8 @@ copy(TSTAR, J('TSTAR')); copy(UIDOTS, J('UIDOTS')); copy(HUBP, J('HUBP')); copy(
 ev('nP=2;nH=1;cpuLv=5;stI=2;itemsOn=true;TIMER=0;COMP=false;TEAMS=false;NERV=10;mapI=0'); // menu defaults (the oracle runner starts a 2-human match)
 ev('Math.random=()=>0.5'); RND.r = () => 0.5; Math.random = () => 0.5;
 const W = +ev('W')!, H = +ev('H')!;
+/** legacy item catalog, read before any scenario trims it */
+const LITEMS = J<{ k: string; name: string; c: string; d: string; ch: string }[]>('ITEMS.map(i=>({k:i.k,name:i.name,c:i.c,d:i.d,ch:i.ch||""}))');
 
 function canon(a: Op[]): Op[] {
   const m = new Map<number, number>(), id = (v: number): number => { if (!m.has(v)) m.set(v, m.size); return m.get(v)!; };
@@ -44,6 +51,8 @@ function canon(a: Op[]): Op[] {
 function blockOf(st: Op[], name: string): Op[] { const i = st.findIndex(o => o[0] === '#' && o[1] === name); if (i < 0) return []; const out: Op[] = []; let d = 0; for (let j = i + 1; j < st.length; j++) { const o = st[j]!; if (o[0] === '#') d++; else if (o[0] === '#/') { if (!d--) break; } else out.push(o); } return out; }
 const snapOf = (st: Op[], name: string): Record<string, unknown> => (st.find(o => o[0] === '#' && o[1] === name)?.[2] ?? {}) as Record<string, unknown>;
 interface Sc { name: string; ms: number; legacy: string; port(): void; /** compare only this legacy draw function's block (fight overlays) */ block?: string; draw?(u: UiCtx): void }
+const roster = [touhou].flatMap(p => Object.entries((p.content?.['character'] ?? {}) as Record<string, CharacterDef>).map(([k, d]) => ({ id: `${p.id}:${k}`, key: k, name: d.name, col: d.color, role: d.role ?? '', desc: d.desc ?? '', o: d.order }))).sort((a, b) => a.o - b.o);
+const items = Object.entries(touhou.content!['item'] as Record<string, ItemDef>).map(([k, d]) => ({ k, name: d.name, c: d.color, d: d.desc ?? '', ch: d.ch ?? '', o: d.order })).sort((a, b) => a.o - b.o);
 const SC: Sc[] = [
   { name: 'title-intro', ms: 1300, legacy: "mode='title';UITITLE.t0=1;UIT.key='title';UIT.t0=-9", port: () => { APP.mode = 'title'; TITLE.t0 = 1; UIT.key = 'title'; UIT.t0 = -9; } },
   { name: 'title', ms: 5000, legacy: "mode='title';UITITLE.t0=2;UITITLE.shk=0;UIT.key='title';UIT.t0=-9", port: () => { APP.mode = 'title'; TITLE.t0 = 2; TITLE.shk = 0; UIT.key = 'title'; UIT.t0 = -9; } },
@@ -69,10 +78,17 @@ const SC: Sc[] = [
     legacy: `mode='menu';openSub('${title}',${lst});subSel=${sel};UISUB.vals={};UISUB.t0=39;UIT.key='sub:${title}';UIT.t0=-9`,
     port() { const mh = { open() {}, title() {}, controls() {}, guide() {}, tutorial() {}, fullscreen: () => false, toggleFullscreen() {}, soon() {} }; APP.mode = 'sub'; SUB.stack = []; SUB.title = title; SUB.sel = sel; SUB.vals = {}; UISUB.t0 = 39; UIT.key = 'sub:' + title; UIT.t0 = -9;
       SUB.rows = ({ RULESL: () => ruleRows(mh), OPTL: () => optionRows(mh), TEAMM: teamRows, SOUNDM: soundRows } as const)[lst]; } })),
+  ...[0, 9].map(sel => ({ name: `items-${sel}`, ms: 41000,
+    legacy: `mode='items';{const keep=new Set(${JSON.stringify(items.map(i => i.k))});for(let i=ITEMS.length-1;i>=0;i--)if(!keep.has(ITEMS[i].k))ITEMS.splice(i,1)}ITEMS.forEach(i=>itemOn[i.k]=true);itemOn.orange=false;itemSel=${sel};UIT.key='items';UIT.t0=-9;frame=7`,
+    port() { APP.mode = 'items'; for (const i of items) SET.itemOn[i.k] = true; SET.itemOn['orange'] = false; IM.sel = sel; UIT.key = 'items'; UIT.t0 = -9; } })),
+  ...([[0, 0, false], [5, 3, false], [10, 4, true]] as const).map(([row, col, wait]) => ({ name: `binds-${row}-${col}`, ms: 42000,
+    legacy: `mode='binds';resetBinds();bind.row=${row};bind.col=${col};bind.wait=${wait};bind.combo=[];MOUSEON=false;UIT.key='binds';UIT.t0=-9`,
+    port() { APP.mode = 'binds'; BIND.row = row; BIND.col = col; BIND.wait = wait; BIND.combo = []; SET.mouse = false; UIT.key = 'binds'; UIT.t0 = -9; } })),
+  // the guide's item pages are built from the catalog: legacy has 131 items, so the port is fed the legacy catalog here
+  ...[0, 3, 7, 12, 16, 37, 38, 39].map(p => ({ name: `guide-${p}`, ms: 43210, legacy: `mode='info';infoP=${p};infoScr=0;UIT.key='info';UIT.t0=-9;frame=33`, port() { APP.mode = 'info'; GUIDE.p = p; GUIDE.scr = 0; UIT.key = 'info'; UIT.t0 = -9; host.items = LITEMS; } })),
 ];
 const want = process.argv.slice(2).filter(a => !a.startsWith('-'));
-const roster = [touhou].flatMap(p => Object.entries((p.content?.['character'] ?? {}) as Record<string, CharacterDef>).map(([k, d]) => ({ id: `${p.id}:${k}`, key: k, name: d.name, col: d.color, role: d.role ?? '', desc: d.desc ?? '', o: d.order }))).sort((a, b) => a.o - b.o);
-const host: UiHost = { sfx() {}, audioLocked: () => false, nowMs: () => 0, sb: 0, touch: false, music: false, open() {}, roster, keys: new Set<string>(), pads: () => [], frame: () => +ev('frame')!, start() {}, playground() {}, drawPlayground() {} };
+const host: UiHost = { items, sfx() {}, audioLocked: () => false, nowMs: () => 0, sb: 0, touch: false, music: false, open() {}, roster, keys: new Set<string>(), pads: () => [], frame: () => +ev('frame')!, start() {}, playground() {}, drawPlayground() {} };
 let bad = 0;
 for (const s of SC.filter(x => !want.length || want.some(w => x.name.startsWith(w)))) {
   L.clock(s.ms); ev(s.legacy); const raw = L.render();
