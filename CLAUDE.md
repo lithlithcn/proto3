@@ -37,6 +37,7 @@ Before any tool/abstraction/doc system answer: which concrete problem, how often
 `npm run dev` (http://localhost:8080, edit + reload, no build) · `npm test` = `node tools/regress.cjs` (8 CPU matches headless vs `tests/baseline.json`; `--update` after an INTENDED gameplay change, and say in the commit what changed) · `npm run smoke` (browser: loads, runs a match, no JS error; needs Playwright) · `npm run map [name]`.
 `tools/headless.cjs` runs the game without rendering (for tests, bug repro, mass simulations).
 Bug hunting: `node tools/campaign.cjs [N] [--kind mix|cpu|rollback|online]` (N headless games on all cores: crash, NaN, flood, rollback save/load/replay mismatch, online desync through the real netcode; unique issues in reports/campaign.json) · `--repro <report.json>` replays the job of a report (the owner's DEBUG LAB files too) · `--selftest` injects each bug kind and must catch all (in CI) · `node tools/diverge.cjs [match] [ref]` = first frame + exact values that differ between a git version and the working tree (use it when `npm test` says CHANGED).
+Online UI without internet: `tools/online-sim.cjs` (`openRoom(n)`: n browser tabs joined through a fake PeerJS on BroadcastChannel; real lobby/netcode code) — use it for every online change.
 Owner's DEBUG LAB = the same checks in the browser (type `ewekeks` on the title screen; content/debug-lab/): he runs it for hours and sends the JSON files (one per NEW issue signature). Start a fix with `--repro` on his file.
 
 ## After every push
