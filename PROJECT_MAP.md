@@ -136,3 +136,4 @@ Files in LOAD ORDER (= index.html). Folder = theme. The order matters: a later f
 - `src/audio/porte-audio.js` porte audio : le navigateur bloque le son tant qu'il n'y a ni clic ni touche (la manette ne compte pas) → écran clair « clique pour jouer »
 - `src/core/boot.js` Runs the queued load-time statements (DEFER) in load order: the game starts here. 
 - `src/engine/modes.js` 
+- `content/graze-rush/graze-rush.js` 
