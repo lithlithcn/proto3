@@ -14,7 +14,7 @@ const MENU=[{t:()=>'FIGHT!',f:()=>start('game')},{t:()=>'ONLINE (2-8 players)',f
  {t:()=>'Map: '+(ALLM()[mapI]||MAPS[0]).name+'  ◀ ▶',lr:d=>{const n=ALLM().length;mapI=((mapI|0)+d+n)%n}},
  {t:()=>'Map maker…',f:()=>openSub('MAP MAKER',MAPM)},
  {t:()=>'Items: '+(itemsOn?'ON':'OFF (card = Last Word)')+'  ◀ ▶',lr:()=>{itemsOn=!itemsOn}},
- {t:()=>'Cards at once: '+maxC+'  ◀ ▶',lr:d=>{maxC=clamp(maxC+d,1,16)}},
+ {t:()=>'Cards at once: '+maxC+'  ◀ ▶',lr:d=>{maxC=clamp(maxC+d,1,64)}},
  {t:()=>'Teams: '+teamTxt(nP)+'  (Enter: edit)',lr:()=>{TEAMS=!TEAMS},f:()=>openSub('TEAMS',TEAMM)},
  {t:()=>'Tempo: '+NERV+'/10 '+(NERV<4?'(calm)':NERV<8?'(relaxed)':'(frantic)')+'  ◀ ▶',lr:d=>{NERV=clamp(NERV+d,0,10)}},
  {t:()=>'Item list…',f:()=>{mode='items';itemSel=0}},
