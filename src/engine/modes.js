@@ -21,7 +21,7 @@ const EXTRASL = () => { const L = Object.values(MODEX).map(m => ({ t: () => m.na
 function modeInput(slot) {
   const I = { x: 0, y: 0, b: {} }, m = KB[slot];
   if (m) { I.x = kd(m.right) - kd(m.left); I.y = kd(m.down) - kd(m.up); for (const k of BTN) I.b[k] = kd(m[k]); }
-  const g = pads()[slot], M = PAD[slot];
+  const g = pads()[slot], M = PAD[slot] || DEF_PAD; // pads 5+ have no saved binds: default layout
   if (g && M) { let ax = g.axes[0] || 0, ay = g.axes[1] || 0; if (Math.hypot(ax, ay) < .25) ax = ay = 0;
     const bt = n => g.buttons[n] && (g.buttons[n].pressed || g.buttons[n].value > .3);
     if (bt(12)) ay = -1; if (bt(13)) ay = 1; if (bt(14)) ax = -1; if (bt(15)) ax = 1; if (ax || ay) { I.x = ax; I.y = ay; }

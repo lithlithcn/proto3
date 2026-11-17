@@ -53,7 +53,8 @@ function labMsg(w, d) {
     if (d.st.stall && !g.stallRep) { g.stallRep = 1; labReport({ type: 'stall', msg: 'online match stuck (no frame progress for 1500 ticks)', at: '' }, { job: g.job, frames: g.f }); } }
   if (d.done) {
     if (w.grp) { const g = w.grp; g.left--; w.grp = null; w.busy = false; if (g.left <= 0 && !g.over) { g.over = 1; LABS.games++; LABS.frames += Math.max(...g.f); } return; }
-    w.busy = false; if (d.bal) { labBalRes(d.res); return; } LABS.games++; LABS.frames += d.res.frames; LABS.ms += d.res.ms || 0; for (const i of d.res.issues) labReport(i, { job: w.job, rules: d.res.rules });
+    w.busy = false; if (d.bal) { labBalRes(d.res); return; } if (!(w.job && w.job.role === 'client')) LABS.games++; LABS.frames += d.res.frames; LABS.ms += d.res.ms || 0; for (const i of d.res.issues) labReport(i, { job: w.job, rules: d.res.rules });
+    if (w.job && (w.job.kind === 'ui' || w.job.kind === 'uinet')) { (LABS.scr || (LABS.scr = new Set())); for (const s of d.res.screens || []) LABS.scr.add(s); labKill(w); } // the monkey leaves options/binds changed: a fresh worker keeps the other games (and repro) clean
   }
 }
 function labRelay(from, m) { const g = from.grp; if (!g || g.dead) return; const [a, b, j] = LAB_NET[LABC.net];
@@ -69,7 +70,9 @@ function labTick() {
   const idle = LABS.W.filter(w => w.ready && !w.busy); if (!idle.length) return;
   if (LABB.on) { labBalTick(idle); return; }
   if (LABS.jobs >= LABC.games) { if (!LABS.W.some(w => w.busy)) { LABS.on = false; sfx('bonus', .6); } return; } // queue done
-  const pick = LABC.kind === 'mix' ? ['cpu', 'bots', 'bots', 'online'][LABS.jobs % 4] : LABC.kind;
+  const pick = LABC.kind === 'mix' ? ['ui', 'cpu', 'uinet', 'bots', 'ui', 'online', 'uinet'][LABS.jobs % 7] : LABC.kind;
+  if (pick === 'uinet') { const c = labCfg('uinet'), n = 2 + (c.seed % 3); if (idle.length < n) return; LABS.jobs++; const room = c.seed.toString(36) + LABS.jobs; // one room = 2-4 workers mashing the same online game
+    idle.slice(0, n).forEach((w, i) => { const cc = Object.assign({}, c, { seed: c.seed + i * 7919, role: i ? 'client' : 'host', room, players: 1 + (c.seed + i) % 3, frames: Math.min(LABC.frames, 7200) }); w.busy = true; w.job = cc; w.t = now; w.wk.postMessage({ job: 'uinet', cfg: cc }); }); return; }
   if (pick === 'online') { if (idle.length < 2) return; const c = labCfg('online'), [a, b] = LAB_NET[LABC.net], n = Math.min(idle.length, c.fighters === 'random' ? 2 + (c.seed % 3) : Math.min(32, c.fighters));
     if (idle.length < n) return; const ws = idle.slice(0, n), g = { ws, left: n, f: ws.map(() => 0), last: {}, job: c }; c.lat = (a + b) / 2 | 0; c.D = 2; c.fighters = n; LABS.jobs++;
     ws.forEach((w, i) => { w.busy = true; w.grp = g; w.peer = i; w.job = c; w.t = now; }); ws[0].wk.postMessage({ job: 'netopts', cfg: c }); return; }
@@ -89,11 +92,12 @@ const LABL = () => {
   return [
     { t: () => (LABS.on ? 'STOP' : 'START') + ': ' + (LABS.on ? LABS.W.filter(w => w.busy).length + ' running' : 'stopped'), f: () => LABS.on ? labStop() : labStart() },
     { t: () => 'Progress: ' + LABS.games + pct + ' · ' + (LABS.frames / 1000 | 0) + 'k frames · ' + fps + ' f/s' + eta, f: () => {} },
+    { t: () => 'Screens mashed by the monkey: ' + (LABS.scr ? LABS.scr.size : 0), f: () => {} },
     { t: () => 'Issues: ' + iss.length + ' kinds · ' + LABS.newN + ' new · ' + LABS.total + ' total', f: () => {} },
     { t: () => 'DOWNLOAD ALL (one file, unique reports)', f: labDownloadAll },
     { t: () => 'Games to run: ' + labV(LABC.games) + '  ◀ ▶', lr: labLR(LABC, 'games', [100, 300, 1000, 3000, 10000, 100000, Infinity]) },
     { t: () => 'Parallel workers: ' + LABC.par + (LABC.par === LAB_CORES ? ' (your CPU)' : LABC.par > LAB_CORES + 1 ? ' (more than your cores)' : '') + '  ◀ ▶', lr: d => { LABC.par = clamp(LABC.par + (d < 0 ? -1 : 1), 1, 64); } },
-    { t: () => 'Tests: ' + { mix: 'MIX', cpu: 'CPU MATCHES', bots: 'EXPERT BOTS + ROLLBACK', online: 'ONLINE (REAL NETCODE)' }[LABC.kind] + '  ◀ ▶', lr: labLR(LABC, 'kind', ['mix', 'cpu', 'bots', 'online']) },
+    { t: () => 'Tests: ' + { mix: 'MIX', ui: 'MENUS MONKEY (8 PLAYERS MASHING)', uinet: 'ONLINE MENUS MONKEY (2-4 PCs, 1 ROOM)', cpu: 'CPU MATCHES', bots: 'EXPERT BOTS + ROLLBACK', online: 'ONLINE (REAL NETCODE)' }[LABC.kind] + '  ◀ ▶', lr: labLR(LABC, 'kind', ['mix', 'ui', 'uinet', 'cpu', 'bots', 'online']) },
     { t: () => 'Bots: ' + labV(LABC.bots) + '  ◀ ▶', lr: labLR(LABC, 'bots', ['expert', 'chaos', 'spam', 'edge', 'cluster', 'items', 'parry', 'cpu']) },
     { t: () => 'Fighters: ' + labV(LABC.fighters) + '  ◀ ▶', lr: labLR(LABC, 'fighters', ['random', ...labRange(2, 32)]) },
     { t: () => 'CPU level: ' + labV(LABC.cpu) + '  ◀ ▶', lr: labLR(LABC, 'cpu', ['random', ...labRange(1, 9)]) },
@@ -116,7 +120,7 @@ const LABHOME = () => [{ t: () => 'BUG HUNT' + (LABS.on ? ' (running: ' + LABS.g
 Object.assign(RDESC, { 'BUG HUNT': 'Thousands of simulated games (CPU, expert bots, online netcode) looking for crashes, desyncs, softlocks, NaN, floods...', 'BALANCE': 'Every matchup, many times, with detailed statistics and a diagnostic file.',
   'START': 'Starts/stops. Leave it running for hours: every new kind of bug downloads one report.', 'Games to run': 'Queue size. The workers chain the games without pause (all your CPU cores).', 'Parallel workers': 'One worker = one CPU core of YOUR PC (nothing runs on a server). More than your cores is not faster.',
   'Tests': 'CPU = game AI. EXPERT BOTS = bug-hunting inputs + save/load/replay checks. ONLINE = real netcode between workers with simulated latency.', 'Bots': 'EXPERT mixes every style and switches during the match: chaos, button spam, walls/corners, crowd, items, frame-perfect parries, CPU.',
-  'Item pool': 'ALL, one single item (to test it with many copies), or EACH ITEM IN TURN (one item per game, all items covered).', 'Cards at once': 'Up to 64 item cards on the map at the same time.', 'Duplicates': 'REMOVED: one report per kind of issue. KEPT: every occurrence (up to 500).',
+  'Screens mashed by the monkey': 'MENUS MONKEY games: 8 players mash keys, pads and taps on every screen (menus, select, match, results, options, editor, online lobby). Count of different screens reached.', 'Item pool': 'ALL, one single item (to test it with many copies), or EACH ITEM IN TURN (one item per game, all items covered).', 'Cards at once': 'Up to 64 item cards on the map at the same time.', 'Duplicates': 'REMOVED: one report per kind of issue. KEPT: every occurrence (up to 500).',
   'DOWNLOAD ALL': 'One .txt file with the summary + every unique report, ready to send.', 'Online network': 'Simulated latency: LOW 20-50 ms, MID 60-140, BAD 150-320 + jitter.' });
 // secret code on the title screen: e w e k e k s (keys swallowed while the code is being typed, so the title screen does not close)
 { const C = 'ewekeks'; let n = 0; EARLYKEY.push(e => { if (mode !== 'title' || e.repeat) { n = 0; return false; } const k = (e.key || '').toLowerCase();

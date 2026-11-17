@@ -81,6 +81,7 @@ function labRollback() {
 }
 function labChars() { const L = []; P.forEach(p => { p.shotT = CH0 + (labRand() * CHR.length | 0); const c = chOf(p); p.spI = c.spI; c.init && c.init(p); L.push(c.k); }); return L; }
 function labOffline(c) {
+  if (c.kind === 'ui' || c.kind === 'uinet') return labMonkey( /* uinet outside the browser lab (CLI repro): the same seed, local only */ { seed: c.seed, frames: c.frames, players: typeof c.fighters === 'number' ? Math.min(8, c.fighters) : 8, mash: c.mash });
   LAB.rng = (c.seed >>> 0) || 1; LAB.issues = []; LAB.bot = []; LAB.seen.clear(); LAB.ev = []; LAB.st = []; LAB.cfg = c; NET = null; let f = 0, rules = {}, ms = 0;
   const bots = c.kind !== 'cpu';
   try { rules = LAB.rules = labRules(c); nH = bots ? nP : 0; LAB.style = Array.from({ length: nP }, () => bots ? (c.bots && c.bots !== 'expert' ? c.bots : LAB_STYLES[labRand() * LAB_STYLES.length | 0]) : 'cpu');

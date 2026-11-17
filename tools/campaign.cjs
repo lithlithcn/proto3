@@ -1,11 +1,11 @@
 // Crash / rollback / desync campaign from the command line (same checks as the secret DEBUG LAB, content/debug-lab/worker/driver.js),
 // on all CPU cores, deterministic: every issue comes with the job that reproduces it.
-//   node tools/campaign.cjs [games=40] [--kind mix|cpu|rollback|online] [--frames 3600] [--par N]
+//   node tools/campaign.cjs [games=40] [--kind mix|ui|cpu|rollback|online] [--frames 3600] [--par N]
 //   node tools/campaign.cjs --repro <lab-or-campaign issue .json>      replay the one job of a report, print what it finds
 //   node tools/campaign.cjs --selftest                                 inject one bug of each kind and check it is caught (proves the detectors)
 // Output: reports/campaign.json (unique issues + counts) and a summary.
 const fs = require('fs'), path = require('path'), os = require('os'); const { Worker, isMainThread, parentPort, workerData } = require('worker_threads');
-const DRV = 'content/debug-lab/worker/driver.js', BAL = 'content/debug-lab/worker/balance.js';
+const DRV = 'content/debug-lab/worker/driver.js', BAL = 'content/debug-lab/worker/balance.js', MKY = 'content/debug-lab/worker/monkey.js';
 const INJECT = { // self-test bugs, applied inside the sandbox after the driver
   crash: `{const S=step;step=()=>{S();if(frame===200)null.boom}}`,
   nan: `{const S=step;step=()=>{S();if(frame===300&&P[0])P[0].vx=NaN}}`,
@@ -14,10 +14,10 @@ const INJECT = { // self-test bugs, applied inside the sandbox after the driver
 };
 function runJob(job) {
   const { createSandbox } = require('./headless.cjs');
-  if (job.kind !== 'online') { const s = createSandbox([DRV, BAL], job.seed); if (job.inject) s.eval(INJECT[job.inject]); s.g.__c = job; return s.eval('labOffline(__c)'); }
+  if (job.kind !== 'online') { const s = createSandbox([DRV, BAL, MKY], job.seed); if (job.inject) s.eval(INJECT[job.inject]); s.g.__c = job; return s.eval('labOffline(__c)'); }
   // online: n peers in n sandboxes, the real netcode, messages delayed by `lat` ticks (deterministic)
-  const n = job.fighters === 'random' ? 2 : Math.min(4, job.fighters), host = createSandbox([DRV, BAL], job.seed); host.g.__c = Object.assign({}, job, { fighters: n });
-  const o = host.eval('labNetOpts(__c)'), peers = [host, ...Array.from({ length: n - 1 }, (_, i) => createSandbox([DRV, BAL], job.seed + i + 1))], Q = [], lat = job.latT || 4;
+  const n = job.fighters === 'random' ? 2 : Math.min(4, job.fighters), host = createSandbox([DRV, BAL, MKY], job.seed); host.g.__c = Object.assign({}, job, { fighters: n });
+  const o = host.eval('labNetOpts(__c)'), peers = [host, ...Array.from({ length: n - 1 }, (_, i) => createSandbox([DRV, BAL, MKY], job.seed + i + 1))], Q = [], lat = job.latT || 4;
   let tick = 0; const issues = [];
   peers.forEach((p, i) => { if (job.inject) p.eval(INJECT[job.inject]); p.g.__o = o; p.g.__send = m => { for (let j = 0; j < n; j++) if (j !== i) Q.push({ at: tick + lat + (tick * 7 + i * 3 + j) % 3, to: j, m: JSON.parse(JSON.stringify(m)) }); }; p.eval(`labNetBoot(__o,${i},m=>__send(m),${job.seed + i * 7919})`); });
   let st = [], still = 0, last = -1, endT = 0;
