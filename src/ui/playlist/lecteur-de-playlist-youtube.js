@@ -278,7 +278,7 @@ window.YTAPIq=()=>{Y.P=new YT.Player('ytpl',{width:'100%',height:'100%',playerVa
 {const o=window.onYouTubeIframeAPIReady;window.onYouTubeIframeAPIReady=()=>{if(o)try{o()}catch(e){}window.YTAPIq()}}
 const sc=document.createElement('script');sc.src='https://www.youtube.com/iframe_api';sc.onerror=()=>toast('YouTube is unreachable',5000);document.head.appendChild(sc);
 // ---- volume : même courbe que la musique interne, qui reste muette tant que YouTube joue
-{const M0=musTick;musTick=()=>{M0();if(!Y.on||!Y.ready||!Y.v.length||Y.bad>=Math.min(15,Y.v.length))return;
+{const M0=musTick;musTick=()=>{M0();if(Y.on&&(!Y.ready||!Y.v.length)&&performance.now()<6000&&MAUD){MAUD.volume=0;return} /* owner: the game's own music no longer plays for a moment while the playlist is still loading (up to 6 s, then it falls back) */if(!Y.on||!Y.ready||!Y.v.length||Y.bad>=Math.min(15,Y.v.length))return;
  // musiques spéciales du jeu (résultats, dernière vie) : elles coupent la vidéo, puis la vidéo reprend
  const spc=(MSCR==='results'||MSCR==='last')&&MCUR&&MAUD&&!MAUD.paused;if(spc){if(Y.st===1||Y.st===3){Y.spP=1;try{Y.P.pauseVideo()}catch(e){}}return}else if(Y.spP){Y.spP=0;try{Y.P.playVideo()}catch(e){}}if(MAUD)MAUD.volume=0;const kd=(performance.now()-KOMT)/1000,ke=kd<0?0:kd<.12?kd/.12:kd<1.1?1:kd<2.1?1-(kd-1.1):0;const v=Math.round(clamp(VOLS.music*VOLS.master*ENDK*(1-.45*ke)*(1-.75*MDUCK),0,1)*Y.vm);
  if(v!==Y.vol){Y.vol=v;try{Y.P.setVolume(v)}catch(e){}}const pr=ke>.35?.75:1;if(pr!==Y.pr){Y.pr=pr;try{Y.P.setPlaybackRate(pr)}catch(e){}}
@@ -314,5 +314,7 @@ if(typeof onlMsg==='function'){const O=onlMsg;onlMsg=(m,k)=>{if(m&&m.t==='ym'){i
 window.YTP={locked:()=>lockd(),toast,Y,load:yLoad,play:yPlay,step:yStep,gone:yGone,ann:yAnn,host:yHost,pp:()=>$('.pp').onclick()};
 yLoad(Y.list||DEFL);if(Y.vid)yColor(Y.vid)}});
 // manette / clavier dans le hub : L1/R1 (Q/E) = morceau précédent/suivant, Select = lecture/pause
-DEFER(()=>{{const N0=nav;nav=ev=>{if(mode==='menu'&&window.YTP&&!YTP.Y.gone&&YTP.Y.v.length){if(ev==='tabL'||ev==='tabR'){if(YTP.locked()){YTP.toast('🔒 The host controls the music',1800);return}YTP.step(ev==='tabL'?-1:1,1,1);sfx('se_select00',.5);return}}return N0(ev)}}});
+/** LB/RB (Q/E, PageUp/Down) switch the music everywhere except during a fight and where LB/RB already do something (owner). */
+const musLR=()=>!(mode==='game'&&!paused&&winner<0)&&!(mode==='game'&&paused&&TEST&&TEST.train)&&mode!=='items'&&mode!=='binds'&&mode!=='maker'&&!(typeof MODEX!=='undefined'&&MODEX[mode])&&!TXI;
+DEFER(()=>{{const N0=nav;nav=ev=>{if((ev==='tabL'||ev==='tabR')&&musLR()&&window.YTP&&!YTP.Y.gone&&YTP.Y.v.length){if(ev==='tabL'||ev==='tabR'){if(YTP.locked()){YTP.toast('🔒 The host controls the music',1800);return}YTP.step(ev==='tabL'?-1:1,1,1);sfx('se_select00',.5);return}}return N0(ev)}}});
 DEFER(()=>{{const P0=padEv;padEv=k=>{if(k==='sel'&&mode==='menu'&&window.YTP&&!YTP.Y.gone&&YTP.Y.v.length){YTP.pp();return}P0(k)}}});

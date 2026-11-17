@@ -3,7 +3,7 @@
 const CS=40;let CMAPS=[],CMAP=null,WG=null,TPS=[],MK=null;DEFER(()=>{try{CMAPS=JSON.parse(localStorage.getItem('sf_maps')||'[]')||[]}catch(e){}});
 let NETMAP=null;const ALLM=()=>MAPS.concat(CMAPS,NETMAP?[NETMAP]:[]),saveMaps=()=>{try{localStorage.setItem('sf_maps',JSON.stringify(CMAPS))}catch(e){}};
 const fixM=m=>{m.w=m.cw*CS;m.h=m.ch*CS;m.edge=100;m.walls=m.walls.filter(([x,y])=>x<m.cw&&y<m.ch);m.tps=m.tps.filter(([x,y])=>x<m.cw&&y<m.ch);return m};
-const MAPM=()=>[{t:()=>'+ New map',f:()=>{const m=fixM({name:'Map '+(CMAPS.length+1),cw:40,ch:26,walls:[],tps:[],perm:''});CMAPS.push(m);saveMaps();openMaker(m)}}].concat(CMAPS.map(m=>({t:()=>'Edit: '+m.name+'  ('+m.cw+'×'+m.ch+')',f:()=>openMaker(m),del:()=>{CMAPS=CMAPS.filter(x=>x!==m);saveMaps();mapI=Math.min(mapI,ALLM().length-1)}})),[{t:()=>CMAPS.length?'(Backspace / Y on a map: delete it)':'',f:()=>{}}]);
+const MAPM=()=>[{t:()=>'+ New map',f:()=>{const m=fixM({name:'Map '+(CMAPS.length+1),cw:40,ch:26,walls:[],tps:[],perm:''});CMAPS.push(m);saveMaps();openMaker(m)}}].concat(CMAPS.map(m=>({t:()=>'Edit: '+m.name+'  ('+m.cw+'×'+m.ch+')',map:m,f:()=>openMaker(m),del:()=>{CMAPS=CMAPS.filter(x=>x!==m);saveMaps();mapI=Math.min(mapI,ALLM().length-1)}})),[{t:()=>CMAPS.length?'(Backspace / Y on a map: delete it)':'',f:()=>{}}]);
 function openMaker(m){mUp(m);MK={m,cx:m.cw>>1,cy:m.ch>>1,tool:0,foc:1,row:0,dn:0,tab:0,li:-1,ei:-1,scr:0};mode='maker'}
 DEFER(()=>{addEventListener('wheel',e=>{if(MK&&mode==='maker'){MK.row=clamp(MK.row+(e.deltaY>0?1:-1),0,999);MK.foc=1}},{passive:true});});
 const MKT=['Wall','Teleporter','Erase'],PERMK=()=>['',...ITEMS.map(i=>i.k)];

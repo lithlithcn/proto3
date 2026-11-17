@@ -20,7 +20,7 @@ const PROFM=()=>{const r=[];for(let i=0;i<4;i++)r.push({t:()=>'P'+(i+1)+': '+(pr
 let SUB=null,subSel=0,subT='',SUBS=[];function openSub(t,f){if(mode==='sub')SUBS.push([SUB,subT,subSel]);else SUBS=[];SUB=f;subT=t;subSel=0;mode='sub'}
 DEFER(()=>{{const N0=nav;nav=ev=>{if(mode!=='sub')return N0(ev);const L=SUB();subSel=clamp(subSel,0,L.length-1);
  if(ev==='up'||ev==='down'){subSel=(subSel+(ev==='up'?L.length-1:1))%L.length;sfx('se_select00',.6)}
- if((ev==='left'||ev==='right')&&L[subSel].lr){L[subSel].lr(ev==='left'?-1:1);sfx('changemenu',.8)}
+ if((ev==='left'||ev==='right')&&L[subSel].lr){lrWrap(L[subSel],ev==='left'?-1:1);sfx('changemenu',.8)}
  if(ev==='ok'){sfx('ok00');const it=L[subSel];it.f?it.f():it.lr&&it.lr(1)}if(ev==='reset'&&L[subSel].del){L[subSel].del();sfx('cancel00')}if(ev==='back'){const q=SUBS.pop();if(q){[SUB,subT,subSel]=q}else mode='menu';sfx('cancel00')}}}});
 function drawSub(){hot=[];const L=SUB();subSel=clamp(subSel,0,L.length-1);ctx.textAlign='center';ctx.fillStyle='#fff';ctx.font='bold 34px monospace';ctx.fillText(subT,W/2,H*.12);
  const y0=H*.22,sp=Math.min(40,H*.6/L.length);
@@ -36,3 +36,6 @@ function drawName(s,x,y,c,a,t,sx=1){ctx.save();ctx.translate(x,y);
  ctx.scale(sx,1);ctx.font='bold 17px monospace';ctx.lineWidth=5;ctx.lineJoin='round';ctx.strokeStyle='rgba(0,0,0,.85)';ctx.fillStyle=c;
  if(a===4){let px=-ctx.measureText(s).width/2;ctx.textAlign='left';for(let i=0;i<s.length;i++){const yy=Math.sin(t*5-i*.6)*3;ctx.strokeText(s[i],px,yy);ctx.fillText(s[i],px,yy);px+=ctx.measureText(s[i]).width}}
  else{ctx.textAlign='center';ctx.strokeText(s,0,0);ctx.fillText(s,0,0)}ctx.restore()}
+/** Left/right on a setting. In OPTIONS (and its sub-pages) values loop (owner): past the last value -> the first, before the first -> the last.
+ *  Works for every setting without touching each one: if the value did not change (it hit a bound), step the other way until the other end. */
+function lrWrap(it,d){const t0=it.t();it.lr(d);if(it.t()!==t0||!(subT==='OPTIONS'||SUBS.some(s=>s[1]==='OPTIONS')))return;const s0=sfx;sfx=()=>({stop(){}});try{let k=0,pv;do{pv=it.t();it.lr(-d)}while(it.t()!==pv&&++k<400)}finally{sfx=s0}}
