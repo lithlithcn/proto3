@@ -1,5 +1,5 @@
 import { FixedLoop, World, newInput, setInput } from '@kernel';
-import { PS, type CharacterDef, type CombatState, type ItemDef } from '@pack/combat/api';
+import { PS, itemPool, type CharacterDef, type CombatState, type ItemDef } from '@pack/combat/api';
 import { drawHud } from '@pack/render/hud';
 import { VIEWZ, camStart, renderViews } from '@pack/render/view';
 import { drawScreenL, drawScreenTopL, screenFilterL } from '@pack/render/ld/bind';
@@ -8,6 +8,10 @@ import { FXF } from '@pack/render/ld/fx';
 import { VOLS, audioLocked, initAudio, playSounds, uiSound } from '@pack/audio/player';
 import { APP, fightKey, onKey, padEv, renderFightUi, renderUi, type UiHost } from '@pack/ui/app';
 import { pollNav } from '@pack/ui/input/padnav';
+import { loadProfiles, pname, profOf, saveProfiles } from '@pack/ui/profiles';
+import { loadRecords, recItem, recStart, recTick, saveRecords, type RecP } from '@pack/ui/records';
+import { setProfOf } from '@pack/render/ld/view';
+import { txiKey } from '@pack/ui/txi';
 import { TCH, drawTouch, installTouch, touchInput } from '@pack/ui/input/touch';
 import { GUIDE } from '@pack/ui/screens/info/info';
 import { PZ, lsZoom, type FightView } from '@pack/ui/screens/fight/overlays';
@@ -21,7 +25,7 @@ import { builtinPacks } from './packs';
 
 /** App shell: menus (packs/ui) until FIGHT!, then the match. Fight keys: P1 WASD + JKL..., P2 arrows + numpad (bindings screen = lot 3). */
 const canvas = document.getElementById('c') as HTMLCanvasElement, c = canvas.getContext('2d')!, loop = new FixedLoop();
-loadSettings(localStorage); loadBinds(localStorage);
+loadSettings(localStorage); loadBinds(localStorage); loadProfiles(localStorage); loadRecords(localStorage); setProfOf((i: number) => i < 4 ? profOf(i) : null);
 try { void (navigator as Navigator & { keyboard?: { getLayoutMap(): Promise<Map<string, string>> } }).keyboard?.getLayoutMap().then(m => m.forEach((v, k) => { LBL[k] = v.toUpperCase(); })); } catch { /* no layout API: key codes are shown */ }
 initAudio(import.meta.env.BASE_URL);
 type Cfg = { seed: number; players: number; world: Record<string, unknown> };
@@ -39,7 +43,7 @@ function newMatch(d: string[], chars: number[]): void {
   const seed = (Math.random() * 1e9) | 0, N = roster.length, n = Math.max(SET.nP, d.length); // sim-allow(boot-time seed)
   const players = Array.from({ length: n }, (_, i) => ({ char: roster[chars[i]! >= 0 ? chars[i]! : (seed + i * 3) % N]!.id, cpu: i >= d.length, ...(SET.teams ? { team: SET.teamA[i] } : {}) }));
   cfg = { seed, players: n, world: { players, stocks: SET.comp ? 4 : STOCKS[SET.stI], items: SET.comp ? false : SET.itemsOn, maxCards: SET.maxC, tempo: SET.nerv, itemSet: catalog.filter(i => SET.itemOn[i.k] !== false).map(i => i.id), ...(SET.teams ? { teams: 1 } : {}) } }; // COMPETITIVE = 4 lives, no items (timer + maps: lot 4)
-  world = mkWorld(cfg); rec = []; devs = d; pg = null; saveSettings(localStorage); mChars = players.map(p => roster.find(r => r.id === p.char)!); tlg = []; matchId++; resetResults();
+  world = mkWorld(cfg); rec = []; devs = d; pg = null; saveSettings(localStorage); mChars = players.map(p => roster.find(r => r.id === p.char)!); tlg = []; matchId++; resetResults(); recStart(0, false);
 }
 /** Character-select playground: the humans who pressed Parry fight behind the menu (99 stocks, no items). */
 let pg: { w: World; devs: string[] } | null = null;
@@ -57,22 +61,25 @@ const step = (w: World, ds: string[]): void => {
 };
 /** Per-player view for the results / last-stock overlays. */
 const resP = (w: World): ResP[] => { const S = w.slice<CombatState>('combat'); return Array.from({ length: S.n }, (_, i) => ({ id: i, cpu: !!S.cpu[i], key: mChars[i]?.key ?? '', col: mChars[i]?.col ?? '#fff', kos: S.kos[i]!, dmgDealt: S.dmgDealt[i]!, dmgTk: S.dmgTaken[i]!, parN: S.parN[i]!, spN: S.spN[i]!, bigHit: S.bigHit[i]!, sd: S.sd[i]!, outAt: S.outAt[i]!, stocks: S.stocks[i]!, hp: S.hp[i]!, dead: S.state[i] === PS.dead })); };
+const recP = (w: World): RecP[] => { const S = w.slice<CombatState>('combat'); return Array.from({ length: S.n }, (_, i) => ({ id: i, cpu: !!S.cpu[i], name: pname({ id: i, cpu: !!S.cpu[i] }), team: S.team[i]!, kos: S.kos[i]!, dmg: S.dmgDealt[i]!, stocks: S.stocks[i]!, pChain: S.pChain[i]!, comboN: S.comboN[i]! })); };
 const fview = (w: World): FightView => { const S = w.slice<CombatState>('combat'); return { f: S.gf, winner: S.winner, winT: S.winT, teams: !!S.teams, teamA: S.team, intro: true }; };
 const drawFight = (w: World, W: number, H: number): void => {
   c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = '#000'; c.fillRect(0, 0, W, H);
   const S = w.slice<CombatState>('combat'), j0 = juiceOf(w); syncJuice(j0, S); const restore = SET.fxOff ? safeView(j0) : null;
   renderViews(c, w, S, W, H); drawScreenL(c, w, S, W, H);
   drawHud(c, w, S, W, H, performance.now() / 1000); drawScreenTopL(c, w, S, W, H); restore?.();
-  const j = juiceOf(w); playSounds(j.SND.splice(0), j.stop.splice(0), S.tstop > 0, j.endk); // juice was synced by renderViews
+  const j = juiceOf(w); if (w === world) { const pool = itemPool(w), ids = w.registry.list<ItemDef>('item'); for (const g of j.gives.splice(0)) { const d = pool[g.kind], id = d && ids.find(e => e[1] === d)?.[0]; if (id && !S.cpu[g.p]) recItem(pname({ id: g.p, cpu: false }), id.split(':')[1]!); } } else j.gives.length = 0;
+  playSounds(j.SND.splice(0), j.stop.splice(0), S.tstop > 0, j.endk); // juice was synced by renderViews
 };
 /** Held keys + keys tapped since the last frame (legacy tapQ: a press shorter than a frame still counts once). */
 const held = new Set<string>(), tap = new Set<string>(), keys = { has: (k: string): boolean => held.has(k) || tap.has(k) }, now = (): number => performance.now() / 1000;
 const host: UiHost = {
   sfx: uiSound, audioLocked, nowMs: () => performance.now(), sb: 0, get touch() { return TCH.on; }, music: false, open() { /* online, training, rules... arrive screen by screen */ },
-  items: catalog, restart: () => newMatch(lastDevs, lastChars), save: () => { saveSettings(localStorage); saveBinds(localStorage); }, fullscreen: () => !!document.fullscreenElement, toggleFullscreen: () => { try { if (document.fullscreenElement) void document.exitFullscreen(); else void document.documentElement.requestFullscreen(); } catch { /* not allowed */ } }, roster, keys, pads, frame: () => world?.frame ?? 0, start: newMatch, playground, drawPlayground: cc => { if (pg) { void cc; drawFight(pg.w, canvas.width, canvas.height); } },
+  items: catalog, restart: () => newMatch(lastDevs, lastChars), save: () => { saveSettings(localStorage); saveBinds(localStorage, () => saveProfiles(localStorage)); }, fullscreen: () => !!document.fullscreenElement, toggleFullscreen: () => { try { if (document.fullscreenElement) void document.exitFullscreen(); else void document.documentElement.requestFullscreen(); } catch { /* not allowed */ } }, roster, keys, pads, frame: () => world?.frame ?? 0, start: newMatch, playground, drawPlayground: cc => { if (pg) { void cc; drawFight(pg.w, canvas.width, canvas.height); } },
 };
 addEventListener('keydown', e => {
   held.add(e.code); tap.add(e.code); if (/^Arrow|^Space$|^Tab$|^Backspace$/.test(e.code)) e.preventDefault();
+  if (txiKey(e)) { e.preventDefault(); return; } // text box open
   if (e.repeat) return;
   if (APP.mode === 'title' && audioLocked()) return; // first gesture only unlocks the sound (legacy veil); runs before the audio unlock listener
   if (APP.mode === 'game') { if (world) fightKey(e.code, host, fview(world)); return; }
@@ -110,7 +117,7 @@ function frame(t: number): void {
   if (renderUi(u, host)) { hot = u.hot; tap.clear(); if (canvas.style.filter) canvas.style.filter = ''; requestAnimationFrame(frame); return; }
   const w = world!;
   const S = w.slice<CombatState>('combat');
-  if (!APP.paused) for (let i = 0; i < n; i++) { const g0 = S.gf; step(w, devs); tap.clear(); if (S.gf !== g0 && S.winner < 0 && S.gf % 30 === 0) tlg[S.gf / 30 | 0] = flowSample(resP(w)); } // match-flow curve (legacy TLG)
+  if (!APP.paused) for (let i = 0; i < n; i++) { const g0 = S.gf; step(w, devs); tap.clear(); if (S.gf !== g0 && S.winner < 0 && S.gf % 30 === 0) tlg[S.gf / 30 | 0] = flowSample(resP(w)); if (S.gf !== g0 && recTick(recP(w), S.gf, S.winner, !!S.teams, cfg.world['stocks'] as number)) saveRecords(localStorage); } // match-flow curve (legacy TLG) + records
   VIEWZ.k = lsZoom(u.now, SET.fxLow); VIEWZ.fxLow = SET.fxLow;
   drawFight(w, W, H); const fv = fview(w); renderFightUi(u, host, fv, resP(w), tlg, matchId, true); hot = u.hot;
   drawTouch(u, 'game', APP.paused, fv.winner >= 0 && fv.winT >= 100 && !APP.paused, { spirit: S.spirit[0]!, ult: !!S.ult[0] }, 100, S.gf);

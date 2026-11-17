@@ -2,10 +2,11 @@ import { UF, UFI, clamp, eo, hexA, lerp, skewRect, strokeTxt, type UiCtx } from 
 import { uiBG } from '../../bg';
 import { HUB } from '../hub/hub';
 import { UISUB } from '../../trans';
+import { PROFS, drawName, ncol } from '../../profiles';
 
 /** Styled settings lists (legacy openSub / drawSub / splitRow / subAcc, line ~3905): rows "Label: value ◀ ▶", big value panel, description bar, breadcrumbs. */
 export interface Row { t(): string; lr?(d: number): void; f?(): void; del?(): void }
-export const SUB = { rows: null as (() => Row[]) | null, title: '', sel: 0, stack: [] as [() => Row[], string, number][], vals: {} as Record<string, number | string> };
+export const SUB = { rows: null as (() => Row[]) | null, title: '', sel: 0, /** profiles list: preview the edited name */ prof: false, stack: [] as [() => Row[], string, number][], vals: {} as Record<string, number | string> };
 export const RDESC: Record<string, string> = { Mode: 'CASUAL = your own rules. COMPETITIVE = 4 lives, 5 minutes, no items.', Fighters: 'How many fighters are in the arena (2 to 8).', Humans: 'How many of them are real players; the rest are CPUs.', 'CPU level': '9 = superhuman: perfect parries and reactions.', Lives: 'Number of stocks per fighter.', Timer: 'Match length in minutes (OFF = until the last one standing).', Map: 'Arena. Custom maps from the Map maker appear here too.', Items: 'Item cards that spawn during the match.', 'Cards at once': 'Maximum item cards on the map at the same time.', Teams: 'Enter to choose the team of each player.', Tempo: 'How fast cards spawn and how frantic the match gets.', Effects: 'REDUCED = fewer flashes and particles (photosensitive players).', Motion: 'SMOOTH = fluid on 120/144 Hz screens (shows the last frame blended, about 8 ms later). STRICT 60 = raw frames. AUTO = smooth only on fast screens.', 'Sound…': 'Volumes and custom music for each screen.', 'Profiles…': 'Player names, colors and name animations.', Controls: 'Keyboard / gamepad bindings.', 'How to play': 'Interactive tutorial.', Guide: 'Every mechanic explained.', 'Title screen': 'Back to the title screen.' };
 export function splitRow(s0: string): { l: string; v: string; ar: boolean } {
   let s = String(s0); const ar = /\s*◀\s*▶\s*$/.test(s); s = s.replace(/\s*◀\s*▶\s*$/, ''); const i = s.indexOf(': ');
@@ -16,7 +17,7 @@ export function subAcc(fallback: string): string {
   if (/TEAM/.test(T)) return '#ffd23a'; if (/SOUND|PROFILE|CONTROL/.test(T)) return '#7fa8ff'; if (/MAP/.test(T)) return '#9b6bff'; if (/ONLINE/.test(T)) return '#29d4ff'; return fallback || '#ff3355';
 }
 /** `nav` routes clicks back through the keyboard path ('ok' / 'back'); `sfx` for hover. */
-export function drawSub(u: UiCtx, nav: (ev: 'ok' | 'back') => void, sfx: (n: string, v?: number, r?: number) => void): void {
+export function drawSub(u: UiCtx, nav: (ev: 'ok' | 'back') => void, sfx: (n: string, v?: number, r?: number) => void, frame = 0): void {
   const { c, W, H } = u; u.hot.length = 0; const L = SUB.rows!(); SUB.sel = clamp(SUB.sel, 0, L.length - 1); const t = u.now, tin = t - UISUB.t0, acc = u.acc = subAcc(u.acc), V = SUB.vals;
   uiBG(u, SUB.title.replace(/[^A-Z ]/gi, '').toUpperCase() + '  ');
   c.save(); c.textAlign = 'left'; c.fillStyle = '#05060c'; skewRect(c, -20, H * 0.04, W * 0.5, H * 0.075, H * 0.03); c.fill(); c.fillStyle = acc; c.fillRect(0, H * 0.04 + H * 0.075 - 4, W * 0.46, 4);
@@ -50,5 +51,6 @@ export function drawSub(u: UiCtx, nav: (ev: 'ok' | 'back') => void, sfx: (n: str
   }
   const d = RDESC[R.l] || RDESC[Object.keys(RDESC).find(k => R.l.startsWith(k)) ?? ''] || '', bh = H * 0.07; c.save(); c.fillStyle = 'rgba(5,6,12,.85)'; c.fillRect(0, H - bh, W, bh); c.fillStyle = acc; c.fillRect(0, H - bh, W, 3); c.textAlign = 'left'; c.font = UF(800, bh * 0.3); c.fillStyle = '#fff'; c.fillText(d || 'Enter: select · ◀ ▶: change', W * 0.035, H - bh * 0.38);
   c.textAlign = 'right'; c.font = '12px monospace'; c.fillStyle = '#999'; c.fillText('↑↓ select · ◀ ▶ change · Enter confirm · Esc back' + (L[SUB.sel]!.del ? ' · Backspace delete' : ''), W * 0.97, H - bh * 0.38); c.restore();
+  if (SUB.title === 'PROFILES' && PROFS.list.length) { const g = PROFS.list[PROFS.edit]!; c.save(); c.translate(W * 0.82, H * 0.7); c.scale(2, 2); drawName(c, g.n, 0, 0, ncol(g.c, '#ffd23a', frame), g.a, t); c.restore(); }
   c.save(); c.textAlign = 'left'; c.font = UF(900, 15); c.fillStyle = '#fff'; c.fillText('◀ BACK', W * 0.05, H * 0.155); c.restore(); u.hot.push({ x: W * 0.04, y: H * 0.13, w: 110, h: 30, hover: () => {}, click: () => nav('back') });
 }

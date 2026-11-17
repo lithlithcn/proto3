@@ -8,10 +8,12 @@ import type { RosterEntry } from './core';
 import type { Keys } from './input/devices';
 import { PZ, drawGameEnd, drawIntro, drawLastStock, drawPause, lsCheck, type FightView, type PauseItem } from './screens/fight/overlays';
 import { drawResults, type ResP } from './screens/fight/results';
-import { SET, saveStats } from './settings';
+import { SET, pickPicture, saveNick, saveStats } from './settings';
 import { SUB, drawSub, type Row } from './screens/sub/draw';
 import { helpRows, optionRows, ruleRows, type MenuHost } from './screens/sub/menus';
 import { clamp } from './core';
+import { TXI, drawTXI, txtInput } from './txi';
+import { profOf } from './profiles';
 import { BIND, bindKey, bindPadTick, bindsNav, drawBinds, type BindsHost } from './screens/binds/binds';
 import { GUIDE, drawInfo, infoNav } from './screens/info/info';
 import { IM, drawItems, itemsNav, type CatItem, type ItemsHost } from './screens/items/items';
@@ -31,7 +33,7 @@ export interface UiHost {
 export const APP = { mode: 'title' as Mode, paused: false };
 
 const titleGo = (h: UiHost): void => { if (APP.mode !== 'title') return; if (h.audioLocked()) { TITLE.agn = h.nowMs(); return; } APP.mode = 'menu'; h.sfx('titleclick', 1); };
-const hubHost = (h: UiHost, now: number): HubHost => ({ sb: h.sb, touch: h.touch, music: h.music, audioLocked: h.audioLocked(), sfx: h.sfx, go: k => { if (k === 'fight') { APP.mode = 'css'; cssOpen(cssHost(h), now); } else if (k === 'rules') openSub('RULES', () => ruleRows(menuHost(h))); else if (k === 'opt') openSub('OPTIONS', () => optionRows(menuHost(h))); else if (k === 'help') openSub('HOW TO PLAY', () => helpRows(menuHost(h))); else if (k === 'items') { APP.mode = 'items'; IM.sel = 0; } else soon(({ online: 'ONLINE', train: 'TRAINING', maps: 'MAP MAKER' } as Record<string, string>)[k] ?? k); }, pic() {}, nick() {} });
+const hubHost = (h: UiHost, now: number): HubHost => ({ sb: h.sb, touch: h.touch, music: h.music, audioLocked: h.audioLocked(), sfx: h.sfx, go: k => { if (k === 'fight') { APP.mode = 'css'; cssOpen(cssHost(h), now); } else if (k === 'rules') openSub('RULES', () => ruleRows(menuHost(h))); else if (k === 'opt') openSub('OPTIONS', () => optionRows(menuHost(h), h.save)); else if (k === 'help') openSub('HOW TO PLAY', () => helpRows(menuHost(h))); else if (k === 'items') { APP.mode = 'items'; IM.sel = 0; } else soon(({ online: 'ONLINE', train: 'TRAINING', maps: 'MAP MAKER' } as Record<string, string>)[k] ?? k); }, pic: () => pickPicture(() => h.sfx('ok00'), () => h.sfx('cancel00')), nick: () => txtInput('YOUR NAME (seen by everyone)', SET.nick || profOf(0)?.n || 'Player', 12, v => { if (v) saveNick(v); }, { touch: h.touch, sfx: h.sfx }) });
 const cssHost = (h: UiHost): CssHost => ({ roster: h.roster, keys: h.keys, pads: h.pads(), touch: h.touch, sfx: h.sfx, go: (d, c) => { APP.mode = 'game'; h.start(d, c); }, back: () => { APP.mode = 'menu'; h.playground([], []); }, playground: h.playground });
 
 /** Sub-menu stack (legacy openSub: nested sub-menus remember where you were). */
@@ -40,7 +42,7 @@ function openSub(title: string, rows: () => Row[]): void { if (APP.mode === 'sub
 const soon = (what: string): void => openSub(what, () => [{ t: () => 'Coming soon: this screen is being ported', f: () => {} }]);
 const itemsHost = (h: UiHost, now: number): ItemsHost => ({ items: h.items, frame: h.frame(), sfx: h.sfx, nav: ev => nav(ev, h, now), test: () => soon('TRAINING') });
 const bindsHost = (h: UiHost, now: number): BindsHost => ({ keys: h.keys, pads: h.pads(), mouseOn: SET.mouse, sfx: h.sfx, nav: ev => nav(ev, h, now), togMouse: () => { SET.mouse = !SET.mouse; h.save(); h.sfx('se_select00', 0.6); }, save: h.save });
-const menuHost = (h: UiHost): MenuHost => ({ open: openSub, title: () => { APP.mode = 'title'; TITLE.t0 = h.nowMs() / 1000; }, controls: () => { APP.mode = 'binds'; BIND.wait = false; }, guide: () => { APP.mode = 'info'; GUIDE.p = 0; GUIDE.scr = 0; }, tutorial: () => soon('HOW TO PLAY (TUTORIAL)'), fullscreen: h.fullscreen, toggleFullscreen: h.toggleFullscreen, soon });
+const menuHost = (h: UiHost): MenuHost => ({ itemName: k => h.items.find(i => i.k === k)?.name, text: (t, v, m, cb) => txtInput(t, v, m, cb, { touch: h.touch, sfx: h.sfx }), open: openSub, title: () => { APP.mode = 'title'; TITLE.t0 = h.nowMs() / 1000; }, controls: () => { APP.mode = 'binds'; BIND.wait = false; }, guide: () => { APP.mode = 'info'; GUIDE.p = 0; GUIDE.scr = 0; }, tutorial: () => soon('HOW TO PLAY (TUTORIAL)'), fullscreen: h.fullscreen, toggleFullscreen: h.toggleFullscreen, soon });
 /** Draws the current screen (not 'game'). Returns false when the caller must draw the fight. */
 export function renderUi(u: UiCtx, h: UiHost): boolean {
   if (APP.mode === 'game') return false;
@@ -53,14 +55,16 @@ export function renderUi(u: UiCtx, h: UiHost): boolean {
   } else if (APP.mode === 'info') { c.fillStyle = '#000'; c.fillRect(0, 0, u.W, u.H); drawInfo(u, { nav: ev => nav(ev, h, u.now), test: () => soon('TRAINING'), items: h.items, frame: h.frame() }, u.now); }
   else if (APP.mode === 'binds') { const bh = bindsHost(h, u.now); bindPadTick(bh); c.fillStyle = '#000'; c.fillRect(0, 0, u.W, u.H); drawBinds(u, bh); }
   else if (APP.mode === 'items') { c.fillStyle = '#000'; c.fillRect(0, 0, u.W, u.H); drawItems(u, itemsHost(h, u.now)); }
-  else if (APP.mode === 'sub') { c.fillStyle = '#000'; c.fillRect(0, 0, u.W, u.H); drawSub(u, ev => nav(ev, h, u.now), h.sfx); }
+  else if (APP.mode === 'sub') { c.fillStyle = '#000'; c.fillRect(0, 0, u.W, u.H); drawSub(u, ev => nav(ev, h, u.now), h.sfx, h.frame()); }
   else { c.fillStyle = '#000'; c.fillRect(0, 0, u.W, u.H); drawHub(u, hubHost(h, u.now)); }
   uiTrans(u, APP.mode === 'sub' ? 'sub:' + SUB.title : APP.mode, APP.mode === 'sub' ? SUB.title.toUpperCase() : LABELS[APP.mode] ?? '');
   if (APP.mode === 'title' && h.audioLocked()) drawSoundLock(u, h.nowMs());
+  drawTXI(u);
   return true;
 }
 /** Menu navigation event (keyboard / pad / touch all map to these). */
 export function nav(ev: NavEv, h: UiHost, now: number): void {
+  if (TXI) return; // the text box owns the keys
   if (APP.mode === 'title') { if (ev === 'up' || ev === 'down' || ev === 'left' || ev === 'right' || ev === 'tabL' || ev === 'tabR') { titleShake(0.7); h.sfx('se_select00', 0.35, 0.8 + Math.random() * 0.4); return; } titleGo(h); return; }
   if (APP.mode === 'css') return; // character select reads the devices itself (cssTick)
   if (APP.mode === 'info') { if (infoNav(ev, h.sfx, h.items)) APP.mode = SUB.rows ? 'sub' : 'menu'; return; }
@@ -110,7 +114,7 @@ export function renderFightUi(u: UiCtx, h: UiHost, v: FightView, P: ResP[], tlg:
       drawResults(u, { t: v.winT - 100, winner: v.winner, teams: v.teams, teamA: v.teamA, P, tlg, touch: h.touch }, h.frame());
     }
   }
-  drawIntro(u, v); drawLastStock(u, v, P);
+  drawIntro(u, v); drawLastStock(u, v, P); drawTXI(u);
 }
 /** Keys during a fight: Esc = pause, pause menu navigation, M = quit (legacy onKey game branch + PZ nav). Returns true when consumed. */
 export function fightKey(code: string, h: UiHost, v: FightView): boolean {

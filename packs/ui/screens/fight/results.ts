@@ -6,7 +6,8 @@ import { COLS, RND, TAU, TCOL, UFI, clamp, eo, eob, hexA, ornFrame, skewRect, st
 export interface ResP { id: number; cpu: boolean; key: string; col: string; kos: number; dmgDealt: number; dmgTk: number; parN: number; spN: number; bigHit: number; sd: number; outAt: number; stocks: number; hp: number; dead: boolean }
 export interface ResultsView { t: number; winner: number; teams: boolean; teamA: ArrayLike<number>; P: ResP[]; tlg: (number[] | undefined)[]; touch: boolean }
 const TNAME = ['RED', 'BLUE', 'YELLOW', 'GREEN'], MED = ['#ffd23a', '#d8e0ea', '#e09a5a'];
-export const pname = (p: { id: number; cpu: boolean }): string => (p.cpu ? 'CPU ' : 'P') + (p.id + 1); // profile names join with the profiles screen
+export { pname } from '../../profiles';
+import { pname } from '../../profiles';
 const byKD = (a: ResP, b: ResP): number => b.kos - a.kos || b.dmgDealt - a.dmgDealt || (b.outAt || 1e9) - (a.outAt || 1e9) || a.id - b.id;
 /** Winner (or its team) first, then the one knocked out last; at time-up: stocks, then HP, then KOs / damage. */
 export function rankList(v: ResultsView): ResP[] {

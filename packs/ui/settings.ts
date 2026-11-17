@@ -41,3 +41,14 @@ export function saveSettings(s: Store): void {
 }
 /** Hub profile stats (wins, KOs, games) — saved right after a counted match (legacy sf_stats). */
 export function saveStats(s: Pick<Storage, 'setItem'> | undefined = typeof localStorage !== 'undefined' ? localStorage : undefined): void { try { s?.setItem('sf_stats', JSON.stringify(SET.st)); } catch { /* quota */ } }
+/** Hub card avatar: pick an image (1 MB max), cropped square to 96 px JPEG, saved as sf_pic (legacy picPick). `fail` = shown when too big. */
+export function pickPicture(done: () => void, fail: () => void): void {
+  const f = document.createElement('input'); f.type = 'file'; f.accept = 'image/*';
+  f.onchange = () => {
+    const F = f.files?.[0]; if (!F) return; if (F.size > 1048576) { fail(); return; }
+    const r = new FileReader(); r.onload = () => { const im = new Image(); im.onload = () => { const cv = document.createElement('canvas'); cv.width = cv.height = 96; const g = cv.getContext('2d')!, s = Math.min(im.width, im.height); g.drawImage(im, (im.width - s) / 2, (im.height - s) / 2, s, s, 0, 0, 96, 96);
+      SET.pic = cv.toDataURL('image/jpeg', 0.75); try { localStorage.setItem('sf_pic', SET.pic); } catch { /* quota */ } done(); }; im.src = r.result as string; }; r.readAsDataURL(F);
+  };
+  f.click();
+}
+export const saveNick = (v: string): void => { SET.nick = v; try { localStorage.setItem('sf_nick', v); } catch { /* quota */ } };

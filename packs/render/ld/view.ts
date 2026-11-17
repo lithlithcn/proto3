@@ -14,7 +14,8 @@ const TN = ['FIRE', 'WATER', 'WOOD', 'METAL', 'EARTH'], TC = ['#ff5030', '#3a7ff
 const NCOL = [0, '#ffffff', '#ff5a5a', '#ffa63a', '#ffe83a', '#7cff6a', '#3affd0', '#5ab0ff', '#a07cff', '#ff7ce0', 'rainbow'];
 const rainbowCol = () => `hsl(${frame * 6 % 360},100%,65%)`, itemCol = k => k === 'rainbow' ? rainbowCol() : (ITEMS.find(i => i.k === k) || {}).c || '#fff';
 const capOf = it => it.type === 'rainbow' ? T.LW_CAP : T.ITEM_CAP, ally = (a, b) => !!a && !!b && a !== b && TEAMS && TEAMA[a.id] === TEAMA[b.id];
-const profOf = () => null, mapLayers = () => {}, drawDebugWorld = () => {}, glShape = () => {}, glRing = () => {}, glHeavy = () => {}, glDot = () => {}, glBul = () => {}; // no profiles / maps / WebGL yet
+let profOf = () => null; export const setProfOf = (f) => { profOf = f; }; // player profiles (name, colour, animation) live in the ui pack
+const mapLayers = () => {}, drawDebugWorld = () => {}, glShape = () => {}, glRing = () => {}, glHeavy = () => {}, glDot = () => {}, glBul = () => {}; // no profiles / maps / WebGL yet
 let H = 720, SCv = 1;
 const SPRC = new Map(), document = globalThis.document ?? { createElement: () => ({ getContext: () => new Proxy({}, { get: () => () => {} }) }) };
 export const bindView = (v) => { ({ ctx, frame, P, B, ENT, cams, MVIEW, T, CARDS, performance, STOCKS, stI, ITEMS, item, hitstop, FX, TX, RINGS, WAVES, LINES, KOFX, CRACK, GZ, invF, TSTOP, TSO, shake, kx, ky, zk, bgF, NERV, slow, WARP, TEAMS, H, SCv, bodyR, coreR } = v); };

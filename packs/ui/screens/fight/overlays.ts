@@ -1,3 +1,4 @@
+import { pname } from '../../profiles';
 import { COLS, TCOL, UF, UFI, clamp, skewRect, strokeTxt, type Hot, type UiCtx } from '../../core';
 
 /** In-fight overlays (legacy drawIntro / drawGameEnd / drawPause + its menu, line ~3989-4178). `f` = game frame, `winT` = frames since the win. */
@@ -74,7 +75,7 @@ export function drawLastStock(u: UiCtx, v: FightView, P: LsPlayer[]): void {
     c.fillStyle = 'rgba(5,6,12,.88)'; skewRect(c, -W * 0.42, -H * 0.1, W * 0.84, H * 0.2, H * 0.07); c.fill(); c.fillStyle = '#ff2d55'; c.fillRect(-W * 0.42, -H * 0.1, W * 0.84, 6); c.fillRect(-W * 0.42 + H * 0.0, H * 0.1 - 6, W * 0.84, 6);
     c.save(); c.scale(sc, sc); c.font = UFI(Math.min(H * 0.14, W * 0.1)); c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round'; c.lineWidth = 14; c.strokeStyle = '#05060c'; c.strokeText('LAST STOCK!', 0, 0);
     if (!u.fxLow) { c.fillStyle = '#2df0ff'; c.fillText('LAST STOCK!', -5, 2); c.fillStyle = '#ff2d6a'; c.fillText('LAST STOCK!', 5, -2); } c.fillStyle = '#fff'; c.fillText('LAST STOCK!', 0, 0); c.restore();
-    if (q && d > 0.25) { const uu = clamp((d - 0.25) / 0.25, 0, 1); c.globalAlpha = (1 - out) * uu; c.font = UF(900, H * 0.03); c.textAlign = 'center'; c.fillStyle = COLS[q.id % 8]!; c.fillText(((q.cpu ? 'CPU ' : 'P') + (q.id + 1)).toUpperCase() + '  ·  ONE LIFE LEFT', (1 - uu) * 80, H * 0.135); }
+    if (q && d > 0.25) { const uu = clamp((d - 0.25) / 0.25, 0, 1); c.globalAlpha = (1 - out) * uu; c.font = UF(900, H * 0.03); c.textAlign = 'center'; c.fillStyle = COLS[q.id % 8]!; c.fillText(pname(q).toUpperCase() + '  ·  ONE LIFE LEFT', (1 - uu) * 80, H * 0.135); }
   }
   c.restore();
 }

@@ -3,6 +3,7 @@ import { uiBG } from '../../bg';
 import { STOCKS, SET, allMaps } from '../../settings';
 import { UISUB } from '../../trans';
 import { hubFX, hubProfile } from './deco';
+import { TXI } from '../../txi';
 import { hubIcon } from './icons';
 
 /** Main hub (legacy HUB + drawMenu, line ~3852, with its v3 graph navigation and hubFX/hubProfile wrappers): spell-card-like tiles. */
@@ -68,7 +69,7 @@ export function drawHub(u: UiCtx, h: HubHost): void {
   { const hs = h.touch ? 'tap a card' : (h.music ? 'L1/R1 · Q/E: music · Select: pause · ' : '') + 'arrows / stick: move · Enter / A: open · Start: quick fight · Esc: title', dw = c.measureText(cur.d).width; c.textAlign = 'right'; c.font = '12px monospace'; c.fillStyle = '#999'; if (h.sb + W * 0.035 + dw + 24 < W * 0.97 - c.measureText(hs).width) c.fillText(hs, W * 0.97, H - bh * 0.38); }
   c.restore();
   if (h.audioLocked) { c.save(); c.textAlign = 'center'; c.font = '13px monospace'; c.fillStyle = '#f8f'; c.fillText('Press a key or click to enable sound', W / 2, H * 0.13); c.restore(); }
-  hubProfile(u, h.pic, h.nick);
+  if (!TXI) hubProfile(u, h.pic, h.nick); // hidden behind the text box
 }
 export function hubGo(h: HubHost): void { h.sfx('ok00'); h.go(HUB[UIHUB.sel]!.k); }
 /** Directional move along the tile graph; a blocked direction bumps (legacy v3 hubMove). */

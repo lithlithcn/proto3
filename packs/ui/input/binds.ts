@@ -12,15 +12,27 @@ const cp = <T>(o: T): T => JSON.parse(JSON.stringify(o)) as T;
 export const BINDS = { KB: cp(DEF_KB), PAD: [0, 1, 2, 3].map(() => cp(DEF_PAD)) };
 export function resetBinds(): void { BINDS.KB = cp(DEF_KB); BINDS.PAD = [0, 1, 2, 3].map(() => cp(DEF_PAD)); }
 type Store = Pick<Storage, 'getItem' | 'setItem'>;
+/** Slot defaults (no profile), persisted as `sf_binds3`; BINDS = defaults + the bindings of the profile assigned to each slot (legacy DEFB / applyBinds). */
+export const DEFB = { KB: cp(DEF_KB), PAD: [0, 1, 2, 3].map(() => cp(DEF_PAD)) };
+export interface ProfBinds { kb?: Partial<Record<Act, string>>; pad?: PadMap }
+let profOf: (i: number) => ProfBinds | null = () => null;
+export const setProfileLookup = (f: (i: number) => ProfBinds | null): void => { profOf = f; };
+export function applyBinds(): void { BINDS.KB = cp(DEFB.KB); BINDS.PAD = cp(DEFB.PAD); for (let i = 0; i < 4; i++) { const f = profOf(i); if (!f) continue; if (f.kb && BINDS.KB[i]) Object.assign(BINDS.KB[i]!, f.kb); if (f.pad && BINDS.PAD[i]) Object.assign(BINDS.PAD[i]!, f.pad); } }
 export function loadBinds(s: Store): void {
-  resetBinds();
+  DEFB.KB = cp(DEF_KB); DEFB.PAD = [0, 1, 2, 3].map(() => cp(DEF_PAD));
   try {
-    const o = JSON.parse(s.getItem('sf_binds3') ?? 'null') as { KB: Record<Act, string>[]; PAD: PadMap[] } | null; if (!o) return;
-    o.KB.forEach((x, i) => { if (BINDS.KB[i]) Object.assign(BINDS.KB[i]!, x); }); o.PAD.forEach((x, i) => { if (BINDS.PAD[i]) Object.assign(BINDS.PAD[i]!, x); });
-    for (const M of BINDS.PAD) { if (Array.isArray(M.burst)) M.burst = 3; if (M.next === 12) M.next = 11; } // old saves: burst was a chord, next was 12
+    const o = JSON.parse(s.getItem('sf_binds3') ?? 'null') as { KB: Record<Act, string>[]; PAD: PadMap[] } | null;
+    if (o) { o.KB.forEach((x, i) => { if (DEFB.KB[i]) Object.assign(DEFB.KB[i]!, x); }); o.PAD.forEach((x, i) => { if (DEFB.PAD[i]) Object.assign(DEFB.PAD[i]!, x); }); }
+    for (const M of DEFB.PAD) { if (Array.isArray(M.burst)) M.burst = 3; if (M.next === 12) M.next = 11; } // old saves: burst was a chord, next was 12
   } catch { /* corrupt: defaults */ }
+  applyBinds();
 }
-export function saveBinds(s: Store): void { try { s.setItem('sf_binds3', JSON.stringify(BINDS)); } catch { /* quota */ } }
+/** Edits go to the profile of each slot when it has one, else to the slot defaults. `saveProfiles` persists the profiles. */
+export function saveBinds(s: Store, saveProfiles: () => void = () => {}): void {
+  for (let i = 0; i < 4; i++) { const f = profOf(i); if (f) { if (BINDS.KB[i]) f.kb = cp(BINDS.KB[i]!); f.pad = cp(BINDS.PAD[i]!); } else { if (BINDS.KB[i]) DEFB.KB[i] = cp(BINDS.KB[i]!); DEFB.PAD[i] = cp(BINDS.PAD[i]!); } }
+  try { s.setItem('sf_binds3', JSON.stringify(DEFB)); } catch { /* quota */ }
+  saveProfiles();
+}
 /** Row labels (legacy ACT_FR). */
 export const ACT_LABEL: Record<Act, string> = { up: 'Up', down: 'Down', left: 'Left', right: 'Right', shot: 'Shot', heavy: 'Heavy', melee: 'Melee', dash: 'Dash', parry: 'Parry', burst: 'Skill 2', spell: 'Spell card', focus: 'Focus', prev: 'Skill 1', next: 'Skill 2 (alt)' };
 /** Layout-aware key labels (navigator.keyboard layout map when the browser has it; legacy LBL). */

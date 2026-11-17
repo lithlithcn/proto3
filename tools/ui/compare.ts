@@ -13,7 +13,10 @@ import { BIND } from '@pack/ui/screens/binds/binds';
 import { GUIDE } from '@pack/ui/screens/info/info';
 import { SET } from '@pack/ui/settings';
 import type { ItemDef } from '@pack/combat/api';
-import { optionRows, ruleRows, soundRows, teamRows } from '@pack/ui/screens/sub/menus';
+import { optionRows, profileRows, ruleRows, soundRows, teamRows } from '@pack/ui/screens/sub/menus';
+import { PROFS } from '@pack/ui/profiles';
+import { RECS, recordRows } from '@pack/ui/records';
+import { txtInput } from '@pack/ui/txi';
 import { UIDOTS } from '@pack/ui/bg';
 import { HUBP } from '@pack/ui/screens/hub/deco';
 import { UIHUB } from '@pack/ui/screens/hub/hub';
@@ -86,6 +89,15 @@ const SC: Sc[] = [
     port() { APP.mode = 'binds'; BIND.row = row; BIND.col = col; BIND.wait = wait; BIND.combo = []; SET.mouse = false; UIT.key = 'binds'; UIT.t0 = -9; } })),
   // the guide's item pages are built from the catalog: legacy has 131 items, so the port is fed the legacy catalog here
   ...[0, 3, 7, 12, 16, 37, 38, 39].map(p => ({ name: `guide-${p}`, ms: 43210, legacy: `mode='info';infoP=${p};infoScr=0;UIT.key='info';UIT.t0=-9;frame=33`, port() { APP.mode = 'info'; GUIDE.p = p; GUIDE.scr = 0; UIT.key = 'info'; UIT.t0 = -9; host.items = LITEMS; } })),
+  ...[0, 5, 7].map(sel => ({ name: `profiles-${sel}`, ms: 44000,
+    legacy: `mode='menu';PROF=[{n:'HKN',c:3,a:4},{n:'AMI',c:10,a:1}];SLOTP=[0,-1,1,-1];profE=0;openSub('PROFILES',PROFM);subSel=${sel};UISUB.vals={};UISUB.t0=43;UIT.key='sub:PROFILES';UIT.t0=-9;frame=12`,
+    port() { PROFS.list = [{ n: 'HKN', c: 3, a: 4 }, { n: 'AMI', c: 10, a: 1 }]; PROFS.slot = [0, -1, 1, -1]; PROFS.edit = 0; APP.mode = 'sub'; SUB.stack = []; SUB.title = 'PROFILES'; SUB.sel = sel; SUB.vals = {}; UISUB.t0 = 43; UIT.key = 'sub:PROFILES'; UIT.t0 = -9;
+      SUB.rows = () => profileRows({ text() {}, open() {}, title() {}, controls() {}, guide() {}, tutorial() {}, fullscreen: () => false, toggleFullscreen() {}, soon() {} }); } })),
+  { name: 'textbox', ms: 45000, legacy: "mode='menu';txtInput('NEW PROFILE NAME','HK',12,()=>{});TXI.t=3;UIHUB.sel=0;UIHUB.a={};UIHUB.desc='';UISUB.t0=40;UIT.key='menu';UIT.t0=-9", port() { APP.mode = 'menu'; txtInput('NEW PROFILE NAME', 'HK', 12, () => {}); UIHUB.sel = 0; UIHUB.a = {}; UIHUB.desc = ''; UISUB.t0 = 40; UIT.key = 'menu'; UIT.t0 = -9; } },
+  ...[true, false].map(full => ({ name: `records-${full ? 'two' : 'empty'}`, ms: 46000,
+    legacy: `mode='menu';for(const k in STATS)delete STATS[k];${full ? "STATS.HKN={m:7,w:5,ko:12,dmg:1503,dth:6,sec:900,pmax:4,cmax:9,it:{orange:3,yellow:1}};STATS.P2={m:2,w:0,ko:1,dmg:80,dth:6,sec:200,pmax:0,cmax:2,it:{}};" : ''}openSub('RECORDS',RECL);subSel=1;UISUB.vals={};UISUB.t0=45;UIT.key='sub:RECORDS';UIT.t0=-9`,
+    port() { for (const k in RECS) delete RECS[k]; if (full) { RECS['HKN'] = { m: 7, w: 5, ko: 12, dmg: 1503, dth: 6, sec: 900, pmax: 4, cmax: 9, it: { orange: 3, yellow: 1 } }; RECS['P2'] = { m: 2, w: 0, ko: 1, dmg: 80, dth: 6, sec: 200, pmax: 0, cmax: 2, it: {} }; }
+      APP.mode = 'sub'; SUB.stack = []; SUB.title = 'RECORDS'; SUB.sel = 1; SUB.vals = {}; UISUB.t0 = 45; UIT.key = 'sub:RECORDS'; UIT.t0 = -9; SUB.rows = () => recordRows(k => LITEMS.find(i => i.k === k)?.name); } })),
 ];
 const want = process.argv.slice(2).filter(a => !a.startsWith('-'));
 const host: UiHost = { items, sfx() {}, audioLocked: () => false, nowMs: () => 0, sb: 0, touch: false, music: false, open() {}, roster, keys: new Set<string>(), pads: () => [], frame: () => +ev('frame')!, start() {}, playground() {}, drawPlayground() {} };

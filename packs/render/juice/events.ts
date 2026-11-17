@@ -148,7 +148,8 @@ const onRefl = on<{ p: number; o: number; dep: number; x: number; y: number; a: 
   j.KOFX.push({ x: e.x, y: e.y, a: e.a, t: 70, c, edge: d0 ? bedge[e.o] ?? null : null, len: e.len }); big(j, d0 ? 'REFLECTED x' + (d0 + 1) + '!' : 'BEAM PARRIED!', '#6ff', 50);
   bcol[e.p] = c; bedge[e.p] = col(e.p);
 });
-export const juiceHooks: HookDef[] = [onFire, onRefl, onSB, onBeamCancel, onRespawn, onKo, onChip, onCancel, onClash, onReady, onFx, onPivot, onCancelB, onCd, onKick, onGlide, onGrab, onHeavy, onBClash, onLight, onSpell, onCapture, onTick, onHit, onBreak, onPip, onGraze, onPower, onRefused, onParry];
+const onItem = on<{ p: number; kind: number }>('juice-item', 'combat:item', (j, e) => { j.gives.push({ p: e.p, kind: e.kind }); if (j.gives.length > 64) j.gives.splice(0, 32); });
+export const juiceHooks: HookDef[] = [onItem, onFire, onRefl, onSB, onBeamCancel, onRespawn, onKo, onChip, onCancel, onClash, onReady, onFx, onPivot, onCancelB, onCd, onKick, onGlide, onGrab, onHeavy, onBClash, onLight, onSpell, onCapture, onTick, onHit, onBreak, onPip, onGraze, onPower, onRefused, onParry];
 export { on as juiceHook };
 export function runJuiceEvent(j: Juice, e: { ev: string }): void { (H[e.ev] as ((j: Juice, e: unknown) => void) | undefined)?.(j, e); }
 export type { Ev };
