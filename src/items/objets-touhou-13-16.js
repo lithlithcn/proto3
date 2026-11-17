@@ -217,7 +217,7 @@ DEFER(()=>{{const U0=updEnt;updEnt=e=>{const p=P[e.o];
   for(const q of al)if(q.state==='dash'&&(e.h?Math.abs(q.y-e.pos):Math.abs(q.x-e.pos))<bodyR(q)+7&&(q.ksOK||0)<frame){q.ksOK=frame+20;txt(q.x,q.y-30,'NICE!','#fff',14)}break}
  case'moonf':if(e.t===1){shake=70;flash(.6,'#ffe8a0');sfx('se_enep01');for(let i=0;i<3;i++)WAVES.push({x:e.x,y:e.y,t:30+i*8,T:30+i*8,spd:20+i*6,th:60,inv:i%2,c:'#ffe8a0'});crack(e.x,e.y); // Clownpiece : la lune tombe
   for(const q of al)if(q.inv<=0&&Math.hypot(q.x-e.x,q.y-e.y)<220+bodyR(q)){if(parryOn(q))parryFx(q);else hit(q,p,q.x-e.x||1,q.y-e.y,IM.moon,1,true)}}break;
- case'dog':{let q=null,bd=1e9;for(const c of al){const d=Math.hypot(c.x-p.x,c.y-p.y);if(d<bd){bd=d;q=c}}const tx=q?p.x+(q.x-p.x)/bd*55:p.x+40,ty=q?p.y+(q.y-p.y)/bd*55:p.y;e.x+=(tx-e.x)*.2;e.y+=(ty-e.y)*.2; // Aunn
+ case'dog':{let q=null,bd=1e9;for(const c of al){const d=Math.hypot(c.x-p.x,c.y-p.y);if(d<bd){bd=d;q=c}}bd=bd||1;const tx=q?p.x+(q.x-p.x)/bd*55:p.x+40,ty=q?p.y+(q.y-p.y)/bd*55:p.y; /* bd||1: foe exactly on the owner gave 0/0 = NaN */e.x+=(tx-e.x)*.2;e.y+=(ty-e.y)*.2; // Aunn
   for(const b of B)if(!b.dead&&b.owner!==e.o&&!b.fake&&Math.abs(b.x-e.x)<b.r+22&&Math.abs(b.y-e.y)<b.r+22){b.dead=1;burst(b.x,b.y,'#5cff7a',4)}
   if(q&&Math.hypot(q.x-e.x,q.y-e.y)<60&&(q.dgCD||0)<frame&&q.inv<=0){q.dgCD=frame+40;hit(q,p,q.x-e.x,q.y-e.y,IM.bite,1,true);txt(q.x,q.y-40,'WOOF!','#5cff7a',16)}break}
  case'mirr':if(Math.hypot(p.x-e.x,p.y-e.y)<34&&(p.mrCD||0)<frame){const q=nearFoe(p.id,p.x,p.y);if(q){p.mrCD=frame+60;burst(p.x,p.y,'#ffd23a',16);const a=q.aim+Math.PI;p.x=clamp(q.x+Math.cos(a)*50,T.BODY_R,T.MAP_W-T.BODY_R);p.y=clamp(q.y+Math.sin(a)*50,T.BODY_R,T.MAP_H-T.BODY_R);burst(p.x,p.y,'#ffd23a',16); // Okina

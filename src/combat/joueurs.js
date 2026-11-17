@@ -91,7 +91,7 @@ function atk(p,o,I,pr){
  if(p.mHit&&pr('dash')&&p.boost>=T.DASH_COST&&!m.spd){p.mHit=0;txt(p.x,p.y-30,'HIT CANCEL','#7cf',13);dash(p,I);return} // coup qui touche → annulable en dash
  if(p.t>m.start+act&&pr('dash')&&p.spirit>=T.CANCEL_COST&&p.boost>=T.DASH_COST){
   p.spirit-=T.CANCEL_COST;txt(p.x,p.y-30,'CANCEL','#7cf');dash(p,I);return}
- if(p.t>=m.start+act+Math.round(m.rec*(m.spd?1:.8)))p.state='idle'}
+ if(p.state!=='dead'&&p.t>=m.start+act+Math.round(m.rec*(m.spd?1:.8)))p.state='idle'} /* dead: KO'd during its own attack, stays dead */
 
 function dash(p,I){if(p.fx.heads>0&&xHeadSwap(p,I))return;let x=I.x,y=I.y;if(Math.hypot(x,y)<.3){x=-Math.cos(p.aim);y=-Math.sin(p.aim)}
  const l=Math.hypot(x,y),v=T.DASH_V*(p.buff==='VITESSE'?1.15:1);
@@ -133,6 +133,7 @@ var HITMEL=0;function hit(v,a,dx,dy,m,mult,heavy){if(a&&a!==v&&a.id!==undefined)
  if(item)item.cp[v.id]=0;
  if(heavy&&inEdge(v)&&v.pips>0){v.pips--;txt(v.x,v.y-46,'WALL '+v.pips+'/'+T.PIPS,'#f66')}
  const n=Math.hypot(dx,dy)||1,s=(.7+.03*NERV)*m.kb*(1+T.KB_SCALE*(1-Math.max(0,v.hp)/T.HP))*(v.giant>0?.5:1);if(s*(mult||1)>20){v.bounceN=3;sfx(s*(mult||1)>34||v.hp<=0?'superheavyhit':'strongslice',s*(mult||1)>34||v.hp<=0?.7:.3)} // superheavyhit : coups vraiment mortels seulement
+ if(v.state==='dead')return; /* KO'd during this hit (item/on-damage effect): do not revive it as hitstun (stocks went to -1) */
  Object.assign(v,{kbx:dx/n*s,kby:dy/n*s,diPend:true,vx:0,vy:0,state:'hitstun',t:Math.round(m.stun*Math.pow(T.STUN_DECAY,v.combo-1)*kS())});
  if(v.hp<=0)v.koPend=true;
  hitstop=Math.max(hitstop,T.HITSTOP+Math.round(dmg*.35));shake=Math.min(28,shake+dmg*1.6);

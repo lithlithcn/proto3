@@ -42,7 +42,7 @@ function labBalance(c) {
   try { while (f < cap && winner < 0) { LBS.hitF = []; step(); f++;
       P.forEach((p, i) => { const d = prev[i] - p.hp, h = LBS.hitF[i] || 0, S = LBS.S[i]; if (d > h + .01 && p.state !== 'dead') { const r = d - h, by = p.lastByF > frame - 60 ? p.lastBy : -1; S.in += r; if (by >= 0 && by !== i && LBS.S[by]) { LBS.S[by].out += r; LBS.S[by].src['bullets/other'] = (LBS.S[by].src['bullets/other'] || 0) + r; } }
         prev[i] = p.hp; if (p.state !== 'dead') S.alive++; });
-      if (f % 30 === 0) { const st = P.map(p => p.stocks), mx = Math.max(...st); P.forEach((p, i) => { if (p.stocks < mx) LBS.S[i].behind = 1; }); labCheck(); } } }
+      if (f % 600 === 0 && LAB.beat) LAB.beat(f); if (f % 30 === 0) { const st = P.map(p => p.stocks), mx = Math.max(...st); P.forEach((p, i) => { if (p.stocks < mx) LBS.S[i].behind = 1; }); labCheck(); } } }
   catch (e) { labIssue('crash', e); }
   LBS.on = false; const S = LBS.S;
   return { chars: c.chars, winner: winner >= 0 && winner < nP ? winner : -1, frames: f, timeout: winner < 0, stocksLeft: P.map(p => p.stocks), stats: S, comeback: winner >= 0 && S[winner] ? S[winner].behind : 0, issues: LAB.issues };

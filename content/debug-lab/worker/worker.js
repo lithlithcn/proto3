@@ -4,7 +4,7 @@
 let loaded = false, netOn = false, netIv = 0;
 self.onmessage = e => {
   const d = e.data;
-  if (d.load) { try { importScripts(d.base + 'content/debug-lab/worker/sandbox.js' + d.v, ...d.scripts, d.base + 'content/debug-lab/worker/driver.js' + d.v, d.base + 'content/debug-lab/worker/balance.js' + d.v); loaded = true; postMessage({ ready: 1 }); } catch (x) { postMessage({ fatal: String(x && x.stack || x) }); } return; }
+  if (d.load) { try { importScripts(d.base + 'content/debug-lab/worker/sandbox.js' + d.v, ...d.scripts, d.base + 'content/debug-lab/worker/driver.js' + d.v, d.base + 'content/debug-lab/worker/balance.js' + d.v); loaded = true; LAB.beat = f => postMessage({ beat: f }); postMessage({ ready: 1 }); } catch (x) { postMessage({ fatal: String(x && x.stack || x) }); } return; }
   if (d.job === 'offline') { const res = labOffline(d.cfg); postMessage({ done: 1, res }); return; }
   if (d.job === 'balance') { postMessage({ done: 1, bal: 1, res: labBalance(d.cfg) }); return; }
   if (d.job === 'netopts') { postMessage({ opts: labNetOpts(d.cfg) }); return; }

@@ -59,8 +59,12 @@ function labCheck() {
     for (const k of ['x', 'y', 'vx', 'vy', 'hp']) if (!Number.isFinite(p[k])) { labIssue('nan', new Error('P' + (p.id + 1) + '.' + k + ' = ' + p[k] + ' (' + labChar(p) + ')')); return; }
     if (p.state !== 'dead' && (p.x < -300 || p.y < -300 || p.x > T.MAP_W + 300 || p.y > T.MAP_H + 300)) labIssue('oob', new Error('P' + (p.id + 1) + ' (' + labChar(p) + ') outside the map at ' + (p.x | 0) + ',' + (p.y | 0) + ' state ' + p.state));
     if (p.hp > LAB_HPMAX() || p.stocks < 0 || !Number.isFinite(p.spirit)) labIssue('invalid', new Error('P' + (p.id + 1) + ' (' + labChar(p) + ') hp ' + p.hp + ' stocks ' + p.stocks + ' spirit ' + p.spirit));
-    const s = LAB.st[p.id] || (LAB.st[p.id] = { k: '', f: frame }), key = p.state + '|' + Math.round(p.x / 8) + '|' + Math.round(p.y / 8);
-    if (key !== s.k || p.state === 'idle' || p.state === 'dead') { s.k = key; s.f = frame; } else if (frame - s.f > 900) { labIssue('softlock', new Error('P' + (p.id + 1) + ' (' + labChar(p) + ') stuck in state "' + p.state + '" without moving for 15 s')); s.f = frame; }
+    /* softlock = same state, same place, no hit taken, while the state's own clock p.t keeps running for 15 s (900 ticks).
+       Counted on p.t, not on frames: slow motion / time stops (32 fighters = KO slow-mo all the time) stretch states legitimately.
+       A big jump of p.t or an hp change = the state was re-entered or refreshed (new hit, new parry): restart. */
+    const s = LAB.st[p.id] || (LAB.st[p.id] = { k: '', n: 0, t: p.t, hp: p.hp }), key = p.state + '|' + Math.round(p.x / 8) + '|' + Math.round(p.y / 8), dt = Math.abs((p.t | 0) - (s.t | 0));
+    if (key !== s.k || p.state === 'idle' || p.state === 'dead' || dt > 60 || p.hp !== s.hp) { s.k = key; s.n = 0; } else if ((s.n += dt) > 900) { labIssue('softlock', new Error('P' + (p.id + 1) + ' (' + labChar(p) + ') stuck in state "' + p.state + '" without moving: its timer ran 15 s (t=' + (p.t | 0) + ')')); s.n = 0; }
+    s.t = p.t; s.hp = p.hp;
   }
   for (const b of B) if (!Number.isFinite(b.x + b.y + b.vx + b.vy)) { labIssue('nan', new Error('bullet of P' + ((b.owner | 0) + 1) + ' has a non-finite position/speed')); break; }
   for (const e of ENT) if (typeof e.x === 'number' && !Number.isFinite(e.x + e.y)) { labIssue('nan', new Error('entity "' + e.k + '" has a non-finite position')); break; }
@@ -85,6 +89,7 @@ function labOffline(c) {
   const cap = c.frames || 7200;
   try { while (f < cap && winner < 0) { const t0 = performance.now(); step(); const dt = performance.now() - t0; ms += dt; f++;
       if (dt > 60 * Math.max(1, nP / 8)) labIssue('slow', new Error('one frame took ' + (dt | 0) + ' ms with ' + nP + ' fighters, ' + B.length + ' bullets, ' + ENT.length + ' entities (' + labTop(ENT.map(e => e.k)) + ')'));
+      if (f % 600 === 0 && LAB.beat) LAB.beat(f); // heartbeat: a slow game (1000+ entities) is not a hang
       if (f % 30 === 0) labCheck(); if ((c.kind === 'rollback' || c.kind === 'bots') && f % 240 === 120) labRollback(); } }
   catch (e) { labIssue('crash', e); }
   return { frames: f, rules, issues: LAB.issues, winner, ms: ms | 0 };
@@ -92,8 +97,8 @@ function labOffline(c) {
 function labNetOpts(c) {
   LAB.rng = (c.seed >>> 0) || 1; const r = labRules(Object.assign({}, c, { fighters: labPick(c.fighters, [2, 2, 3, 4]) })), n = nP;
   return { v: NETV, g: 1, names: Array.from({ length: n }, (_, i) => 'LAB' + (i + 1)), pics: [], chars: Array.from({ length: n }, () => CH0 + (labRand() * CHR.length | 0)), dn: 1700000000000,
-    mw: Math.round(W / SC), n, D: c.D ?? 2, lat: c.lat ?? 60, TEAMS: false, TEAMA: [], mapI, itemsOn, itemOn: Object.assign({}, itemOn), COMP, stI, TIMER, NERV, maxC, seed: (labRand() * 1e9 | 0) || 1, rules: r };
+    mw: Math.round(W / SC), n, D: c.D ?? 2, lat: c.lat ?? 60, TEAMS: false, TEAMA: [], mapI, itemsOn, itemOn: Object.assign({}, itemOn), COMP, stI, TIMER, NERV, maxC, every: T.ITEM_EVERY, seed: (labRand() * 1e9 | 0) || 1, rules: r }; // every: lab-only fast item spawn, must be the same on every peer
 }
 function labNetBoot(o, id, send, botSeed) { LAB.rng = (botSeed >>> 0) || 7; LAB.issues = []; LAB.bot = []; LAB.seen.clear(); LAB.ev = []; LAB.st = []; LAB.cfg = { bots: 'expert', noCpu: true }; LAB.style = [];
-  Object.assign(itemOn, o.itemOn || {}); maxC = o.maxC; readHumanBase = i => labBotIn(i); netBoot(o, id); NET = netNew(id, send, o.D, o.n); NET.g = o.g; NET.lat = o.lat; NET.rtt = o.lat * 2; }
+  Object.assign(itemOn, o.itemOn || {}); maxC = o.maxC; if (!LAB.T0) LAB.T0 = { every: T.ITEM_EVERY }; T.ITEM_EVERY = o.every || LAB.T0.every; readHumanBase = i => labBotIn(i); netBoot(o, id); NET = netNew(id, send, o.D, o.n); NET.g = o.g; NET.lat = o.lat; NET.rtt = o.lat * 2; }
 function labNetTick() { try { netTick(); } catch (e) { labIssue('crash', e, { peer: NET.L }); } if (NET.f % 30 === 0) labCheck(); return { f: NET.f, winner, desync: NET.desync, stall: NET.stall, rb: NET.rbN, issues: LAB.issues.splice(0) }; }

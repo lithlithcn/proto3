@@ -45,6 +45,7 @@ function labKill(w) { try { w.wk.terminate(); } catch (e) {} const i = LABS.W.in
 function labMsg(w, d) {
   w.t = performance.now();
   if (d.ready) { w.ready = true; return; }
+  if (d.beat) return; // still playing (slow game), not hung
   if (d.fatal) { LABS.on = false; LABB.on = false; labReport({ type: 'load', msg: d.fatal.split('\n')[0], at: (d.fatal.match(/((?:src|content)\/[^\s)?:]+)(?:\?[^:\s)]*)?:(\d+)/) || []).slice(1, 3).join(':') }, {}); labKill(w); return; }
   if (d.net && w.grp) { labRelay(w, d.net); return; }
   if (d.opts && w.grp) { const g = w.grp; g.ws.forEach((x, i) => x.wk.postMessage({ job: 'net', o: d.opts, id: i, botSeed: g.job.seed + i * 7919, speed: 3, frames: g.job.frames })); return; }
