@@ -36,9 +36,9 @@ function endK(j: Juice, e: { pw: number[]; hp: number[]; tm: number }): void {
   let n = 0, last = true, mh: number = T.HP; for (let p = 0; p * 2 < e.pw.length; p++) { const st = e.pw[p * 2 + 1]!; if (st <= 0) continue; n++; if (st !== 1) last = false; mh = Math.min(mh, e.hp[p]!); }
   const tg = !e.tm && n === 2 && last ? 1 + 0.05 * Math.min(1, Math.max(0, (40 - mh) / 40)) : 1; j.endk += (tg - j.endk) * 0.02;
 }
-H['combat:fx-tick'] = ((j: Juice, e: { gf: number; tr: number[]; pos: number[]; cn: string[]; pw: number[]; hp: number[]; tm: number }) => {
+H['combat:fx-tick'] = ((j: Juice, e: { gf: number; wt: number; tr: number[]; pos: number[]; cn: string[]; pw: number[]; hp: number[]; tm: number }) => {
   for (let p = 0; p * 2 < e.pw.length; p++) { const pw = e.pw[p * 2]!, st = e.pw[p * 2 + 1]!, o = j.pw[p]; if (pw >= 0) { if (o && Math.floor(pw + 1e-9) > Math.floor(o[0] + 1e-9)) snd(j, e.gf, 'bonus', 0.7); if (o && st > o[1]) snd(j, e.gf, 'bonus', 0.8); j.pw[p] = [pw, st]; } } // wrapper line 2735
-  if (e.gf === j.lastGf) return; j.lastGf = e.gf;
+  { const k = e.gf + e.wt * 1e7; if (k === j.lastGf) return; j.lastGf = k; } // after the match ends gf stops but the effects keep ticking (winT counts)
   if (e.gf === 1) snd(j, e.gf, 'ready', 0.9); else if (e.gf === 55) { snd(j, e.gf, 'se_cardget', 0.8); snd(j, e.gf, 'ok00', 0.7); } // match intro (legacy drawIntro, line 3990)
   tickJuice(j); endK(j, e);
   for (let p = 0; p * 2 < e.pos.length; p++) if ((j.nds[p] ?? 0) > e.gf && e.cn[p] === 'Nue' && e.gf % 2 === 0 && j.FX.length < 480) j.FX.push({ x: e.pos[p * 2]!, y: e.pos[p * 2 + 1]!, vx: 0, vy: 0, t: 18, c: '#1a1028' }); // Nue dash shadow (tick, line 4458)
@@ -47,7 +47,7 @@ H['combat:fx-tick'] = ((j: Juice, e: { gf: number; tr: number[]; pos: number[]; 
 const onTick: HookDef<{ gf: number }> = { id: 'juice-tick', event: 'combat:fx-tick', phase: 'after', run(w, ev) {
   const s = combatOf(w), tr: number[] = [];
   const pos: number[] = [], cn: string[] = [], pw: number[] = [], hp: number[] = []; for (let p = 0; p < s.n; p++) { pos.push(s.x[p]!, s.y[p]!); cn.push(charOf(w, s, p).name); pw.push(s.state[p] === PS.dead ? -1 : s.power[p]!, s.stocks[p]!); hp.push(s.state[p] === PS.dead ? T.HP : s.hp[p]!); }
-  jq(w).push({ ev: 'combat:fx-tick', gf: ev.payload.gf, tr, pos, cn, pw, hp, tm: s.teams } as never);
+  jq(w).push({ ev: 'combat:fx-tick', gf: ev.payload.gf, wt: (ev.payload as { wt?: number }).wt ?? 0, tr, pos, cn, pw, hp, tm: s.teams } as never);
 } };
 type Pp = { p: number; px: number; py: number; pa: number; pcpu: number };
 const onGraze = on<Pp & { x: number; y: number; k: number; streak: number }>('juice-graze', 'combat:graze', (j, e) => {

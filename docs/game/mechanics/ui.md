@@ -8,10 +8,12 @@ Same screens and look as the legacy game: title (warp stars, galaxy, planet, log
 - Screens: `packs/ui/screens/title/title.ts`, `packs/ui/screens/title/bg.ts`, `packs/ui/screens/hub/hub.ts`, `packs/ui/screens/hub/deco.ts`, `packs/ui/screens/hub/icons.ts`; shared `packs/ui/core.ts` (UiCtx, fonts, skewRect, ornFrame), `packs/ui/bg.ts`, `packs/ui/trans.ts`.
 - Character select: `packs/ui/screens/css/state.ts` (`cssOpen`, `cssTick`, `cssGo`, `cssTapTile`), `packs/ui/screens/css/draw.ts`; character art through `packs/render/ld/portrait.ts` (`drawCharArt`); roster texts = `role` / `desc` of each character content file.
 - Devices + bindings: `packs/ui/input/devices.ts` (`devIn` menu reading, `readDev` fight reading with pad chords), `packs/ui/input/binds.ts` (`sf_binds3`). The shell keeps a one-frame tap buffer (legacy tapQ) so a press shorter than a frame still counts.
+- Fight overlays: `packs/ui/screens/fight/overlays.ts` (`drawIntro` READY?/FIGHT!, `drawGameEnd` GAME!, `drawPause` + menu with quit confirm, `PZ`), routed by `renderFightUi` / `fightKey` in `packs/ui/app.ts`; auto-pause on blur / hidden tab / pad unplugged (shell).
+- Match end: once a winner exists the sim only counts `winT` and ticks the effects (combat `gate`, legacy loop `stepFx();winT++`); the oracle runner does the same.
 - Settings with the legacy storage keys: `packs/ui/settings.ts` (`SET`, `loadSettings`, `saveSettings`).
 ## Tests
 `pnpm ui [scenario]` (`tools/ui/compare.ts`): legacy render() vs port per scenario (state + clock), op diff; run by `tests/parity/ui.test.ts`. Random decorations are copied legacy -> port, later Math.random pinned to 0.5.
 ## Bugs
 - Legacy pad reading in the character select overwrote the vertical stick with the Y button (`I.y=bt(3)`): pads could not move up/down and Y moved down. Port keeps the team-flag button apart (`t`) — deliberate fix.
 ## Not ported yet
-Sub-menus (rules/options/help/sound/profiles/teams), items list, controls, guide, pause, results, intro/GAME!, last stock banner, training, online lobby, map maker, YouTube sidebar (`sb` = 0), touch layer, pad menu polling (pollNav), CPU AI (CPUs stand still until lot 4), profiles' per-player bindings.
+Results screen (winT >= 100), last-stock banner, sub-menus (rules/options/help/sound/profiles/teams), items list, controls, guide, training, online lobby, map maker, YouTube sidebar (`sb` = 0), touch layer, pad menu polling (pollNav), CPU AI (CPUs stand still until lot 4), profiles' per-player bindings.

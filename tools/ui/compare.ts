@@ -13,6 +13,7 @@ import { UIHUB } from '@pack/ui/screens/hub/hub';
 import { CS2, CSA, cssOpen } from '@pack/ui/screens/css/state';
 import type { CharacterDef } from '@pack/combat/api';
 import touhou from '@pack/touhou/pack';
+import { PZ, drawGameEnd, drawIntro, drawPause } from '@pack/ui/screens/fight/overlays';
 
 const req = createRequire(import.meta.url);
 const { createLegacy } = req('../parity/legacy.cjs') as { createLegacy(o: object): Legacy };
@@ -36,7 +37,10 @@ function canon(a: Op[]): Op[] {
     return r;
   });
 }
-interface Sc { name: string; ms: number; legacy: string; port(): void }
+/** Ops inside the first marker block `name` (nested markers dropped) and the ctx state at its entry. */
+function blockOf(st: Op[], name: string): Op[] { const i = st.findIndex(o => o[0] === '#' && o[1] === name); if (i < 0) return []; const out: Op[] = []; let d = 0; for (let j = i + 1; j < st.length; j++) { const o = st[j]!; if (o[0] === '#') d++; else if (o[0] === '#/') { if (!d--) break; } else out.push(o); } return out; }
+const snapOf = (st: Op[], name: string): Record<string, unknown> => (st.find(o => o[0] === '#' && o[1] === name)?.[2] ?? {}) as Record<string, unknown>;
+interface Sc { name: string; ms: number; legacy: string; port(): void; /** compare only this legacy draw function's block (fight overlays) */ block?: string; draw?(u: UiCtx): void }
 const SC: Sc[] = [
   { name: 'title-intro', ms: 1300, legacy: "mode='title';UITITLE.t0=1;UIT.key='title';UIT.t0=-9", port: () => { APP.mode = 'title'; TITLE.t0 = 1; UIT.key = 'title'; UIT.t0 = -9; } },
   { name: 'title', ms: 5000, legacy: "mode='title';UITITLE.t0=2;UITITLE.shk=0;UIT.key='title';UIT.t0=-9", port: () => { APP.mode = 'title'; TITLE.t0 = 2; TITLE.shk = 0; UIT.key = 'title'; UIT.t0 = -9; } },
@@ -47,18 +51,23 @@ const SC: Sc[] = [
   ...([['css-empty', ''], ['css-joined', 'S[0].dev="k0";S[0].ty=CH0+3'], ['css-ready', 'S[0].dev="k0";S[0].ty=CH0+3;S[0].rd=true;S[1].dev="k1";S[1].ty=CH0+6'], ['css-teams', 'CS2.tb=true;S[0].dev="k0";S[0].tm=2']] as const).map(([name, js]) => ({ name, ms: 20000,
     legacy: `mode='menu';cssOpen();CSA.t0=18;UIT.key='css';UIT.t0=-9;{const S=CS2.sl;${js}}`,
     port: () => { APP.mode = 'css'; cssOpen({ ...host, pads: [], go() {}, back() {} } as never, 0); CSA.t0 = 18; UIT.key = 'css'; UIT.t0 = -9; const S = CS2.sl; const CH0 = 0; void CH0; new Function('S', 'CH0', 'CS2', js)(S, 0, CS2); } })),
+  // fight overlays: legacy game render, only the named block is compared
+  ...[20, 60, 70, 100].map(f => ({ name: `intro-f${f}`, ms: 30000, block: 'drawIntro', legacy: `mode='game';winner=-1;paused=false;MINTRO.on=true;frame=${f}`, port() {}, draw: (u: UiCtx) => drawIntro(u, { f, winner: -1, winT: 0, teams: false, teamA: [], intro: true }) })),
+  ...[3, 12, 30].map(t => ({ name: `gameend-t${t}`, ms: 30000, block: 'drawGameEnd', legacy: `mode='game';winner=1;winT=${t};paused=false;frame=500`, port() {}, draw: (u: UiCtx) => drawGameEnd(u, { f: 500, winner: 1, winT: t, teams: false, teamA: [], intro: true }) })),
+  { name: 'pause', ms: 30000, block: 'drawPause', legacy: "mode='game';winner=-1;paused=true;UIP.t0=29.8;PZ.sel=1;PZ.cf=0;PZ.why='';frame=500", port() { PZ.t0 = 29.8; PZ.sel = 1; PZ.cf = 0; PZ.why = ''; }, draw: (u: UiCtx) => drawPause(u, ['RESUME', 'RESTART MATCH', 'SOUND…', 'QUIT TO MENU'].map(t => ({ t, f() {} }))) },
 ];
 const want = process.argv.slice(2).filter(a => !a.startsWith('-'));
 const roster = [touhou].flatMap(p => Object.entries((p.content?.['character'] ?? {}) as Record<string, CharacterDef>).map(([k, d]) => ({ id: `${p.id}:${k}`, key: k, name: d.name, col: d.color, role: d.role ?? '', desc: d.desc ?? '', o: d.order }))).sort((a, b) => a.o - b.o);
 const host: UiHost = { sfx() {}, audioLocked: () => false, nowMs: () => 0, sb: 0, touch: false, music: false, open() {}, roster, keys: new Set<string>(), pads: () => [], frame: () => +ev('frame')!, start() {}, playground() {}, drawPlayground() {} };
 let bad = 0;
 for (const s of SC.filter(x => !want.length || want.some(w => x.name.startsWith(w)))) {
-  L.clock(s.ms); ev(s.legacy); const lo = canon(L.render());
+  L.clock(s.ms); ev(s.legacy); const raw = L.render();
+  const lo = canon(s.block ? blockOf(raw, s.block) : raw);
   s.port(); const r = makeRecorder(); host.nowMs = () => s.ms;
   const u: UiCtx = { c: r.screenCtx as unknown as CanvasRenderingContext2D, W, H, now: s.ms / 1000, mx: 0, my: 0, fxLow: false, hot: [], acc: '#ff3355' };
-  renderUi(u, host); const po = canon(r.take());
+  if (s.draw) { for (const [k, v] of Object.entries(snapOf(raw, s.block!))) r.screenCtx[k] = v; r.take(); s.draw(u); } else renderUi(u, host); const po = canon(r.take());
   // legacy clears its overlay canvas (OC) first: the port draws on one canvas
-  let lo2 = lo[0]?.[0] === 'clearRect' ? lo.slice(1) : lo;
+  let lo2 = !s.block && lo[0]?.[0] === 'clearRect' ? lo.slice(1) : lo;
   { const i = lo2.findIndex(o => o[0] === 'fillText' && o[1] === 'WebGL unavailable — 2D mode'); if (i >= 0) lo2 = [...lo2.slice(0, i - 4), ...lo2.slice(i + 2)]; } // legacy 2D-fallback notice: the port has no WebGL layer (deliberate, DESIGN §25)
   const d = diffOps(lo2, po, 1e-6);
   if (!d) console.log(`ok   ${s.name.padEnd(22)} ${lo2.length} ops identical`);

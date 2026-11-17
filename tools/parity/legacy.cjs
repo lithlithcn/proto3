@@ -39,7 +39,7 @@ function createLegacy(opts = {}) {
     /** Draws one frame (the legacy `render()`, 2D path) and returns the recorded op stream. Draw functions are wrapped once so the stream carries who-drew-what markers. */
     render() { if (!g.__wrapped) { g.__wrapped = 1; g.__mk = (n, e) => rec.mark(n, e); R(`for(const k of Object.getOwnPropertyNames(globalThis)){const f=globalThis[k];if(typeof f==='function'&&/^(draw[A-Z]|tDraw$|shB$|uiBG$)/.test(k)&&!f.__w){const w=function(...a){__mk(k,1);try{return f.apply(this,a)}finally{__mk(k,0)}};w.__w=1;globalThis[k]=w}}`); } rec.take(); rec.reset(); R('render()'); return rec.take(); },
     /** Advance one frame with inputs per player: {x,y,b:{shot,heavy,melee,dash,parry,burst,spell,focus,prev,next}} */
-    step(inputs = []) { g.__in = inputs; R('step()'); },
+    step(inputs = []) { g.__in = inputs; R('if(winner<0)step();else{stepFx();winT++}'); }, // the real loop: once a winner exists only the effects tick (results screen)
     /** Read a JSON-able expression, e.g. get('P[0].x'). */
     get(expr) { return JSON.parse(R(`JSON.stringify(${expr})`)); },
     /** Snapshot of the observables used by parity tests. */

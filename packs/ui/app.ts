@@ -6,6 +6,7 @@ import { CS2, cssOpen, cssTick, type CssHost } from './screens/css/state';
 import { drawCss } from './screens/css/draw';
 import type { RosterEntry } from './core';
 import type { Keys } from './input/devices';
+import { PZ, drawGameEnd, drawIntro, drawPause, type FightView, type PauseItem } from './screens/fight/overlays';
 
 /** UI router (legacy `mode` + the render()/nav()/onKey() wrapper chains, flattened). 'game' is drawn by the render pack. */
 export type Mode = 'title' | 'menu' | 'css' | 'game';
@@ -17,8 +18,9 @@ export interface UiHost {
   roster: RosterEntry[]; keys: Keys; pads(): Gamepad[]; /** frame counter the character art animates with */ frame(): number;
   /** start the match: device per human, character per fighter (-1 = default) */ start(devs: string[], chars: number[]): void;
   /** live arena behind the select (empty = stop) */ playground(devs: string[], chars: number[]): void; drawPlayground(c: CanvasRenderingContext2D): void;
+  /** same line-up, new match */ restart(): void;
 }
-export const APP = { mode: 'title' as Mode };
+export const APP = { mode: 'title' as Mode, paused: false };
 
 const titleGo = (h: UiHost): void => { if (APP.mode !== 'title') return; if (h.audioLocked()) { TITLE.agn = h.nowMs(); return; } APP.mode = 'menu'; h.sfx('titleclick', 1); };
 const hubHost = (h: UiHost, now: number): HubHost => ({ sb: h.sb, touch: h.touch, music: h.music, audioLocked: h.audioLocked(), sfx: h.sfx, go: k => { if (k === 'fight') { APP.mode = 'css'; cssOpen(cssHost(h), now); } else h.open(k); }, pic() {}, nick() {} });
@@ -55,4 +57,32 @@ const KEYEV: Record<string, NavEv> = { ArrowUp: 'up', ArrowDown: 'down', ArrowLe
 export function onKey(code: string, h: UiHost, now: number): void {
   if (APP.mode === 'title') { if (/^(Arrow|Key[WASDQE]$)/.test(code)) { nav(({ ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' } as Record<string, NavEv>)[code] ?? 'left', h, now); return; } if (!/^F\d+$/.test(code)) titleGo(h); return; }
   const ev = KEYEV[code]; if (ev) nav(ev, h, now);
+}
+
+/** Pause menu entries (legacy pzItems; SOUND… joins with the sound sub-menu). */
+const pauseItems = (h: UiHost): PauseItem[] => [
+  { t: 'RESUME', f: () => { APP.paused = false; h.sfx('ok00'); } },
+  { t: 'RESTART MATCH', f: () => { APP.paused = false; h.restart(); h.sfx('ok00'); } },
+  { t: PZ.cf ? 'QUIT? PRESS AGAIN' : 'QUIT TO MENU', f: () => { if (!PZ.cf) { PZ.cf = 1; h.sfx('cancel00'); return; } APP.paused = false; APP.mode = 'menu'; h.sfx('cancel00'); } },
+];
+/** Overlays drawn over the fight (after the fight HUD). */
+export function renderFightUi(u: UiCtx, h: UiHost, v: FightView): void {
+  u.hot.length = 0;
+  if (APP.paused) drawPause(u, pauseItems(h)); else PZ.t0 = 0;
+  if (v.winner >= 0) drawGameEnd(u, v); // results screen (winT >= 100) comes with its port
+  drawIntro(u, v);
+}
+/** Keys during a fight: Esc = pause, pause menu navigation, M = quit (legacy onKey game branch + PZ nav). Returns true when consumed. */
+export function fightKey(code: string, h: UiHost, v: FightView): boolean {
+  if (APP.paused) {
+    const L = pauseItems(h); PZ.sel = Math.max(0, Math.min(L.length - 1, PZ.sel)); const ev = KEYEV[code];
+    if (code === 'KeyM') { APP.paused = false; APP.mode = 'menu'; h.sfx('cancel00'); return true; }
+    if (ev === 'up' || ev === 'down') { PZ.sel = (PZ.sel + (ev === 'up' ? L.length - 1 : 1)) % L.length; PZ.cf = 0; h.sfx('se_select00', 0.6); }
+    else if (ev === 'ok') L[PZ.sel]!.f(); else if (ev === 'back') { APP.paused = false; h.sfx('ok00'); }
+    return true;
+  }
+  if (code === 'Escape' && v.winner < 0) { APP.paused = true; PZ.why = ''; h.sfx('cancel00'); return true; }
+  if (v.winner >= 0 && v.winT >= 100 && (code === 'Enter' || code === 'KeyR')) { h.restart(); return true; }
+  if (v.winner >= 0 && code === 'KeyM') { APP.mode = 'menu'; h.sfx('cancel00'); return true; }
+  return false;
 }

@@ -29,6 +29,7 @@ const gate: SystemDef = {
   run(w) {
     const s = combatOf(w);
     s.skip = 0;
+    if (s.winner >= 0) { s.winT++; s.skip = 1; return; } // match over (legacy loop: no step, only stepFx + winT++ — the results screen reads winT)
     if (s.slow > 0) { s.slow--; if (s.slow % 3) { s.skip = 1; return; } }
     s.gf++;
     for (let p = 0; p < s.n; p++) pickTarget(s, p);
@@ -46,7 +47,7 @@ const items: SystemDef = { id: 'items', phase: 'sim', after: ['bullets'], run(w)
 const itemWorld: SystemDef = { id: 'item-world', phase: 'sim', after: ['ko-beam'], run(w) { const s = combatOf(w); if (!s.skip) updateItemWorld(w, s); } };
 const status: SystemDef = { id: 'status', phase: 'sim', after: ['item-world'], run(w) { const s = combatOf(w); if (!s.skip) tickFx(w, s); } };
 /** Legacy end of the base `step` (where `stepFx` runs, also on hit-stop frames): presentation listeners tick their effects here; every later wrapper and `chStep` happen after it. */
-const baseEnd: SystemDef = { id: 'base-end', phase: 'sim', after: ['bullet-motion', 'item-world', 'status'], run(w) { w.emit('combat:fx-tick', { gf: combatOf(w).gf }); } };
+const baseEnd: SystemDef = { id: 'base-end', phase: 'sim', after: ['bullet-motion', 'item-world', 'status'], run(w) { const s = combatOf(w); w.emit('combat:fx-tick', { gf: s.gf, wt: s.winner >= 0 ? s.winT : 0 }); } };
 const itemLate: SystemDef = { id: 'item-late', phase: 'sim', after: ['base-end'], run(w) { const s = combatOf(w); if (!s.skip) { for (let p = 0; p < s.n; p++) if (s.state[p] !== PS.dead) updateClone(s, p); driftBumpers(s); updateFreezeQueue(s); updateTimeStop(w, s); } } };
 /** Every legacy `step` wrapper (clone soak, bumpers, freeze queue, The World knives) runs AFTER the base step, bullet motion included -> item-late follows bullet-motion (this fixes the shared-rng draw order vs fn() callbacks). */
 /** Legacy chStep: rays, per-bullet modifiers and entity handlers of characters, after every character hook. */
