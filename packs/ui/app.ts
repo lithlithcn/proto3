@@ -9,9 +9,12 @@ import type { Keys } from './input/devices';
 import { PZ, drawGameEnd, drawIntro, drawLastStock, drawPause, lsCheck, type FightView, type PauseItem } from './screens/fight/overlays';
 import { drawResults, type ResP } from './screens/fight/results';
 import { SET, saveStats } from './settings';
+import { SUB, drawSub, type Row } from './screens/sub/draw';
+import { helpRows, optionRows, ruleRows, type MenuHost } from './screens/sub/menus';
+import { clamp } from './core';
 
 /** UI router (legacy `mode` + the render()/nav()/onKey() wrapper chains, flattened). 'game' is drawn by the render pack. */
-export type Mode = 'title' | 'menu' | 'css' | 'game';
+export type Mode = 'title' | 'menu' | 'css' | 'sub' | 'game';
 export type NavEv = 'up' | 'down' | 'left' | 'right' | 'ok' | 'back' | 'reset' | 'tabL' | 'tabR' | 'start' | 'sel';
 export interface UiHost {
   sfx(n: string, v?: number, r?: number): void; audioLocked(): boolean; nowMs(): number;
@@ -20,14 +23,19 @@ export interface UiHost {
   roster: RosterEntry[]; keys: Keys; pads(): Gamepad[]; /** frame counter the character art animates with */ frame(): number;
   /** start the match: device per human, character per fighter (-1 = default) */ start(devs: string[], chars: number[]): void;
   /** live arena behind the select (empty = stop) */ playground(devs: string[], chars: number[]): void; drawPlayground(c: CanvasRenderingContext2D): void;
-  /** same line-up, new match */ restart(): void;
+  /** same line-up, new match */ restart(): void; /** persist the settings */ save(): void; fullscreen(): boolean; toggleFullscreen(): void;
 }
 export const APP = { mode: 'title' as Mode, paused: false };
 
 const titleGo = (h: UiHost): void => { if (APP.mode !== 'title') return; if (h.audioLocked()) { TITLE.agn = h.nowMs(); return; } APP.mode = 'menu'; h.sfx('titleclick', 1); };
-const hubHost = (h: UiHost, now: number): HubHost => ({ sb: h.sb, touch: h.touch, music: h.music, audioLocked: h.audioLocked(), sfx: h.sfx, go: k => { if (k === 'fight') { APP.mode = 'css'; cssOpen(cssHost(h), now); } else h.open(k); }, pic() {}, nick() {} });
+const hubHost = (h: UiHost, now: number): HubHost => ({ sb: h.sb, touch: h.touch, music: h.music, audioLocked: h.audioLocked(), sfx: h.sfx, go: k => { if (k === 'fight') { APP.mode = 'css'; cssOpen(cssHost(h), now); } else if (k === 'rules') openSub('RULES', () => ruleRows(menuHost(h))); else if (k === 'opt') openSub('OPTIONS', () => optionRows(menuHost(h))); else if (k === 'help') openSub('HOW TO PLAY', () => helpRows(menuHost(h))); else soon(({ online: 'ONLINE', train: 'TRAINING', items: 'ITEMS', maps: 'MAP MAKER' } as Record<string, string>)[k] ?? k); }, pic() {}, nick() {} });
 const cssHost = (h: UiHost): CssHost => ({ roster: h.roster, keys: h.keys, pads: h.pads(), touch: h.touch, sfx: h.sfx, go: (d, c) => { APP.mode = 'game'; h.start(d, c); }, back: () => { APP.mode = 'menu'; h.playground([], []); }, playground: h.playground });
 
+/** Sub-menu stack (legacy openSub: nested sub-menus remember where you were). */
+function openSub(title: string, rows: () => Row[]): void { if (APP.mode === 'sub') SUB.stack.push([SUB.rows!, SUB.title, SUB.sel]); else SUB.stack = []; SUB.rows = rows; SUB.title = title; SUB.sel = 0; APP.mode = 'sub'; }
+/** Screens still being ported open an honest placeholder instead of a dead button. */
+const soon = (what: string): void => openSub(what, () => [{ t: () => 'Coming soon: this screen is being ported', f: () => {} }]);
+const menuHost = (h: UiHost): MenuHost => ({ open: openSub, title: () => { APP.mode = 'title'; TITLE.t0 = h.nowMs() / 1000; }, controls: () => soon('CONTROLS'), guide: () => soon('GUIDE'), tutorial: () => soon('HOW TO PLAY (TUTORIAL)'), fullscreen: h.fullscreen, toggleFullscreen: h.toggleFullscreen, soon });
 /** Draws the current screen (not 'game'). Returns false when the caller must draw the fight. */
 export function renderUi(u: UiCtx, h: UiHost): boolean {
   if (APP.mode === 'game') return false;
@@ -37,8 +45,9 @@ export function renderUi(u: UiCtx, h: UiHost): boolean {
     const ch = cssHost(h); if (!cssTick(ch, u.now)) return renderUi(u, h); // the screen was left this frame
     if (CS2.on) { h.drawPlayground(c); c.setTransform(1, 0, 0, 1, 0, 0); c.globalAlpha = 1; } else { c.globalAlpha = 1; c.fillStyle = '#000'; c.fillRect(0, 0, u.W, u.H); }
     drawCss(u, ch, h.frame());
-  } else { c.fillStyle = '#000'; c.fillRect(0, 0, u.W, u.H); drawHub(u, hubHost(h, u.now)); }
-  uiTrans(u, APP.mode, LABELS[APP.mode] ?? '');
+  } else if (APP.mode === 'sub') { c.fillStyle = '#000'; c.fillRect(0, 0, u.W, u.H); drawSub(u, ev => nav(ev, h, u.now), h.sfx); }
+  else { c.fillStyle = '#000'; c.fillRect(0, 0, u.W, u.H); drawHub(u, hubHost(h, u.now)); }
+  uiTrans(u, APP.mode === 'sub' ? 'sub:' + SUB.title : APP.mode, APP.mode === 'sub' ? SUB.title.toUpperCase() : LABELS[APP.mode] ?? '');
   if (APP.mode === 'title' && h.audioLocked()) drawSoundLock(u, h.nowMs());
   return true;
 }
@@ -46,6 +55,15 @@ export function renderUi(u: UiCtx, h: UiHost): boolean {
 export function nav(ev: NavEv, h: UiHost, now: number): void {
   if (APP.mode === 'title') { if (ev === 'up' || ev === 'down' || ev === 'left' || ev === 'right' || ev === 'tabL' || ev === 'tabR') { titleShake(0.7); h.sfx('se_select00', 0.35, 0.8 + Math.random() * 0.4); return; } titleGo(h); return; }
   if (APP.mode === 'css') return; // character select reads the devices itself (cssTick)
+  if (APP.mode === 'sub') {
+    const L = SUB.rows!(); SUB.sel = clamp(SUB.sel, 0, L.length - 1); const it = L[SUB.sel]!;
+    if (ev === 'up' || ev === 'down') { SUB.sel = (SUB.sel + (ev === 'up' ? L.length - 1 : 1)) % L.length; h.sfx('se_select00', 0.6); }
+    if ((ev === 'left' || ev === 'right') && it.lr) { it.lr(ev === 'left' ? -1 : 1); h.sfx('changemenu', 0.8); h.save(); }
+    if (ev === 'ok') { h.sfx('ok00'); if (it.f) it.f(); else if (it.lr) it.lr(1); h.save(); }
+    if (ev === 'reset' && it.del) { it.del(); h.sfx('cancel00'); h.save(); }
+    if (ev === 'back') { const q = SUB.stack.pop(); if (q) [SUB.rows, SUB.title, SUB.sel] = q; else APP.mode = 'menu'; h.sfx('cancel00'); }
+    return;
+  }
   if (APP.mode === 'menu') {
     const hh = hubHost(h, now);
     if (ev === 'up') hubMove(hh, now, 0, -1); else if (ev === 'down') hubMove(hh, now, 0, 1); else if (ev === 'left') hubMove(hh, now, -1, 0); else if (ev === 'right') hubMove(hh, now, 1, 0);

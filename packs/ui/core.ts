@@ -4,7 +4,7 @@ export { UF, UFI, clamp, hexA, lerp } from '@pack/render/ui';
 export const TAU = 6.2832; // legacy constant (op parity: arcs end at 6.2832, not 2π)
 
 /** Clickable / hoverable region (legacy `hot`). */
-export interface Hot { x: number; y: number; w: number; h: number; hover(): void; click(): void }
+export interface Hot { x: number; y: number; w: number; h: number; hover(): void; click(x?: number, y?: number): void }
 export interface UiCtx {
   c: CanvasRenderingContext2D; W: number; H: number;
   /** UI clock in seconds (legacy UNOW = performance.now()/1000). */ now: number;

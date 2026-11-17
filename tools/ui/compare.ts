@@ -7,6 +7,8 @@ import { APP, renderUi, type UiHost } from '@pack/ui/app';
 import { TEMB, TGAL, TSTAR } from '@pack/ui/screens/title/bg';
 import { TITLE } from '@pack/ui/screens/title/title';
 import { UISUB, UIT } from '@pack/ui/trans';
+import { SUB } from '@pack/ui/screens/sub/draw';
+import { optionRows, ruleRows, soundRows, teamRows } from '@pack/ui/screens/sub/menus';
 import { UIDOTS } from '@pack/ui/bg';
 import { HUBP } from '@pack/ui/screens/hub/deco';
 import { UIHUB } from '@pack/ui/screens/hub/hub';
@@ -63,6 +65,10 @@ const SC: Sc[] = [
       drawResults(u, { t, winner: 0, teams: false, teamA: [], P, tlg: [[300, 300], [260, 280], [240, 180], [200, 90]], touch: false }, 900); } })),
   ...[0.1, 0.3, 0.5, 2.3, 4].map(d => ({ name: `laststock-${d}`, ms: 30000, block: 'drawLastStock', legacy: `mode='game';paused=false;winner=-1;LS.on=1;LS.t0=${30 - d};LS.p=1;P[1].stocks=1;lsCheck=()=>{}`,
     port() { LS.on = 1; LS.t0 = 30 - d; LS.p = 1; }, draw: (u: UiCtx) => drawLastStock(u, { f: 500, winner: -1, winT: 0, teams: false, teamA: [], intro: true }, [{ id: 0, stocks: 2, cpu: false }, { id: 1, stocks: 1, cpu: false }]) })),
+  ...([['RULES', 'RULESL', 0], ['RULES', 'RULESL', 6], ['OPTIONS', 'OPTL', 2], ['OPTIONS', 'OPTL', 11], ['TEAMS', 'TEAMM', 1], ['SOUND', 'SOUNDM', 0]] as const).map(([title, lst, sel]) => ({ name: `sub-${title}-${sel}`, ms: 40000,
+    legacy: `mode='menu';openSub('${title}',${lst});subSel=${sel};UISUB.vals={};UISUB.t0=39;UIT.key='sub:${title}';UIT.t0=-9`,
+    port() { const mh = { open() {}, title() {}, controls() {}, guide() {}, tutorial() {}, fullscreen: () => false, toggleFullscreen() {}, soon() {} }; APP.mode = 'sub'; SUB.stack = []; SUB.title = title; SUB.sel = sel; SUB.vals = {}; UISUB.t0 = 39; UIT.key = 'sub:' + title; UIT.t0 = -9;
+      SUB.rows = ({ RULESL: () => ruleRows(mh), OPTL: () => optionRows(mh), TEAMM: teamRows, SOUNDM: soundRows } as const)[lst]; } })),
 ];
 const want = process.argv.slice(2).filter(a => !a.startsWith('-'));
 const roster = [touhou].flatMap(p => Object.entries((p.content?.['character'] ?? {}) as Record<string, CharacterDef>).map(([k, d]) => ({ id: `${p.id}:${k}`, key: k, name: d.name, col: d.color, role: d.role ?? '', desc: d.desc ?? '', o: d.order }))).sort((a, b) => a.o - b.o);

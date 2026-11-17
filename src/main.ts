@@ -4,7 +4,7 @@ import { drawHud } from '@pack/render/hud';
 import { VIEWZ, camStart, renderViews } from '@pack/render/view';
 import { drawScreenL, drawScreenTopL, screenFilterL } from '@pack/render/ld/bind';
 import { juiceOf } from '@pack/render/juice/state';
-import { audioLocked, initAudio, playSounds, uiSound } from '@pack/audio/player';
+import { VOLS, audioLocked, initAudio, playSounds, uiSound } from '@pack/audio/player';
 import { APP, fightKey, onKey, renderFightUi, renderUi, type UiHost } from '@pack/ui/app';
 import { PZ, lsZoom, type FightView } from '@pack/ui/screens/fight/overlays';
 import { flowSample, resetResults, type ResP } from '@pack/ui/screens/fight/results';
@@ -29,7 +29,7 @@ function newMatch(d: string[], chars: number[]): void {
   lastDevs = d; lastChars = chars;
   const seed = (Math.random() * 1e9) | 0, N = roster.length, n = Math.max(SET.nP, d.length); // sim-allow(boot-time seed)
   const players = Array.from({ length: n }, (_, i) => ({ char: roster[chars[i]! >= 0 ? chars[i]! : (seed + i * 3) % N]!.id, cpu: i >= d.length, ...(SET.teams ? { team: SET.teamA[i] } : {}) }));
-  cfg = { seed, players: n, world: { players, stocks: STOCKS[SET.stI], items: SET.itemsOn, maxCards: SET.maxC } };
+  cfg = { seed, players: n, world: { players, stocks: SET.comp ? 4 : STOCKS[SET.stI], items: SET.comp ? false : SET.itemsOn, maxCards: SET.maxC, tempo: SET.nerv, ...(SET.teams ? { teams: 1 } : {}) } }; // COMPETITIVE = 4 lives, no items (timer + maps: lot 4)
   world = mkWorld(cfg); rec = []; devs = d; pg = null; saveSettings(localStorage); mChars = players.map(p => roster.find(r => r.id === p.char)!); tlg = []; matchId++; resetResults();
 }
 /** Character-select playground: the humans who pressed Parry fight behind the menu (99 stocks, no items). */
@@ -56,7 +56,7 @@ const drawFight = (w: World, W: number, H: number): void => {
 const held = new Set<string>(), tap = new Set<string>(), keys = { has: (k: string): boolean => held.has(k) || tap.has(k) }, now = (): number => performance.now() / 1000;
 const host: UiHost = {
   sfx: uiSound, audioLocked, nowMs: () => performance.now(), sb: 0, touch: false, music: false, open() { /* online, training, rules... arrive screen by screen */ },
-  restart: () => newMatch(lastDevs, lastChars), roster, keys, pads, frame: () => world?.frame ?? 0, start: newMatch, playground, drawPlayground: cc => { if (pg) { void cc; drawFight(pg.w, canvas.width, canvas.height); } },
+  restart: () => newMatch(lastDevs, lastChars), save: () => saveSettings(localStorage), fullscreen: () => !!document.fullscreenElement, toggleFullscreen: () => { try { if (document.fullscreenElement) void document.exitFullscreen(); else void document.documentElement.requestFullscreen(); } catch { /* not allowed */ } }, roster, keys, pads, frame: () => world?.frame ?? 0, start: newMatch, playground, drawPlayground: cc => { if (pg) { void cc; drawFight(pg.w, canvas.width, canvas.height); } },
 };
 addEventListener('keydown', e => {
   held.add(e.code); tap.add(e.code); if (/^Arrow|^Space$|^Tab$|^Backspace$/.test(e.code)) e.preventDefault();
@@ -76,7 +76,7 @@ addEventListener('gamepadconnected', () => { if (PZ.why.startsWith('CONTROLLER')
 let hot: Hot[] = [], mx = 0, my = 0;
 const at = (x: number, y: number): Hot | undefined => hot.find(r => x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h);
 addEventListener('pointermove', e => { mx = e.clientX; my = e.clientY; if (APP.mode !== 'game' || APP.paused) at(mx, my)?.hover(); });
-addEventListener('pointerdown', e => { mx = e.clientX; my = e.clientY; if (APP.mode === 'title' && audioLocked()) return; if (APP.mode !== 'game' || APP.paused) at(mx, my)?.click(); }, true);
+addEventListener('pointerdown', e => { mx = e.clientX; my = e.clientY; if (APP.mode === 'title' && audioLocked()) return; if (APP.mode !== 'game' || APP.paused) at(mx, my)?.click(mx, my); }, true);
 /** F8: downloads the match (config + every input frame + build id) so a bug can be replayed exactly. */
 addEventListener('keydown', e => { if (e.code !== 'F8' || !world) return; e.preventDefault(); const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify({ v: 1, build: import.meta.env.MODE, cfg, frames: rec.length, inputs: rec })], { type: 'application/json' })); a.download = `proto3-match-${cfg.seed}-f${rec.length}.json`; a.click(); });
 
@@ -86,7 +86,7 @@ function frame(t: number): void {
   if (canvas.width !== innerWidth || canvas.height !== innerHeight) { canvas.width = innerWidth; canvas.height = innerHeight; }
   const W = canvas.width, H = canvas.height;
   const u: UiCtx = { c, W, H, now: t / 1000, mx, my, fxLow: SET.fxLow, hot: [], acc: '#ff3355' };
-  VIEWZ.k = 1;
+  VIEWZ.k = 1; Object.assign(VOLS, SET.vols);
   if (APP.mode === 'css' && pg) for (let i = 0; i < n; i++) step(pg.w, pg.devs); // playground keeps running behind the select
   if (renderUi(u, host)) { hot = u.hot; tap.clear(); if (canvas.style.filter) canvas.style.filter = ''; requestAnimationFrame(frame); return; }
   const w = world!;

@@ -5,6 +5,9 @@ export const STOCKS = Array.from({ length: 99 }, (_, i) => i + 1);
 export const SET = {
   nP: 2, nH: 1, cpuLv: 5, maxC: 1, stI: 2, timer: 0, mapI: 0, itemsOn: true, comp: false, teams: false, teamA: Array.from({ length: 32 }, (_, i) => i % 2), nerv: 10,
   fxLow: false, fxOff: false, itemOn: {} as Record<string, boolean>,
+  /** accessibility (legacy ACC, sf_acc): screen shake factor, interface size, colour-blind marks */ acc: { shk: 1, ui: 1, cb: 0 },
+  /** frame blending mode 0 AUTO / 1 SMOOTH / 2 STRICT 60 (sf_motion) */ motion: 0, /** download a .json bug report on errors (sf_errdl) */ errdl: 0,
+  /** mixer (legacy VOLS, sf_vol) */ vols: { master: 1, sfx: 1, music: 0.7 },
   /** stats (wins, KOs, matches) for the hub profile card */ st: { w: 0, k: 0, m: 0 }, nick: '', pic: null as string | null,
 };
 /** Maps the menu can pick (custom maps from the map maker join in lot 4). */
@@ -28,10 +31,13 @@ export function loadSettings(s: Store): void {
   SET.comp = get(s, 'sf_comp') === '1'; SET.timer = +(get(s, 'sf_timer') ?? 0) || 0; SET.fxOff = get(s, 'sf_fxoff') === '1';
   try { Object.assign(SET.st, JSON.parse(get(s, 'sf_stats') ?? '{}')); } catch { /* keep zeros */ }
   SET.nick = get(s, 'sf_nick') ?? ''; SET.pic = get(s, 'sf_pic');
+  try { Object.assign(SET.acc, JSON.parse(get(s, 'sf_acc') ?? '{}')); } catch { /* defaults */ } SET.motion = +(get(s, 'sf_motion') ?? 0) || 0; SET.errdl = +(get(s, 'sf_errdl') ?? 0) || 0;
+  try { Object.assign(SET.vols, JSON.parse(get(s, 'sf_vol') ?? '{}')); } catch { /* defaults */ }
 }
 export function saveSettings(s: Store): void {
   put(s, 'sf_opts', JSON.stringify({ nP: SET.nP, nH: SET.nH, stI: SET.stI, mapI: SET.mapI, itemsOn: SET.itemsOn, fxLow: SET.fxLow, itemOn: SET.itemOn, cpuLv: SET.cpuLv, maxC: SET.maxC, TEAMS: SET.teams, TEAMA: SET.teamA, NERV: SET.nerv }));
   put(s, 'sf_comp', SET.comp ? '1' : '0'); put(s, 'sf_timer', String(SET.timer)); put(s, 'sf_fxoff', SET.fxOff ? '1' : '0');
+  put(s, 'sf_acc', JSON.stringify(SET.acc)); put(s, 'sf_motion', String(SET.motion)); put(s, 'sf_errdl', String(SET.errdl)); put(s, 'sf_vol', JSON.stringify(SET.vols));
 }
 /** Hub profile stats (wins, KOs, games) — saved right after a counted match (legacy sf_stats). */
 export function saveStats(s: Pick<Storage, 'setItem'> | undefined = typeof localStorage !== 'undefined' ? localStorage : undefined): void { try { s?.setItem('sf_stats', JSON.stringify(SET.st)); } catch { /* quota */ } }
