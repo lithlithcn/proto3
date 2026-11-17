@@ -1,3 +1,4 @@
+import { jfx } from '../jfx';
 import { type World, cos, hypot, sin } from '@kernel';
 import { spRand } from '../bullets/pattern';
 import { itemPool } from '../api';
@@ -41,6 +42,7 @@ export function updateCards(w: World, s: CombatState): void {
       w.emit('combat:card-spawn', { i, kind, x: s.cx[i]!, y: s.cy[i]! });
     }
   }
+  let prog = 0;
   for (let k = s.ncard - 1; k >= 0; k--) {
     if (!s.con[k]) { if (++s.cage[k]! >= T.ITEM_WARN) s.con[k] = 1; continue; }
     const cap = s.ckind[k] === CARD_ULT ? T.LW_CAP : T.ITEM_CAP, ins: boolean[] = [];
@@ -53,7 +55,7 @@ export function updateCards(w: World, s: CombatState): void {
     s.ccont[k] = cnt > 1 ? 1 : 0;
     for (let q = 0; q < s.n; q++) {
       const j = k * MAXP + q;
-      if (ins[q] && !s.ccont[k]) s.ccp[j] = s.ccp[j]! + (s.state[q] === PS.spell ? 0.4 : 1);
+      if (ins[q] && !s.ccont[k]) { s.ccp[j] = s.ccp[j]! + (s.state[q] === PS.spell ? 0.4 : 1); prog = 1; }
       else if (!ins[q]) s.ccp[j] = Math.max(0, s.ccp[j]! - 2);
       if (s.ccp[j]! >= cap) {
         const kind = s.ckind[k]!, x = s.cx[k]!, y = s.cy[k]!;
@@ -64,4 +66,5 @@ export function updateCards(w: World, s: CombatState): void {
       }
     }
   }
+  jfx(w, 'load', prog); // legacy loadSrc: the capture loop sound plays while a gauge fills (line 831)
 }

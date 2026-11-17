@@ -11,7 +11,7 @@ export const hecatiaHeavy = {
     const L: number[] = []; entsOf(s, EK_HPL, p, L); for (let i = 0; i < L.length - 3; i++) s.et[L[i]!] = 0;
     sfx(w, 'tan00', 0.6);
   },
-  F({ s, p, a, k, m, src }: HeavyCtx): void { for (let i = 0; i < 6; i++) heavyBullet(s, p, src, m, a, k, { spd: 6 + i * 0.9, r: 6, k: 0.22, col: HEC[i % 3] }); },
+  F({ w, s, p, a, k, m, src }: HeavyCtx): void { for (let i = 0; i < 6; i++) { heavyBullet(w, s, p, src, m, a, k, { spd: 6 + i * 0.9, r: 6, k: 0.22 }); const b = s.nb - 1; if (b >= 0 && s.bowner[b] === p) s.bcol[b] = HEC[i % 3]!; } }, // colour on the LAST bullet (legacy)
   B({ w, s, p }: HeavyCtx): void {
     const L: number[] = []; entsOf(s, EK_HRG, p, L); for (const i of L) s.et[i] = 0;
     for (let i = 0; i < 3; i++) { const e = addEnt(s, EK_HRG, p, 240, s.x[p]!, s.y[p]!); if (e >= 0) s.ebc[e] = i; }

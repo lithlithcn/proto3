@@ -1,7 +1,7 @@
 import type { HookDef } from '@kernel';
 import { CARD_ULT, PS, T, charOf, combatOf, itemActive, itemPool } from '@pack/combat/api';
 import { COLS, LCOLS } from '../colors';
-import { big, burst, crack, flash, juiceOf, tickJuice, txt, type Juice } from './state';
+import { big, burst, capTX, crack, flash, juiceOf, tickJuice, txt, type Juice } from './state';
 
 /** Event → presentation effects. Each hook is a line-for-line copy of the juice that the legacy sim sites triggered (docs/game/mechanics/render.md lists the source line of each). */
 // Hooks run inside the sanitized sim window (no Math.random/sin/hypot): they only journal the event; handlers run later from syncJuice, in order, between the frame ticks.
@@ -16,7 +16,6 @@ const col = (p: number): string => COLS[(p < 0 ? 0 : p) % 8]!;
 interface HitP { victim: number; attacker: number; dmg: number; combo: number; heavy: boolean; x: number; y: number; dx: number; dy: number; ach: string }
 const onHit = on<HitP>('juice-hit', 'combat:hit', (j, e) => {
   const { x, y, dmg, combo } = e, a = e.attacker, c = col(a), kn = Math.hypot(e.dx, e.dy) || 1;
-  if (e.ach === 'Okina' && a !== e.victim) j.chG[a] = Math.min(100, (j.chG[a] ?? 0) + dmg * 0.8); // legacy hit wrapper (line 4706): shotT CH0+5
   j.kx += e.dx / kn * Math.min(14, dmg); j.ky += e.dy / kn * Math.min(14, dmg); j.zk = Math.min(0.3, j.zk + dmg * 0.008);
   if (dmg >= 7) { j.WAVES.push({ x, y, t: 12, T: 12, spd: 10, th: 18, inv: 1 }); j.chroma = Math.max(j.chroma, dmg); }
   if (dmg >= 10) { j.bright = Math.max(j.bright, 0.6); j.chroma = Math.max(j.chroma, 14); j.bgF = { c, t: 12 }; j.focusL = Math.max(j.focusL, 0.5); j.zblur = Math.max(j.zblur, 0.04); }
@@ -40,18 +39,28 @@ H['combat:fx-tick'] = ((j: Juice, e: { gf: number; wt: number; sk: number; ia: n
   for (let p = 0; p * 2 < e.pw.length; p++) { const pw = e.pw[p * 2]!, st = e.pw[p * 2 + 1]!, o = j.pw[p]; if (pw >= 0) { if (o && Math.floor(pw + 1e-9) > Math.floor(o[0] + 1e-9)) snd(j, e.gf, 'bonus', 0.7); if (o && st > o[1]) snd(j, e.gf, 'bonus', 0.8); j.pw[p] = [pw, st]; } } // wrapper line 2735
   { const k = e.gf + e.wt * 1e7; if (k === j.lastGf) return; j.lastGf = k; } // after the match ends gf stops but the effects keep ticking (winT counts)
   if (e.gf === 1) snd(j, e.gf, 'ready', 0.9); else if (e.gf === 55) { snd(j, e.gf, 'se_cardget', 0.8); snd(j, e.gf, 'ok00', 0.7); } // match intro (legacy drawIntro, line 3990)
-  tickJuice(j, !e.sk); endK(j, e);
+  tickJuice(j); endK(j, e);
   if (!e.sk) for (let p = 0; p * 2 < e.pw.length; p++) { const st = e.pw[p * 2 + 1]!; if (j.stk0[p] !== undefined && st > j.stk0[p]! && e.pw[p * 2]! >= 0) snd(j, e.gf, '1up', 0.7); j.stk0[p] = st; } // legacy chPre5: a life gained
-  if (!e.sk) { j.ia = e.ia; j.SMR = j.SMR.filter(m => --(m['t'] as number) > 0); for (const r of j.RDK) { r['t'] = (r['t'] as number) - 1; if (!r['w']) { r['x'] = (r['x'] as number) + (r['vx'] as number); r['y'] = (r['y'] as number) + (r['vy'] as number); } } j.RDK = j.RDK.filter(r => (r['t'] as number) > 0); for (const ph of j.PHOTO) ph['t'] = (ph['t'] as number) - 1; j.PHOTO = j.PHOTO.filter(ph => (ph['t'] as number) > 0); } // PHOTO: updWorld tick (line 3236) // legacy SMR tick (step wrapper, line 2289)
-  if (!e.sk) e.ia.forEach((a, p) => { const l = j.acts[p]; if (l?.length) j.acts[p] = l.filter(x => a >= 0 && e.gf - x.f < x.T + 30 && !(e.gf - x.f > 90 && !a)); }); // legacy actsPrune (step wrapper, line 2828)
-  for (let p = 0; p * 2 < e.pos.length; p++) if ((j.nds[p] ?? 0) > e.gf && e.cn[p] === 'Nue' && e.gf % 2 === 0 && j.FX.length < 480) j.FX.push({ x: e.pos[p * 2]!, y: e.pos[p * 2 + 1]!, vx: 0, vy: 0, t: 18, c: '#1a1028' }); // Nue dash shadow (tick, line 4458)
-  if (!e.sk) for (let p = 0; p * 2 < e.pos.length; p++) { const c = j.cc[p] ?? 0; if (c && e.gf - j.ccF[p]! > 18) { if (c >= 5) txt(j, e.pos[p * 2]!, e.pos[p * 2 + 1]! - 52, 'CANCEL x' + c, '#ffd23a', c >= 20 ? 18 : 14); j.cc[p] = 0; } } // step wrapper line 2398, after stepFx
+  if (!e.sk) for (const x of j.PE) { x.t--; if ((e.pw[(x['o'] as number) * 2] ?? 0) < 0) x.t = 0; } // legacy updEnt: timer, dies with its owner
+  if (!e.sk) j.PE = j.PE.filter(x => x.t > 0);
+  if (!e.sk) { for (const ph of j.PHOTO) ph['t'] = (ph['t'] as number) - 1; j.PHOTO = j.PHOTO.filter(ph => (ph['t'] as number) > 0); } // PHOTO: updWorld tick (line 3236) // legacy SMR tick (step wrapper, line 2289)
 }) as never;
+/** Legacy step wrappers after the item-late one (combat:wrap): ph 0 = end of wrapper 2277 (SMR / RDK ticks) then the TX cap (2381); ph 1 = CANCEL xN (2398) then actsPrune (2828). */
+H['combat:wrap'] = ((j: Juice, e: { gf: number; ph: number; pos: number[]; ia: number[] }) => {
+  if (!e.ph) { j.SMR = j.SMR.filter(m => --(m['t'] as number) > 0); for (const r of j.RDK) { r['t'] = (r['t'] as number) - 1; if (!r['w']) { r['x'] = (r['x'] as number) + (r['vx'] as number); r['y'] = (r['y'] as number) + (r['vy'] as number); } } j.RDK = j.RDK.filter(r => (r['t'] as number) > 0); capTX(j); return; }
+  for (let p = 0; p * 2 < e.pos.length; p++) { const c = j.cc[p] ?? 0; if (c && e.gf - j.ccF[p]! > 18) { if (c >= 5) txt(j, e.pos[p * 2]!, e.pos[p * 2 + 1]! - 52, 'CANCEL x' + c, '#ffd23a', c >= 20 ? 18 : 14); j.cc[p] = 0; } }
+  j.ia = e.ia; e.ia.forEach((a, p) => { const l = j.acts[p]; if (l?.length) j.acts[p] = l.filter(x => a >= 0 && e.gf - x.f < x.T + 30 && !(e.gf - x.f > 90 && !a)); });
+}) as never;
+const onWrap: HookDef<{ gf: number; ph: number }> = { id: 'juice-wrap', event: 'combat:wrap', phase: 'after', run(w, ev) {
+  const s = combatOf(w), pos: number[] = [], ia: number[] = [];
+  if (ev.payload.ph) for (let p = 0; p < s.n; p++) { pos.push(s.x[p]!, s.y[p]!); ia.push(s.state[p] === PS.dead ? -1 : itemActive(w, s, p) ? 1 : 0); }
+  jq(w).push({ ev: 'combat:wrap', gf: ev.payload.gf, ph: ev.payload.ph, pos, ia } as never);
+} };
 const onTick: HookDef<{ gf: number }> = { id: 'juice-tick', event: 'combat:fx-tick', phase: 'after', run(w, ev) {
   const s = combatOf(w), tr: number[] = [];
   const pos: number[] = [], cn: string[] = [], pw: number[] = [], hp: number[] = []; for (let p = 0; p < s.n; p++) { pos.push(s.x[p]!, s.y[p]!); cn.push(charOf(w, s, p).name); pw.push(s.state[p] === PS.dead ? -1 : s.power[p]!, s.stocks[p]!); hp.push(s.state[p] === PS.dead ? T.HP : s.hp[p]!); }
-  const sk = (ev.payload as { sk?: number }).sk ?? 0, ia: number[] = []; if (!sk) for (let p = 0; p < s.n; p++) ia.push(s.state[p] === PS.dead ? -1 : itemActive(w, s, p) ? 1 : 0);
-  jq(w).push({ ev: 'combat:fx-tick', gf: ev.payload.gf, wt: (ev.payload as { wt?: number }).wt ?? 0, sk, ia, tr, pos, cn, pw, hp, tm: s.teams } as never);
+  const sk = (ev.payload as { sk?: number }).sk ?? 0;
+  jq(w).push({ ev: 'combat:fx-tick', gf: ev.payload.gf, wt: (ev.payload as { wt?: number }).wt ?? 0, sk, tr, pos, cn, pw, hp, tm: s.teams } as never);
 } };
 type Pp = { p: number; px: number; py: number; pa: number; pcpu: number };
 const onGraze = on<Pp & { x: number; y: number; k: number; streak: number }>('juice-graze', 'combat:graze', (j, e) => {
@@ -110,15 +119,17 @@ const onFx = on<{ op: string; a: (number | string)[]; gf: number }>('juice-fx', 
     case 'edge': j.FX.push({ x: (a[0] as number) + (j.rnd() - 0.5) * 20, y: (a[1] as number) + (j.rnd() - 0.5) * 20, vx: 0, vy: -1, t: 16, c: '#f44' }); break; // red-zone damage sparks (line 357)
     case 'chg': j.chG[a[0] as number] = Math.min(100, (j.chG[a[0] as number] ?? 0) + (a[1] as number)); break; // Okina season gauge (presentation only in legacy)
     case 'nds': j.nds[a[0] as number] = a[1] as number; break;
+    case 'ndsf': if ((j.nds[a[0] as number] ?? 0) > e.gf && e.gf % 2 === 0 && j.FX.length < 480) j.FX.push({ x: a[1] as number, y: a[2] as number, vx: 0, vy: 0, t: 18, c: '#1a1028' }); break;
     case 'trail': { const k = a[2] as number; j.FX.push(k >= 0 ? { x: a[0] as number, y: a[1] as number, vx: 0, vy: 0, t: 12, c: col(k), r: T.BODY_R } : { x: a[0] as number, y: a[1] as number, vx: 0, vy: 0, t: 18, c: '#999' }); break; }
     case 'camsnap': j.camSnap.push(a[0] as number); break;
     case 'brk': if (e.gf - (j.sl['brk'] ?? -99) > 4) { j.sl['brk'] = e.gf; snd(j, e.gf, 'se_enep00', 0.6); } break; // legacy brk(): big bullet destroyed
     case 'mir': if (e.gf - (j.sl['mir'] ?? -99) > 3) { j.sl['mir'] = e.gf; snd(j, e.gf, 'tan02', 0.3); } break; // legacy mirrorRef sMir throttle
     case 'rdk': { const x = a[0] as number, y = a[1] as number, L: Record<string, unknown>[] = []; for (let i = 0; i < 12; i++) { const g = i * 6.2832 / 12 + e.gf * 0.05; L.push({ x, y, vx: Math.cos(g) * 3.2, vy: Math.sin(g) * 3.2, t: 110, r: 16 }); } L.push({ x, y, w: 1, t: 34 });
-      for (const r of L) { r['t'] = (r['t'] as number) - 1; if (!r['w']) { r['x'] = (r['x'] as number) + (r['vx'] as number); r['y'] = (r['y'] as number) + (r['vy'] as number); } } j.RDK.push(...L); break; } // Rumia's harmless darkness (legacy line 2283), ticked once in the frame it appears
+      j.RDK.push(...L); break; } // Rumia's harmless darkness (legacy line 2283); ticked by combat:wrap ph 0 the same frame
     case 'kira': if (e.gf - (j.sl['kira'] ?? -99) > 40) { j.sl['kira'] = e.gf; snd(j, e.gf, 'se_kira00', 0.7); } break;
     case 'sfxk': snd(j, e.gf, a[1] as string, a[2] as number, 1, a[0] as string); break; // keyed: a later sfxstop with the same key cuts it
     case 'sfxstop': j.stop.push(a[0] as string); break;
+    case 'load': if (a[0] && !j.load) { j.load = 1; snd(j, e.gf, 'loadvrai2', 0.6, 1, 'load'); } else if (!a[0] && j.load) { j.load = 0; j.stop.push('load'); } break;
     case 'sfx': snd(j, e.gf, a[0] as string, a[1] as number, a[2] as number); break;
     case 'sfxr': snd(j, e.gf, (a[0] as string) + ((a[3] as number) + (j.rnd() * (a[1] as number) | 0)), a[2] as number); break;
     case 'sfxdmg': { if (e.gf - (j.sl['dmg'] ?? -99) < 3) break; j.sl['dmg'] = e.gf; const f = 1 - Math.min(1, Math.max(0, (a[0] as number) / T.HP)); snd(j, e.gf, 'damage00', 0.3 + (1.3 - 0.3) * f, 1 + 0.1 * f); /* legacy T.SFX_DMG_MIN/MAX */ break; }
@@ -168,7 +179,21 @@ const onItem: HookDef = { ...onItem0, run(w, ev) {
   const p = ev.payload as { p: number; kind: number }, d = p.kind === CARD_ULT ? null : itemPool(w)[p.kind], id = d ? w.registry.list<typeof d>('item').find(e => e[1] === d)![0] : 'rainbow', m = /(\d+(?:\.\d+)?) ?s\b/.exec(d ? d.desc ?? '' : 'Every 35 s, takes 3 s to grab. Unlocks your LAST WORD: press Spell.');
   onItem0.run(w, { ...ev, payload: { ...p, nm: d ? d.name : 'Last Word', c: d ? d.color : '', sf: d?.sfx ?? '', ik: id.split(':').pop()!, iT: m ? Math.round(+m[1]! * 60) : 420, iht: m ? 1 : 0 } as never });
 } };
-export const juiceHooks: HookDef[] = [onItem, onFire, onRefl, onSB, onBeamCancel, onRespawn, onKo, onChip, onCancel, onClash, onReady, onFx, onPivot, onCancelB, onCd, onKick, onGlide, onGrab, onHeavy, onBClash, onLight, onSpell, onCapture, onTick, onHit, onBreak, onPip, onGraze, onPower, onRefused, onParry];
+/** Movement / wall feedback (legacy dash line 434, wall 690-699, xSpitWall 967) and card spawns (line 821). */
+type Xy = { p: number; x: number; y: number };
+const onTech = on<Xy>('juice-tech', 'combat:tech', (j, e) => { txt(j, e.x, e.y - 30, 'TECH', '#9f9'); burst(j, e.x, e.y, '#9f9', 10); });
+const onBounce = on<Xy & { big: number }>('juice-wall-bounce', 'combat:wall-bounce', (j, e) => {
+  if (e.big) { j.shake = Math.min(60, j.shake + 26); flash(j, 0.25, '#fff'); crack(j, e.x, e.y); snd(j, e.gf, 'bord_brise2', 0.7); big(j, 'BOUNCE!', '#fff', 40); j.WAVES.push({ x: e.x, y: e.y, t: 16, T: 16, spd: 16, th: 30, inv: 1 }); return; }
+  j.shake = Math.min(28, j.shake + 12); j.chroma = Math.max(j.chroma, 10); burst(j, e.x, e.y, '#fff', 14); j.WAVES.push({ x: e.x, y: e.y, t: 12, T: 12, spd: 10, th: 20, inv: 1 });
+});
+const onPush = on<Xy & { pip: number }>('juice-wall-push', 'combat:wall-push', (j, e) => { if (e.pip) snd(j, e.gf, 'bord_brise', 0.8); j.shake = Math.min(40, j.shake + 16); burst(j, e.x, e.y, '#6ff', 24); txt(j, e.x, e.y - 40, 'PUSHED TO THE EDGE!', '#6ff', 18); });
+const onCard0 = on<{ kind: number; x: number; y: number; c: string; nm: string }>('juice-card-spawn', 'combat:card-spawn', (j, e) => {
+  if (e.kind === CARD_ULT) { snd(j, e.gf, 'spellcardsultimespawn'); big(j, 'LAST WORD CARD!', RB[0]!, 56, 'u'); flash(j, 0.35); j.focusL = 1; j.chroma = Math.max(j.chroma, 16); j.bright = Math.max(j.bright, 0.6); for (let i = 0; i < 6; i++) j.WAVES.push({ x: e.x, y: e.y, t: 20 + i * 6, T: 20 + i * 6, spd: 10 + i * 4, th: 30, inv: 0, c: RB[i]! }); }
+  else { snd(j, e.gf, 'spellcardspawn' + (1 + (Math.random() * 2 | 0))); j.focusL = Math.max(j.focusL, 0.4); j.WAVES.push({ x: e.x, y: e.y, t: 20, T: 20, spd: 14, th: 30, inv: 0, c: e.c }); }
+  txt(j, e.x, e.y - 56, e.nm.toUpperCase(), e.kind === CARD_ULT ? RB[2]! : e.c, 20);
+});
+const onCard: HookDef = { ...onCard0, run(w, ev) { const p = ev.payload as { kind: number }; onCard0.run(w, { ...ev, payload: { ...p, c: p.kind === CARD_ULT ? '' : itemPool(w)[p.kind]?.color ?? '#fff', nm: p.kind === CARD_ULT ? 'Last Word' : itemPool(w)[p.kind]?.name ?? '' } as never }); } };
+export const juiceHooks: HookDef[] = [onWrap, onTech, onBounce, onPush, onCard, onItem, onFire, onRefl, onSB, onBeamCancel, onRespawn, onKo, onChip, onCancel, onClash, onReady, onFx, onPivot, onCancelB, onCd, onKick, onGlide, onGrab, onHeavy, onBClash, onLight, onSpell, onCapture, onTick, onHit, onBreak, onPip, onGraze, onPower, onRefused, onParry];
 export { on as juiceHook };
 export function runJuiceEvent(j: Juice, e: { ev: string }): void { (H[e.ev] as ((j: Juice, e: unknown) => void) | undefined)?.(j, e); }
 export type { Ev };

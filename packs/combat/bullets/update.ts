@@ -60,7 +60,7 @@ export function updateBullets(w: World, s: CombatState): void {
       if (s.mirror[t]! > 0 && d < bodyR(s, t) + r) { mirrorRef(w, s, i, t); continue; }
       if (s.state[t] === PS.parry && d < T.PARRY_R) { s.bflags[i] = s.bflags[i]! | BF.dead; continue; }
       if (!(s.bflags[i]! & BF.grazed) && d < r + T.GRAZE_R) { s.bflags[i] = s.bflags[i]! | BF.grazed; graze(w, s, t, bx, by, 1); }
-      if (s.state[t] !== PS.dash && s.inv[t]! <= 0 && d < r * 0.68 + coreR(s, t)) { if (bulletRule(w, s, i, t)) continue; s.bflags[i] = s.bflags[i]! | BF.dead; if (s.bsea[i]) { seaHit(s, i, t, owner); jfx(w, 'chg', owner, 2.2); } lightHit(w, s, t, owner, s.bdmg[i]!); }
+      if (s.state[t] !== PS.dash && s.inv[t]! <= 0 && d < r * 0.68 + coreR(s, t)) { if (s.bsea[i]) { seaHit(s, i, t, owner); jfx(w, 'chg', owner, 2.2); } if (bulletRule(w, s, i, t)) continue; s.bflags[i] = s.bflags[i]! | BF.dead; lightHit(w, s, t, owner, s.bdmg[i]!); }
     }
     if (nf && !(s.bflags[i]! & BF.dead) && hitFairy(w, s, i)) s.bflags[i] = s.bflags[i]! | BF.dead;
   }

@@ -33,8 +33,9 @@ export function hit(w: World, s: CombatState, v: number, a: number, dx: number, 
     if (raw < 16 && s.hp[v]! > raw * 1.6) {
       const dmg = dealDamage(w, s, v, a, raw, heavy);
       s.hp[v] = s.hp[v]! - dmg; s.flash[v] = 8; s.spirit[a] = Math.min(T.SPIRIT_MAX, s.spirit[a]! + dmg * T.HIT_GAIN);
-      if (a >= 0 && a !== v && dmg > 0) charOf(w, s, a).onHit?.(w, s, a, v, heavy); // legacy wraps hit(): onHit fires on ANY path that lowered hp, chip included
-      w.emit('combat:spell-chip', { victim: v, attacker: a, dmg }); return;
+      w.emit('combat:spell-chip', { victim: v, attacker: a, dmg });
+      if (a >= 0 && a !== v && dmg > 0) charOf(w, s, a).onHit?.(w, s, a, v, heavy, dmg); // legacy wraps hit(): onHit fires after the whole hit (its effects follow the hit's), on ANY path that lowered hp, chip included
+      return;
     }
   }
   if (s.state[v] === PS.spell) { endSpell(w, s, v, false); w.emit('combat:spell-break', { victim: v, attacker: a }); }
@@ -51,6 +52,6 @@ export function hit(w: World, s: CombatState, v: number, a: number, dx: number, 
   s.t[v] = Math.round(stun * pow(T.STUN_DECAY, s.combo[v]! - 1) * kS(s));
   if (s.hp[v]! <= 0) s.koPend[v] = 1;
   s.hitstop = Math.max(s.hitstop, T.HITSTOP + Math.round(dmg * 0.35));
-  if (a >= 0 && a !== v && dmg > 0) charOf(w, s, a).onHit?.(w, s, a, v, heavy);
   w.emit('combat:hit', { victim: v, attacker: a, dmg, combo: s.combo[v]!, heavy, x: s.x[v]!, y: s.y[v]!, dx, dy });
+  if (a >= 0 && a !== v && dmg > 0) charOf(w, s, a).onHit?.(w, s, a, v, heavy, dmg);
 }

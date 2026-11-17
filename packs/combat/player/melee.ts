@@ -1,4 +1,4 @@
-import { sfx, sfxR } from '../jfx';
+import { burst, sfx, sfxR } from '../jfx';
 import { BTN, type World, atan2, cos, hypot, sin } from '@kernel';
 import { type PCtx, held, pr } from '../input';
 import { MV, MV_NAMES, SRC, type MeleeName, type MoveDef } from '../moves';
@@ -11,7 +11,7 @@ import { fireHeavy } from './heavy';
 import { rel, startAtk } from './atkstart';
 import { moveOf } from './atkstart';
 import { hit } from './hit';
-import { parryFx, shieldBreak } from './parry';
+import { parryFx, parryOn, shieldBreak } from './parry';
 import { clearBuf } from '../input';
 
 const SRC_IDX = ['jab', 'lunge', 'strong', 'dashatk', 'tslam', 'grab'];
@@ -66,9 +66,9 @@ function strike(w: World, s: CombatState, p: number, o: number, m: MoveDef): voi
     return;
   }
   s.hitDone[p] = 1;
-  if (s.state[o] === PS.parry) { // parried melee: the attacker is left defenceless
+  if (parryOn(s, o)) { // parried melee: the attacker is left defenceless
     s.state[p] = PS.parrystun; s.t[p] = T.PARRY_STUN; s.vx[p] = 0; s.vy[p] = 0; s.state[o] = PS.idle; s.inv[o] = T.PARRY_INV;
-    parryFx(w, s, o);
+    burst(w, s.x[o]!, s.y[o]!, '#6ff', 14); parryFx(w, s, o);
     return;
   }
   const mult = (1 + s.charge[p]! / (m.charge || 1) * 0.7) * (s.giant[p]! > 0 ? 1.5 : 1);

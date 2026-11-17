@@ -98,3 +98,30 @@ Written by `pnpm parity keep ... --cause ... [--attempts "tried X: failed"]`; re
 - Symptoms (forced-give render sweep): Blade hits had no `hitN` sound; Rifle aiming had no charge sound (and its stop); Master Spark charge/release sounds, banner, flash, shake missing; bombs: no `bombtick`, `timeout` countdown, explosion wave/burst/sound/shake; Perfect Freeze: banners and sounds (give, repeats, SHATTER); healing orbs: no +100 text / burst / sound; WARP OVER; fairies: STOLEN / +LOOT / FAIRY DOWN, bursts; Hourai Elixir banners + immortality juice; Tengu Camera: photo sounds, flash, PHOTO glow, SNAP! text; The World: give / start sounds, banners, wave, shake, flash, the charging clock (CX.zaw), knife look; TIME RESUMES; KO beam cancel sound.
 - Also: thief fairies' ribbons never drawn (objects rebuilt each frame broke the trail cache); legacy draws during The World redraw the holder (compare mapping); ifx VIEW was always 0; render compare checked heavy bullets with a dead renderer (`actors.ts`, removed).
 - Fix in: `packs/combat/items/*` (jfx at the legacy sites), `packs/touhou/items/*`, `packs/render/ld/bind.ts`, `packs/render/juice/*`, `tools/render/compare.ts`.
+
+## Card spawn / capture, tech, wall bounce, edge push: no feedback
+- Symptom: a new card made no sound / wave / name text; filling a card gauge had no `loadvrai2` loop; TECH, BOUNCE / wall bounce and PUSHED TO THE EDGE had no text, burst, shake, sound.
+- Cause: the combat events existed but no juice hook listened (`combat:card-spawn`, `tech`, `wall-bounce`, `wall-push`). Found by listing every emitted combat event without a handler.
+- Fix in: `packs/render/juice/events.ts` (onTech, onBounce, onPush, onCard, `load` op), `packs/combat/items/cards.ts` (capture progress), `packs/combat/player/physics.ts` (pip flag).
+- Harness: the legacy `sfx` stub now returns a source handle like a browser, else legacy re-plays handle-guarded loops every frame.
+
+## Step-wrapper order after the base step
+- Legacy post-step wrappers run innermost first: bullet motion (2119) → item-late (2277) → TX cap (2381) → input buffer + guard gauge + CANCEL xN (2394) → actsPrune (2828) → character wrappers. The port ran the input buffer / guard gauge before the base step's end, so GUARD LOW texts were one tick old and the TX cap ran before item-late texts.
+- Fix in: `packs/combat/systems.ts` (input-buffer after item-late, emits `combat:wrap` ph 0 / ph 1), `packs/render/juice/events.ts` (TX cap, SMR/RDK ticks, CANCEL xN, actsPrune on `combat:wrap`). Also `(pOK || -1)` exactly as legacy in the guard gauge.
+
+## Burst mini-HUD bar
+- Legacy resets every player's dead `burst` to 0 at each step start (wrapper 4726) and regains one tick only when `updP` reaches line 355; the port guessed it from the frame state. Now `bregF` stamps when the port's player update reached the same line.
+
+## Character presentation gaps (render sweep, 8 characters x seeds)
+- Okina: drums had no taiko sounds on a kick, the door no `break` sound; the season gauge (chG) filled from the juice's guess of the hit damage, missed heavy season bullets and ran after item rules. Now Okina's `onHit` (dmg passed to `CharacterDef.onHit`) and `seaHit` before `bulletRule` for light AND heavy bullets (legacy outermost chBullet wrapper 4704).
+- Nue: dash afterimage was emitted every effects tick (also hit-stop frames); now at the end of her tick (`ndsf`).
+- Melee parry: no `#6ff` burst on the parrier; uses `parryOn`.
+- Run trail (`#666`, every 4 frames) and sharp-brake burst missing (legacy lines 397-398).
+- Presentation-only legacy entities (juice PE: photo flash, dowsing cone) ticked on hit-stop frames and were drawn after every sim entity; now ticked on full steps (die with their owner) and slotted in push order (`seq` = next entity id).
+- Render compare: juice check now also compares every player's item activation list.
+
+## Charged heavy (LV2/LV3) details
+- LV3 played no `strong_effect_attack` and no pink ring (legacy spawnH wrapper, line 2419): `heavyBullet` now takes the world.
+- Character heavy colours: legacy sets `b.c` on the LAST bullet of each spawnH call (B[B.length-1]), which for a charged shot is an extra side/ring bullet, not the core; the port passed the colour to every bullet of the call. Colours now follow the same rule as the sim tags (pierce, spl, wav, mst) already did. Kept as legacy: it only changes looks.
+- Hit order: the character `onHit` effects (Flandre CRUSH!, Okina gauge) now come after the hit's own effects, as in the legacy wrapper.
+- Reimu's barrier flash (`e.fl`) was not bound to the draw (efl).

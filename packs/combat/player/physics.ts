@@ -11,9 +11,10 @@ export function wallHit(w: World, s: CombatState, p: number, ax: number): void {
 function wall(w: World, s: CombatState, p: number, ax: number): void {
   if (wallRule(w, s, p, ax)) return; // legacy xSpitWall (spit 1/3) and spinning items, before the beam push
   if (s.spit[p] === 2) { // pushed to the edge by a parried KO beam: costs a wall pip, then free
+    const pip = s.beamPip[p] ? 1 : 0;
     if (s.beamPip[p]) { s.beamPip[p] = 0; s.pips[p] = Math.max(0, s.pips[p]! - 1); w.emit('combat:wall-pip', { p, pips: s.pips[p]! }); }
     s.spit[p] = 0; s.state[p] = PS.idle; s.t[p] = 0; if (ax) s.vy[p] = 0; else s.vx[p] = 0;
-    w.emit('combat:wall-push', { p, x: s.x[p]!, y: s.y[p]! }); return;
+    w.emit('combat:wall-push', { p, x: s.x[p]!, y: s.y[p]!, pip }); return;
   }
   const v = ax ? s.vy : s.vx;
   if (s.state[p] === PS.dash) { // wall kick: one per dash, bounce with momentum, half charge back

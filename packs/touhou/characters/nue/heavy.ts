@@ -11,9 +11,9 @@ export const nueHeavy = {
     if (e >= 0) { s.eh[e] = 4; s.er[e] = 30; }
     cap(s, EK_NUFO, p, 3); sfx(w, 'se_enep00', 0.5);
   },
-  F({ s, p, a, k, m, src }: HeavyCtx): void {
-    heavyBullet(s, p, src, m, a, k, { spd: 13, r: 7, k: 1, col: 0xc03aff });
-    const b = s.nb - 1; if (b >= 0 && s.bowner[b] === p) s.bflags[b] = s.bflags[b]! | BF.pierce;
+  F({ w, s, p, a, k, m, src }: HeavyCtx): void {
+    heavyBullet(w, s, p, src, m, a, k, { spd: 13, r: 7, k: 1 });
+    const b = s.nb - 1; if (b >= 0 && s.bowner[b] === p) { s.bflags[b] = s.bflags[b]! | BF.pierce; s.bcol[b] = 0xc03aff; } // legacy: the LAST bullet of the call (an extra of a charged shot if any)
   },
   B({ s, p, a, k }: HeavyCtx): void {
     const e = addEnt(s, EK_NST, p, 360, s.x[p]! - cos(a) * 60, s.y[p]! - sin(a) * 60);

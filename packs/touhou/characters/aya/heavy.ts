@@ -9,8 +9,8 @@ export const ayaHeavy = {
     if (e >= 0) { s.evx[e] = cos(a) * 2; s.evy[e] = sin(a) * 2; s.ed[e] = 3 * k; }
     const L: number[] = []; entsOf(s, EK_ATN, p, L); for (let i = 0; i < L.length - 2; i++) s.et[L[i]!] = 0;
   },
-  F({ s, p, a, k, m, src }: HeavyCtx): void {
-    heavyBullet(s, p, src, m, a, k, { spd: 18, r: 6, k: 1 });
+  F({ w, s, p, a, k, m, src }: HeavyCtx): void {
+    heavyBullet(w, s, p, src, m, a, k, { spd: 18, r: 6, k: 1 });
     const b = s.nb - 1; if (b >= 0 && s.bowner[b] === p) { s.bflags[b] = s.bflags[b]! | BF.pierce; s.bcol[b] = 0xbfffe0; }
   },
   B({ w, s, p, k }: HeavyCtx): void {

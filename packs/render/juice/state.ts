@@ -10,31 +10,31 @@ export interface Juice {
   FX: P2[]; PE: P2[]; TX: P2[]; RINGS: P2[]; WAVES: P2[]; LINES: P2[]; KOFX: P2[]; CRACK: P2[]; GZ: P2[]; BIG: P2[];
   lastGf: number; rnd: () => number; q: { ev: string; gf: number }[]; cc: number[]; ccF: number[]; chG: number[]; nds: number[]; stock0: number; camSnap: number[];
   /** sounds of the frame being drained (name, vol, rate); the audio player and the oracle consume it. `sl` = legacy rate limiters (last frame). */
-  SND: { n: string; v: number; r: number; gf: number; k?: string }[]; /** legacy ENDK: sound swell while the last two survivors are on their last stock */ endk: number; sl: Record<string, number>; /** keyed (stoppable) sounds started / stop requests (legacy `p.chS=sfx(...)` / `.stop()`) */ stop: string[]; /** items handed out (player, pool index) since the shell last drained it — records screen */ gives: { p: number; kind: number }[]; /** KO counter (the music dips on each KO) */ koN: number; pw: [number, number][]; /** legacy p.acts: item activation list per player (drawActs, item auras) */ acts: { k: string; f: number; T: number; ht: boolean }[][]; /** legacy xActive per player at the last full step */ ia: number[]; /** legacy SMR: kick / sword arcs (Meiling, Momiji) */ SMR: Record<string, unknown>[]; /** legacy RDK: Rumia's dark wisps / waves */ RDK: Record<string, unknown>[]; /** legacy PHOTO: camera flashes */ PHOTO: Record<string, unknown>[]; /** legacy p.stk0 (stocks at the last full step, for the 1up sound) */ stk0: number[];
+  SND: { n: string; v: number; r: number; gf: number; k?: string }[]; /** legacy ENDK: sound swell while the last two survivors are on their last stock */ endk: number; sl: Record<string, number>; /** keyed (stoppable) sounds started / stop requests (legacy `p.chS=sfx(...)` / `.stop()`) */ stop: string[]; /** items handed out (player, pool index) since the shell last drained it — records screen */ gives: { p: number; kind: number }[]; /** KO counter (the music dips on each KO) */ koN: number; pw: [number, number][]; /** legacy p.acts: item activation list per player (drawActs, item auras) */ acts: { k: string; f: number; T: number; ht: boolean }[][]; /** legacy xActive per player at the last full step */ ia: number[]; /** legacy SMR: kick / sword arcs (Meiling, Momiji) */ SMR: Record<string, unknown>[]; /** legacy RDK: Rumia's dark wisps / waves */ RDK: Record<string, unknown>[]; /** legacy PHOTO: camera flashes */ PHOTO: Record<string, unknown>[]; /** legacy loadSrc playing (card capture loop) */ load: number; /** legacy p.stk0 (stocks at the last full step, for the 1up sound) */ stk0: number[];
 }
 const cache = new WeakMap<World, Juice>();
 export function juiceOf(w: World): Juice {
   let j = cache.get(w);
-  if (!j) { j = { shake: 0, zk: 0, kx: 0, ky: 0, chroma: 0, bright: 0, focusL: 0, zblur: 0, flashS: 0, flashCol: '#fff', invF: 0, bgF: { c: '#fff', t: 0 }, borderF: { c: '#fff', t: 0 }, FX: [], PE: [], TX: [], RINGS: [], WAVES: [], LINES: [], KOFX: [], CRACK: [], GZ: [], BIG: [], lastGf: -1, rnd: () => Math.random(), q: [], cc: [], ccF: [], chG: [], nds: [], stock0: 0, camSnap: [], SND: [], endk: 1, sl: {}, stop: [], gives: [], koN: 0, pw: [], acts: [], ia: [], SMR: [], RDK: [], PHOTO: [], stk0: [] }; /* late-bound rnd: juiceOf may first run inside the sanitized step */ cache.set(w, j); }
+  if (!j) { j = { shake: 0, zk: 0, kx: 0, ky: 0, chroma: 0, bright: 0, focusL: 0, zblur: 0, flashS: 0, flashCol: '#fff', invF: 0, bgF: { c: '#fff', t: 0 }, borderF: { c: '#fff', t: 0 }, FX: [], PE: [], TX: [], RINGS: [], WAVES: [], LINES: [], KOFX: [], CRACK: [], GZ: [], BIG: [], lastGf: -1, rnd: () => Math.random(), q: [], cc: [], ccF: [], chG: [], nds: [], stock0: 0, camSnap: [], SND: [], endk: 1, sl: {}, stop: [], gives: [], koN: 0, pw: [], acts: [], ia: [], SMR: [], RDK: [], PHOTO: [], load: 0, stk0: [] }; /* late-bound rnd: juiceOf may first run inside the sanitized step */ cache.set(w, j); }
   return j;
 }
 
 /** Legacy stepFx (+ the 10-unique-texts cap): runs once per completed sim frame. */
-/** `cap` = a full sim step ran (legacy: the 10-text cap is a `step` wrapper, line 2381, skipped on hit-stop / slow-motion / results frames, line 4138). */
-export function tickJuice(j: Juice, cap = true): void {
+export function tickJuice(j: Juice): void {
   for (const f of j.FX) { if (f['vx']) { f.x += f['vx'] as number; f['vx'] = (f['vx'] as number) * 0.92; } if (f['vy']) { f.y += f['vy'] as number; f['vy'] = (f['vy'] as number) * 0.92; } f.t--; }
   for (const t of j.TX) { t.y -= 0.6; t.t--; }
   for (const r of j.RINGS) { (r['r'] as number) += ((r['m'] as number) - (r['r'] as number)) * 0.25; r.t--; }
-  for (const a of [j.KOFX, j.WAVES, j.LINES, j.CRACK, j.GZ, j.BIG, j.PE]) for (const x of a) x.t--; // PE = presentation-only legacy ENT (dowsing cone, photo flash)
+  for (const a of [j.KOFX, j.WAVES, j.LINES, j.CRACK, j.GZ, j.BIG]) for (const x of a) x.t--; // PE (presentation-only legacy ENT: dowsing cone, photo flash) ticks with updEnt, on full steps only (fx-tick handler)
   if (j.invF > 0) j.invF--; j.kx *= 0.8; j.ky *= 0.8; j.chroma *= 0.85; j.bright *= 0.85; j.focusL *= 0.9; j.zblur *= 0.85; j.borderF.t--; j.bgF.t--;
   for (const a of [j.FX, j.TX, j.RINGS, j.KOFX, j.WAVES, j.LINES, j.CRACK, j.GZ, j.BIG, j.PE]) { let w = 0; for (const x of a) if (x.t > 0) a[w++] = x; a.length = w; }
   if (j.LINES.length > 240) j.LINES.splice(0, j.LINES.length - 240); if (j.RINGS.length > 120) j.RINGS.splice(0, j.RINGS.length - 120); if (j.WAVES.length > 60) j.WAVES.splice(0, j.WAVES.length - 60); if (j.TX.length > 80) j.TX.splice(0, j.TX.length - 80);
   j.shake = j.shake > 0.3 ? j.shake * 0.86 : 0; j.zk *= 0.9; j.flashS *= 0.85;
-  if (cap && j.TX.length > 10) { const seen = new Set<unknown>(); j.TX = j.TX.reverse().filter(t => { const k = t['s']; if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 10).reverse(); }
 }
+/** Legacy 10-text cap (step wrapper line 2381: newest copy of each text kept). Runs only on full steps, after item-late (combat:wrap). */
+export function capTX(j: Juice): void { if (j.TX.length > 10) { const seen = new Set<unknown>(); j.TX = j.TX.reverse().filter(t => { const k = t['s']; if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 10).reverse(); } }
 /** Drains the journaled events in order (fx-tick events run `tickJuice`). Call before drawing; hooks themselves only journal because they run inside the sanitized sim window. */
 export function syncJuice(j: Juice, s: CombatState): void {
-  if (j.lastGf > s.gf) { j.lastGf = -1; j.q.length = 0; j.acts = []; j.ia = []; j.SMR = []; j.RDK = []; j.PHOTO = []; j.stk0 = []; } // new match / rewind
+  if (j.lastGf > s.gf) { j.lastGf = -1; j.q.length = 0; j.acts = []; j.ia = []; j.SMR = []; j.RDK = []; j.PHOTO = []; if (j.load) { j.load = 0; j.stop.push('load'); } j.stk0 = []; } // new match / rewind
   for (const e of j.q) runJuiceEvent(j, e);
   j.q.length = 0;
 }

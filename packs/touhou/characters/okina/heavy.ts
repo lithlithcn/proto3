@@ -13,10 +13,10 @@ export const okinaHeavy = {
     const D: number[] = []; entsOf(s, EK_ODR, p, D);
     for (const d of D) { const q = nearFoe(s, p, s.ex[d]!, s.ey[d]!, 1500); if (q >= 0) fireRay(s, p, { T: LZ_TELE + 8, tele: LZ_TELE, flags: RAYF.warn, w: 7, len: 900, dmg: 6 * k, ev: 99, kb: 8, stun: 24, c: 0xffd23a, a: atan2(s.y[q]! - s.ey[d]!, s.x[q]! - s.ex[d]!), x: s.ex[d]!, y: s.ey[d]! }); }
   },
-  B({ s, p, a, k, m, src }: HeavyCtx): void {
+  B({ w, s, p, a, k, m, src }: HeavyCtx): void {
     for (let i = 0; i < 12; i++) {
-      heavyBullet(s, p, src, m, a + i * TAU / 12, k, { spd: 3, r: 7, k: 0.15, life: 200, col: 0xffb04a });
-      const b = s.nb - 1; if (b >= 0 && s.bowner[b] === p) { s.bwav[b] = 0.08; s.bph[b] = i; }
+      heavyBullet(w, s, p, src, m, a + i * TAU / 12, k, { spd: 3, r: 7, k: 0.15, life: 200 });
+      const b = s.nb - 1; if (b >= 0 && s.bowner[b] === p) { s.bwav[b] = 0.08; s.bph[b] = i; s.bcol[b] = 0xffb04a; }
     }
   },
 } as const;

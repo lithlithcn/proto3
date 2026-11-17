@@ -21,8 +21,8 @@ export const marisaHeavy = {
   B({ w, s, p, a, k, m, src }: HeavyCtx): void {
     const h = heatMul(w.slice<TouhouState>('touhou'), p);
     for (let i = 0; i < 7; i++) {
-      heavyBullet(s, p, src, m, a + (i - 3) * 0.22, k, { spd: 5.5, r: Math.round(9 * Math.min(1.6, h)), k: 0.28 * h, col: STAR[i % 3] });
-      const b = s.nb - 1; if (b >= 0 && s.bowner[b] === p) s.bmst[b] = s.gf;
+      heavyBullet(w, s, p, src, m, a + (i - 3) * 0.22, k, { spd: 5.5, r: Math.round(9 * Math.min(1.6, h)), k: 0.28 * h });
+      const b = s.nb - 1; if (b >= 0 && s.bowner[b] === p) { s.bmst[b] = s.gf; s.bcol[b] = STAR[i % 3]!; }
     }
   },
 } as const;

@@ -22,7 +22,7 @@ export const nazrinHeavy = {
       const dx = s.x[q]! - s.x[p]!, dy = s.y[q]! - s.y[p]!, d = hypot(dx, dy); let da = Math.abs(atan2(dy, dx) - a); da = Math.min(da, TAU - da);
       if (d < 420 && da < 0.5 && d < bd) { bd = d; best = q; }
     }
-    pushJ(w, 'PE', 'k', 'ncn', 'o', p, 't', 16, 'x', s.x[p]!, 'y', s.y[p]!, 'a', a); // dowsing cone (presentation entity)
+    pushJ(w, 'PE', 'seq', s.nextEid, 'k', 'ncn', 'o', p, 't', 16, 'x', s.x[p]!, 'y', s.y[p]!, 'a', a); // dowsing cone (presentation entity)
     if (best >= 0 && !clone) { const t = w.slice<TouhouState>('touhou'); t.nTg[p] = best; t.nTgF[p] = s.gf + 200; jTxt(w, s.x[best]!, s.y[best]! - 36, 'FOUND!', '#ffd23a', 15); }
     if (!clone) sfx(w, best >= 0 ? 'aimreal' : 'se_invalid', best >= 0 ? 1 : 0.5);
   },

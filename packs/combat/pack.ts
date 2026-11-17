@@ -14,7 +14,7 @@ export default definePack({
   version: '0.1.0',
   contentTypes: ['character', 'spell', 'item', 'status', 'rules'],
   events: [
-    'combat:graze', 'combat:fx-tick', 'combat:bullet-clash', 'combat:bullet-cancel', 'combat:pivot', 'combat:fx', 'combat:fx-end', 'combat:item', 'combat:card-spawn', 'combat:power-up', 'combat:hit-light', 'combat:ko:before', 'combat:ko', 'combat:respawn', 'combat:spell-ready',
+    'combat:graze', 'combat:fx-tick', 'combat:wrap', 'combat:bullet-clash', 'combat:bullet-cancel', 'combat:pivot', 'combat:fx', 'combat:fx-end', 'combat:item', 'combat:card-spawn', 'combat:power-up', 'combat:hit-light', 'combat:ko:before', 'combat:ko', 'combat:respawn', 'combat:spell-ready',
     'combat:dash', 'combat:glide', 'combat:wall-kick', 'combat:hit', 'combat:wall-pip', 'combat:tech', 'combat:wall-bounce', 'combat:cancel', 'combat:parry', 'combat:shield-break', 'combat:clash', 'combat:grab', 'combat:reflect', 'combat:heavy', 'combat:kobeam-fire', 'combat:kobeam-reflect', 'combat:kobeam-cancel', 'combat:wall-push', 'combat:spell', 'combat:spell-break', 'combat:spell-capture', 'combat:spell-refused', 'combat:spell-chip', 'combat:skill-cooldown', 'combat:ent-spawn', 'combat:time-resume',
   ],
   state: combatSchema,

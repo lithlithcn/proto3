@@ -31,6 +31,7 @@ const gate: SystemDef = {
     const s = combatOf(w);
     s.skip = 0;
     if (s.winner >= 0) { s.winT++; s.skip = 1; return; } // match over (legacy loop: no step, only stepFx + winT++ — the results screen reads winT)
+    s.burst.fill(0, 0, s.n); // legacy wrapper 4726: the removed burst gauge is zeroed at every step start, even frozen ones (R73: only its HUD bar remains)
     if (s.slow > 0) { s.slow--; if (s.slow % 3) { s.skip = 1; return; } }
     s.gf++;
     for (let p = 0; p < s.n; p++) pickTarget(s, p);
@@ -44,12 +45,12 @@ const players: SystemDef = { id: 'players', phase: 'sim', run(w) { const s = com
 const phys: SystemDef = { id: 'physics', phase: 'sim', after: ['players'], run(w) { const s = combatOf(w); if (s.skip) return; for (let p = 0; p < s.n; p++) if (!stopped(s, p)) physics(w, s, p); } };
 const bullets: SystemDef = { id: 'bullets', phase: 'sim', after: ['physics'], run(w) { const s = combatOf(w); if (s.skip || s.tstop > 0) return; updateBullets(w, s); } };
 /** Character hooks (legacy `tick`): after the whole step, only on frames where time advances. */
-const charTick: SystemDef = { id: 'char-tick', phase: 'sim', after: ['item-late'], run(w) { const s = combatOf(w); if (s.skip) return; settleSpirit(s); for (let p = 0; p < s.n; p++) if (s.state[p] !== PS.dead) charOf(w, s, p).tick?.(w, s, p); for (let p = 0; p < s.n; p++) s.spP[p] = s.spirit[p]!; } };
+const charTick: SystemDef = { id: 'char-tick', phase: 'sim', after: ['input-buffer'], run(w) { const s = combatOf(w); if (s.skip) return; settleSpirit(s); for (let p = 0; p < s.n; p++) if (s.state[p] !== PS.dead) charOf(w, s, p).tick?.(w, s, p); for (let p = 0; p < s.n; p++) s.spP[p] = s.spirit[p]!; } };
 const items: SystemDef = { id: 'items', phase: 'sim', after: ['bullets'], run(w) { const s = combatOf(w); if (!s.skip) updateCards(w, s); } };
 const itemWorld: SystemDef = { id: 'item-world', phase: 'sim', after: ['ko-beam'], run(w) { const s = combatOf(w); if (!s.skip) updateItemWorld(w, s); } };
 const status: SystemDef = { id: 'status', phase: 'sim', after: ['item-world'], run(w) { const s = combatOf(w); if (s.skip) return; if (rulesOwnPre(w)) { for (const r of rulesOf(w)) r.pre?.(w, s); } else tickFx(w, s); } }; // legacy chPre..chPre5 (themed rules) or the bare status countdown
 /** Legacy end of the base `step` (where `stepFx` runs, also on hit-stop frames): presentation listeners tick their effects here; every later wrapper and `chStep` happen after it. */
-const baseEnd: SystemDef = { id: 'base-end', phase: 'sim', after: ['input-buffer', 'item-world', 'status'], run(w) { const s = combatOf(w); w.emit('combat:fx-tick', { gf: s.gf, wt: s.winner >= 0 ? s.winT : 0, sk: s.skip }); } };
+const baseEnd: SystemDef = { id: 'base-end', phase: 'sim', after: ['entities', 'item-world', 'status'], run(w) { const s = combatOf(w); w.emit('combat:fx-tick', { gf: s.gf, wt: s.winner >= 0 ? s.winT : 0, sk: s.skip }); } };
 const itemLate: SystemDef = { id: 'item-late', phase: 'sim', after: ['bullet-motion'], run(w) { const s = combatOf(w); if (!s.skip) { for (let p = 0; p < s.n; p++) if (s.state[p] !== PS.dead) { for (const r of rulesOf(w)) r.late?.(w, s, p); updateClone(w, s, p); } driftBumpers(s); updateFreezeQueue(w, s); updateTimeStop(w, s); } } };
 /** Every legacy `step` wrapper runs AFTER the base step (which ends with stepFx = base-end): bullet motion first (wrapper line 2119, so its juice lands after the effects tick), then clone soak, bumpers, freeze queue, The World knives (item-late; this fixes the shared-rng draw order vs fn() callbacks). */
 /** Legacy chStep: rays, per-bullet modifiers and entity handlers of characters, after every character hook. */
@@ -66,6 +67,7 @@ function entityPass(w: World, s: CombatState, post = false): void {
 const rayStep: SystemDef = { id: 'ray-step', phase: 'sim', after: ['char-tick'], run(w) { const s = combatOf(w); if (s.skip) return; entityPass(w, s); bulletMods(s); entityPass(w, s, true); for (let p = 0; p < s.n; p++) if (s.state[p] !== PS.dead) charOf(w, s, p).post?.(w, s, p); waveBullets(s); for (let p = 0; p < s.n; p++) s.spP[p] = s.spirit[p]!; } };
 const beams: SystemDef = { id: 'ko-beam', phase: 'sim', after: ['items'], run(w) { const s = combatOf(w); if (!s.skip) updateBeams(w, s); } };
 const ents: SystemDef = { id: 'entities', phase: 'sim', after: ['status'], run(w) { const s = combatOf(w); if (!s.skip) updateEnts(w, s); } };
-const buffer: SystemDef = { id: 'input-buffer', phase: 'sim', after: ['entities'], run(w) { const s = combatOf(w); if (!s.skip) bufferInputs(w, s); } };
+/** Legacy step wrappers after item-late, in definition order: TX cap (2381) | input buffer + guard gauge + CANCEL xN (2394) | actsPrune (2828). `combat:wrap` lets the effects run at those two points. */
+const buffer: SystemDef = { id: 'input-buffer', phase: 'sim', after: ['item-late'], run(w) { const s = combatOf(w); if (s.skip) return; w.emit('combat:wrap', { gf: s.gf, ph: 0 }); bufferInputs(w, s); w.emit('combat:wrap', { gf: s.gf, ph: 1 }); } };
 const motionStep: SystemDef = { id: 'bullet-motion', phase: 'sim', after: ['base-end'], /* legacy step wrapper line 2119: after the base step's stepFx */ run(w) { const s = combatOf(w); if (!s.skip) motion(s, w); } };
 export const systems: SystemDef[] = [spiritBegin, gate, players, phys, bullets, items, beams, itemWorld, status, ents, buffer, baseEnd, itemLate, motionStep, charTick, rayStep, spiritEnd];

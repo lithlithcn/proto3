@@ -50,7 +50,7 @@ export function updParrystun(c: PCtx): void {
 
 /** End-of-step guard gauge (legacy wrapper): a parry that ended without a success drains the gauge; empty = guard crush. Regens outside parry. */
 export function guardGauge(w: World, s: CombatState, p: number): void {
-  if (s.lstS[p] === PS.parry && s.state[p] !== PS.parry && !(Math.max(-1, s.pOK[p]!) >= s.pStart[p]!) && s.state[p] !== PS.dead) {
+  if (s.lstS[p] === PS.parry && s.state[p] !== PS.parry && !((s.pOK[p] || -1) >= s.pStart[p]!) && s.state[p] !== PS.dead) {
     s.pg[p] = s.pg[p]! - T.GUARD_WHIFF;
     if (s.pg[p]! <= 0) { s.pg[p] = T.GUARD_RESET; shieldBreak(w, s, p); big(w, 'GUARD CRUSH!', '#6ff', 40); } else if (s.pg[p]! < 35) txt(w, s.x[p]!, s.y[p]! - 40, 'GUARD LOW', '#6ff', 12);
   }

@@ -1,4 +1,5 @@
 import { BTN, cos, sin, type World } from '@kernel';
+import { pushJ, sfx } from '../jfx';
 import { BF, MAX_B, PS, type CombatState } from '../state';
 import { TAU } from '../tuning';
 import type { MoveDef } from '../moves';
@@ -30,12 +31,12 @@ export interface HeavyOpts { spd?: number; r?: number; k?: number; off?: number;
  * Heavy shot bullet (legacy spawnH). `m` is the heavy move (hit data lives there, per bullet id `mv`), `pm` the power multiplier.
  * When MAX_B is reached the oldest light bullet is replaced; with none left the shot is dropped.
  */
-export function heavyBullet(s: CombatState, p: number, src: number, m: MoveDef, a: number, pm: number, o: HeavyOpts = {}): void {
+export function heavyBullet(w: World, s: CombatState, p: number, src: number, m: MoveDef, a: number, pm: number, o: HeavyOpts = {}): void {
   const i = spawnHeavy(s, p, src, m, a, pm, o), lv = s.hLv[p]! || 1;
   if (i < 0 || lv < 2 || s.state[p] !== PS.atk) return;
   // charged heavy (hold the button): LV2 = two extra side shots + bigger core, LV3 = bigger, stronger core + an 8-way ring (R68)
   if (lv === 2) { for (const d of [-0.22, 0.22]) spawnHeavy(s, p, src, m, a + d, pm * 0.8, o); s.br[i] = s.br[i]! * 1.2; }
-  else { s.br[i] = s.br[i]! * 1.5; s.bmult[i] = s.bmult[i]! * 1.4; s.bcol[i] = 0xff7ce0; for (let k = 1; k < 8; k++) spawnHeavy(s, p, src, m, a + k * TAU / 8, pm * 0.7, o); }
+  else { s.br[i] = s.br[i]! * 1.5; s.bmult[i] = s.bmult[i]! * 1.4; s.bcol[i] = 0xff7ce0; for (let k = 1; k < 8; k++) spawnHeavy(s, p, src, m, a + k * TAU / 8, pm * 0.7, o); sfx(w, 'strong_effect_attack', 0.4); pushJ(w, 'RINGS', 'x', s.x[p]!, 'y', s.y[p]!, 'r', 0, 'm', 80, 't', 16, 'c', '#ff7ce0'); }
 }
 function spawnHeavy(s: CombatState, p: number, src: number, m: MoveDef, a: number, pm: number, o: HeavyOpts): number {
   const sp = o.spd || m.spd!, c = cos(a), n = sin(a), off = o.off || 0;

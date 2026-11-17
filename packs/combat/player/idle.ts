@@ -1,3 +1,4 @@
+import { burst, pushJ } from '../jfx';
 import { BTN, hypot } from '@kernel';
 import { charOf } from '../api';
 import { type PCtx, held, pr } from '../input';
@@ -30,7 +31,8 @@ export function updIdle(c: PCtx): void {
     const ac = focus ? 0.5 : s.run[p] ? 0.14 : 0.24;
     s.vx[p] = s.vx[p]! + (c.ix * sp - s.vx[p]!) * ac; s.vy[p] = s.vy[p]! + (c.iy * sp - s.vy[p]!) * ac;
   }
-  if (pr(c, BTN.focus) && hypot(s.vx[p]!, s.vy[p]!) > T.BRAKE_MIN) { s.vx[p] = s.vx[p]! * 0.15; s.vy[p] = s.vy[p]! * 0.15; s.slide[p] = 0; s.run[p] = 0; } // sharp brake
+  if (s.run[p] && s.gf % 4 === 0) pushJ(c.w, 'FX', 'x', s.x[p]!, 'y', s.y[p]!, 'vx', 0, 'vy', 0, 't', 12, 'c', '#666'); // run trail (legacy line 397)
+  if (pr(c, BTN.focus) && hypot(s.vx[p]!, s.vy[p]!) > T.BRAKE_MIN) { s.vx[p] = s.vx[p]! * 0.15; s.vy[p] = s.vy[p]! * 0.15; s.slide[p] = 0; s.run[p] = 0; burst(c.w, s.x[p]!, s.y[p]!, '#aaa', 5); } // sharp brake
   if (s.shotCd[p]! > 0) s.shotCd[p] = s.shotCd[p]! - 1;
   
   if (pr(c, BTN.parry)) { startParry(s, p); return; }

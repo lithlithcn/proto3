@@ -7,12 +7,12 @@ import { throwOrbs } from './orbs';
  */
 export const reimuHeavy = {
   N(c: HeavyCtx): void { throwOrbs(c.w, c.s, c.p, 1); },
-  F(c: HeavyCtx): void { for (let i = -2; i <= 2; i++) heavyBullet(c.s, c.p, c.src, c.m, c.a + i * 0.09, c.k, { spd: 10 + Math.abs(i) * 0.6, r: 8, k: 0.38, col: 0xb04aff }); },
+  F(c: HeavyCtx): void { for (let i = -2; i <= 2; i++) { heavyBullet(c.w, c.s, c.p, c.src, c.m, c.a + i * 0.09, c.k, { spd: 10 + Math.abs(i) * 0.6, r: 8, k: 0.38 }); const b = c.s.nb - 1; if (b >= 0 && c.s.bowner[b] === c.p) c.s.bcol[b] = 0xb04aff; } }, // colour on the LAST bullet (legacy)
   B(c: HeavyCtx): void {
     for (const o of [-0.5, 0, 0.5]) {
-      heavyBullet(c.s, c.p, c.src, c.m, c.a + o, c.k, { spd: 4, r: 14, k: 0.45, life: 200, col: 0x8ab0ff });
+      heavyBullet(c.w, c.s, c.p, c.src, c.m, c.a + o, c.k, { spd: 4, r: 14, k: 0.45, life: 200 });
       const b = c.s.nb - 1; // legacy: the LAST bullet of the call gets the timer (an extra of a charged shot if there is one)
-      if (b >= 0 && c.s.bowner[b] === c.p) c.s.bspl[b] = c.s.gf + 28;
+      if (b >= 0 && c.s.bowner[b] === c.p) { c.s.bspl[b] = c.s.gf + 28; c.s.bcol[b] = 0x8ab0ff; }
     }
   },
 } as const;

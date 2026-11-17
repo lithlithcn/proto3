@@ -1,5 +1,5 @@
 import { type World, hypot } from '@kernel';
-import { PS, type CombatState, addEnt, entsOf } from '@pack/combat/api';
+import { PS, type CombatState, addEnt, entsOf, jfx } from '@pack/combat/api';
 import type { TouhouState } from '../../state';
 import { EK_NCL } from './kinds';
 
@@ -10,4 +10,5 @@ export function nueTick(w: World, s: CombatState, p: number): void {
     t.nS[p] = t.nS[p]! + 1;
     if (t.nS[p]! % 20 === 0) { const L: number[] = []; if (entsOf(s, EK_NCL, p, L) < 8) { const e = addEnt(s, EK_NCL, p, 900, s.x[p]!, s.y[p]!); if (e >= 0) s.ebc[e] = t.nS[p]! / 20 | 0; } }
   } else t.nS[p] = 0;
+  jfx(w, 'ndsf', p, s.x[p]!, s.y[p]!); // dash afterimage, end of the legacy tick (line 4458; the deadline lives in the juice)
 }

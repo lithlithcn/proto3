@@ -1,4 +1,4 @@
-/* pnpm render compare [a,b] [frames=900] [seed=1] (env PLAN=item@frame/player,... forces item gives, e.g. PLAN=rin@100/0) — visual/HUD/audio parity, the same way the oracle campaign checks the sim.
+/* pnpm render compare [a,b] [frames=900] [seed=1] (env ITEMS=a,b enables those cards; PLAN=item@frame/player,... forces item gives, e.g. PLAN=rin@100/0) — visual/HUD/audio parity, the same way the oracle campaign checks the sim.
  * Plays a bot match on legacy + port, calls the legacy render() every frame (camera easing needs it), and at sample frames:
  *   - splits the legacy op stream into per-draw-function blocks (drawHUD, drawP, drawHeavy, drawItem, drawView...), each with the ctx state at entry;
  *   - re-draws the same thing with the PORT renderer from that state and diffs the op streams (identical / first differing op);
@@ -22,8 +22,8 @@ interface Block { name: string; snap: Record<string, unknown>; ops: Op[] }
 
 const arg = (i: number, d: string): string => process.argv[i] && !process.argv[i]!.startsWith('--') ? process.argv[i]! : d;
 const [a, b] = arg(3, 'reimu,marisa').split(','), FR = +arg(4, '900'), SEED = +arg(5, '1'), STEP = 150;
-const ss = session(a!, b!, SEED, [], process.env['PLAN'] ?? ''), k = ss.k, ev = (s: string): unknown => k.legacy.eval(s);
-ev("globalThis.__SFX=[];globalThis.__SFL=[];{const s0=sfx;sfx=function(n,v,r){__SFX.push(n);(globalThis.__SFV||=[]).push(n+'|'+(+(v===undefined?1:v)).toFixed(3)+'|'+(+(r===undefined?1:r)).toFixed(3));const L=[...new Error().stack.matchAll(/legacy:(\\d+)/g)].map(m=>m[1]);__SFL.push(n+'@'+(L.find(x=>!['217','26','2275','219','220','221','222'].includes(x))||'?'));return s0.apply(this,arguments)}}");
+const ss = session(a!, b!, SEED, process.env['ITEMS']?.split(',').filter(Boolean) ?? [], process.env['PLAN'] ?? ''), k = ss.k, ev = (s: string): unknown => k.legacy.eval(s);
+ev("globalThis.__SFX=[];globalThis.__SFL=[];{const s0=sfx;sfx=function(n,v,r){__SFX.push(n);(globalThis.__SFV||=[]).push(n+'|'+(+(v===undefined?1:v)).toFixed(3)+'|'+(+(r===undefined?1:r)).toFixed(3));const L=[...new Error().stack.matchAll(/legacy:(\\d+)/g)].map(m=>m[1]);__SFL.push(n+'@'+(L.find(x=>!['217','26','2275','219','220','221','222'].includes(x))||'?'));return s0.apply(this,arguments)||{stop(){}}}}"); // a playing source like in a browser, so legacy keeps its handles (loadSrc, rsrc)
 const sink = makeRecorder(), W = k.world as World, S = k.s as CombatState;
 
 /** Legacy stream -> blocks (nested blocks also appear on their own, their ops are included in every enclosing block). */
@@ -68,6 +68,7 @@ function juiceCheck(f: number): void {
   const P = [...JV.map(n => j[n]), ...JL.map(n => n === 'FX' ? fxPush : j[n].length), j.bgF.t, j.borderF.t], N = [...JV, ...JL.map(n => n === 'FX' ? 'FX pushes' : n + '.length'), 'bgF.t', 'borderF.t'];
   l[JV.length] = lfx;
   const sites = (ev('JSON.stringify(globalThis.__JW||[])') as string), sf = (ev('JSON.stringify(__SFL)') as string); ev('globalThis.__JW=[]');
+  { const la = ev("JSON.stringify(P.map(p=>(p.acts||[]).map(a=>a.k+'@'+a.f).join(' ')))") as string, pa = JSON.stringify(Array.from({ length: S.n }, (_, q) => (j.acts[q] ?? []).map(x => x.k + '@' + x.f).join(' '))); if (la !== pa && !juiceBad.has('acts')) juiceBad.set('acts', `f${f}: legacy ${la} | port ${pa}`); } // item activation lists
   N.forEach((n, i) => { const a = l[i]!, b = P[i] as number; if (Math.abs(a - b) > 1e-6 && !juiceBad.has(n)) juiceBad.set(n, `f${f}: legacy ${a} | port ${b}${n === 'TX.length' ? `   legacy TX: ${ev('JSON.stringify(TX.map(t=>t.s))')} port TX: ${JSON.stringify(j.TX.map(t => t['s']))}` : ''}   legacy pushes this frame: ${[...new Set(JSON.parse(sites) as string[])].filter(x => x.startsWith(n.split(/[. ]/)[0]!)).join(' ') || '-'}   port events: ${pev}   sfx this frame: ${(JSON.parse(sf) as string[]).join(' ') || '-'}`); });
 }
 RENDER_CLOCK.now = () => 0; // legacy harness: performance.now() = VT = 0

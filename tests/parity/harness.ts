@@ -26,7 +26,6 @@ const q = (v: number | undefined): number => Math.max(-127, Math.min(127, Math.r
 /** Themed columns whose unset value is not 0 (legacy field absent). */
 const THEMED_UNSET: Record<string, number> = { eatBy: -1 };
 const AUTO_SKIP = new Set([
-  'burst', // legacy `burst` is dead (removed feature, value 0.08); the port's `burst` is the live burst gauge: name collision
   'spP', // spirit at frame start: stored by a different wrapper layer in legacy; the resulting spirit IS compared
   'spReady', // 'SPELL READY' fx flag, refreshed only in some states in legacy; presentation only (spirit is compared)
 ]);

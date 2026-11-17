@@ -42,7 +42,7 @@ export interface CharacterDef {
   dinM?(w: World, s: CombatState, v: number): number;
   spdM?(w: World, s: CombatState, p: number): number;
   /** Runs after a heavy-type hit by this character's player actually hurt `v` (legacy `onHit`). */
-  onHit?(w: World, s: CombatState, a: number, v: number, heavy: boolean): void;
+  onHit?(w: World, s: CombatState, a: number, v: number, heavy: boolean, dmg: number): void;
   /** Entity handlers of the character (legacy `EST` kinds): called once per entity in creation order with the index range `s.eLo..s.eHi` to process (legacy chStep). */
   ents?(w: World, s: CombatState, p: number): void;
   /** Inclusive range of entity kinds `ents` handles: dispatch is by kind, not by the owner's current kit (a disguised Nue still runs her own clouds). */

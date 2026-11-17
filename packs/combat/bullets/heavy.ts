@@ -7,6 +7,7 @@ import { parryFx, shieldBreak } from '../player/parry';
 import { T } from '../tuning';
 import { bodyR, coreR } from '../stats';
 import { mirrorRef } from './mirror';
+import { seaHit } from './sea';
 import { BF, PS, type CombatState } from '../state';
 import { bulletRule } from '../rules';
 
@@ -33,6 +34,7 @@ export function heavyContact(w: World, s: CombatState, i: number, t: number, d: 
   if (parrying && d < r + T.PARRY_R && !(f & BF.np)) { reflect(w, s, i, t); return; }
   const armed = s.bdist[i]! >= s.barm[i]!;
   if (armed && s.inv[t]! <= 0 && d < r * 0.82 + coreR(s, t)) {
+    if (s.bsea[i]) { seaHit(s, i, t, s.bowner[i]!); jfx(w, 'chg', s.bowner[i]!, 2.2); } // Okina's season (outermost chBullet wrapper, line 4704)
     if (bulletRule(w, s, i, t)) return; // legacy chBullet
     s.bflags[i] = f | BF.dead;
     const n = s.brefl[i]!;

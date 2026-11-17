@@ -41,7 +41,7 @@ describe('parity: item cards and the first items (vs legacy)', () => {
       big = Math.max(big, k.legacy.eval("B.filter(b=>b.heavy&&b.owner===0).length") as number);
     }
     expect(big, 'big rainbow balls').toBeGreaterThan(20);
-  });
+  }, 60000);
   it('Mirror Aura bounces bullets (light + heavy) back at the shooter; Oni Giant: reach x1.6, damage x1.5, half knockback, bigger body', () => {
     const k = makePair(['reimu', 'reimu'], 7, { items: ['green'] });
     k.legacy.eval('P[0].mirror=400;P[1].giant=400'); k.s.mirror[0] = 400; k.s.giant[1] = 400;

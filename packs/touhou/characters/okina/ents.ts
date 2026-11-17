@@ -26,14 +26,14 @@ export function okinaEnts(w: World, s: CombatState, p: number): void {
         const m = moveOf(w, s, q); if (!m || m.spd !== undefined || s.t[q]! < m.start || s.t[q]! >= m.start + m.act) continue;
         if (hypot(s.x[q]! - s.ex[i]!, s.y[q]! - s.ey[i]!) < (m.range || 40) + bodyR(s, q) + 16) { s.ehc[i * 32 + q] = s.gf + 20; s.eh[i] = s.eh[i]! - (m.dmg || 5); }
       }
-      if (s.eh[i]! <= 0) { s.et[i] = 0; jBurst(w, s.ex[i]!, s.ey[i]!, '#ffd23a', 18); jTxt(w, s.ex[i]!, s.ey[i]! - 30, 'DOOR BROKEN', '#ffd23a', 13); }
+      if (s.eh[i]! <= 0) { s.et[i] = 0; jBurst(w, s.ex[i]!, s.ey[i]!, '#ffd23a', 18); sfx(w, 'break', 0.6); jTxt(w, s.ex[i]!, s.ey[i]! - 30, 'DOOR BROKEN', '#ffd23a', 13); }
     } else if (k === EK_ODN) { // dancer: kicks foes it touches (toward its sister if both are out), throws an 8-way ring every 45 frames and a big pair every 3rd ring
       let S = -1; for (let z = 0; z < s.nent; z++) if (z !== i && s.ek[z] === EK_ODN && s.eo[z] === p && s.et[z]! > 0) { S = z; break; }
       for (let q = 0; q < s.n; q++) {
         if (!live(s, p, q) || s.ehc[i * 32 + q]! > s.gf || hypot(s.x[q]! - s.ex[i]!, s.y[q]! - s.ey[i]!) > 30 + bodyR(s, q)) continue;
         s.ehc[i * 32 + q] = s.gf + 20;
         let dx = S >= 0 ? s.ex[S]! - s.ex[i]! : s.x[q]! - s.ex[i]!, dy = S >= 0 ? s.ey[S]! - s.ey[i]! : s.y[q]! - s.ey[i]!; const l = hypot(dx, dy) || 1; dx /= l; dy /= l;
-        if (chHitQ(w, s, p, q, dx, dy, 5, S >= 0 ? Math.min(18, 7 + l / 16) : 12, 30)) jBurst(w, s.x[q]!, s.y[q]!, s.ebc[i] ? '#5cff7a' : '#ff7ad0', 10);
+        if (chHitQ(w, s, p, q, dx, dy, 5, S >= 0 ? Math.min(18, 7 + l / 16) : 12, 30)) { jBurst(w, s.x[q]!, s.y[q]!, s.ebc[i] ? '#5cff7a' : '#ff7ad0', 10); sfx(w, s.ebc[i] ? 'taikorouge' : 'taikobleu', 0.6); }
       }
       s.er[i] = s.er[i]! - 1;
       if (s.er[i]! <= 0) {
