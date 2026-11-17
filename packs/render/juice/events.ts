@@ -126,7 +126,7 @@ const onClash = on<{ x: number; y: number }>('juice-clash', 'combat:clash', (j, 
   j.shake = Math.min(40, j.shake + 16); j.invF = Math.max(j.invF, 4); txt(j, x, y - 30, 'CLASH!', '#fff', 20);
 });
 const onChip = on<Pp & { dmg: number }>('juice-spell-chip', 'combat:spell-chip', (j, e) => { txt(j, e.px, e.py - 40, '-' + Math.round(e.dmg), '#f8f', 14); snd(j, e.gf, 'hit1', 0.5); });
-const onKo = on<Pp & { why: string; x: number; y: number }>('juice-ko', 'combat:ko', (j, e) => { // legacy ko (lines 709-715)
+const onKo = on<Pp & { why: string; x: number; y: number }>('juice-ko', 'combat:ko', (j, e) => { j.koN++; // legacy ko (lines 709-715)
   const x = e.x, y = e.y, why = e.why || 'K.O.', c = col(e.p);
   snd(j, e.gf, 'charge', 0.8); snd(j, e.gf, 'aimreal', 1.7); snd(j, e.gf, 'se_pldead00');
   big(j, why, '#fff', why.length > 6 ? 72 : 110); if (!e.pcpu) big(j, 'AIM YOUR KO BEAM!', c, 30, 'kb' + e.p);

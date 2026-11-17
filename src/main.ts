@@ -6,6 +6,7 @@ import { drawScreenL, drawScreenTopL, screenFilterL } from '@pack/render/ld/bind
 import { juiceOf, safeView, syncJuice } from '@pack/render/juice/state';
 import { FXF } from '@pack/render/ld/fx';
 import { VOLS, audioLocked, initAudio, playSounds, uiSound } from '@pack/audio/player';
+import { MUS, addMusic, initMusic, musKO, musPlay, musTick, removeMusic, setWeight } from '@pack/audio/music';
 import { APP, fightKey, onKey, padEv, renderFightUi, renderUi, type UiHost } from '@pack/ui/app';
 import { pollNav } from '@pack/ui/input/padnav';
 import { loadProfiles, pname, profOf, saveProfiles } from '@pack/ui/profiles';
@@ -14,7 +15,7 @@ import { setProfOf } from '@pack/render/ld/view';
 import { txiKey } from '@pack/ui/txi';
 import { TCH, drawTouch, installTouch, touchInput } from '@pack/ui/input/touch';
 import { GUIDE } from '@pack/ui/screens/info/info';
-import { PZ, lsZoom, type FightView } from '@pack/ui/screens/fight/overlays';
+import { LS, PZ, lsZoom, type FightView } from '@pack/ui/screens/fight/overlays';
 import { BIND } from '@pack/ui/screens/binds/binds';
 import { flowSample, resetResults, type ResP } from '@pack/ui/screens/fight/results';
 import type { Hot, RosterEntry, UiCtx } from '@pack/ui/core';
@@ -27,9 +28,9 @@ import { builtinPacks } from './packs';
 const canvas = document.getElementById('c') as HTMLCanvasElement, c = canvas.getContext('2d')!, loop = new FixedLoop();
 loadSettings(localStorage); loadBinds(localStorage); loadProfiles(localStorage); loadRecords(localStorage); setProfOf((i: number) => i < 4 ? profOf(i) : null);
 try { void (navigator as Navigator & { keyboard?: { getLayoutMap(): Promise<Map<string, string>> } }).keyboard?.getLayoutMap().then(m => m.forEach((v, k) => { LBL[k] = v.toUpperCase(); })); } catch { /* no layout API: key codes are shown */ }
-initAudio(import.meta.env.BASE_URL);
+initAudio(import.meta.env.BASE_URL); initMusic(import.meta.env.BASE_URL);
 type Cfg = { seed: number; players: number; world: Record<string, unknown> };
-let lastDevs: string[] = [], lastChars: number[] = [], mChars: RosterEntry[] = [], tlg: (number[] | undefined)[] = [], matchId = 0;
+let lastKo = 0, lastDevs: string[] = [], lastChars: number[] = [], mChars: RosterEntry[] = [], tlg: (number[] | undefined)[] = [], matchId = 0;
 let cfg: Cfg = { seed: 0, players: 2, world: {} }, world: World | null = null, rec: number[][] = [], devs: string[] = [];
 /** Characters in roster order (character content of the loaded packs). */
 const roster: RosterEntry[] = builtinPacks.flatMap(p => Object.entries((p.content?.['character'] ?? {}) as Record<string, CharacterDef>).map(([k, d]) => ({ id: `${p.id}:${k}`, key: k, name: d.name, col: d.color, role: d.role ?? '', desc: d.desc ?? '', o: d.order })))
@@ -43,7 +44,7 @@ function newMatch(d: string[], chars: number[]): void {
   const seed = (Math.random() * 1e9) | 0, N = roster.length, n = Math.max(SET.nP, d.length); // sim-allow(boot-time seed)
   const players = Array.from({ length: n }, (_, i) => ({ char: roster[chars[i]! >= 0 ? chars[i]! : (seed + i * 3) % N]!.id, cpu: i >= d.length, ...(SET.teams ? { team: SET.teamA[i] } : {}) }));
   cfg = { seed, players: n, world: { players, stocks: SET.comp ? 4 : STOCKS[SET.stI], items: SET.comp ? false : SET.itemsOn, maxCards: SET.maxC, tempo: SET.nerv, itemSet: catalog.filter(i => SET.itemOn[i.k] !== false).map(i => i.id), ...(SET.teams ? { teams: 1 } : {}) } }; // COMPETITIVE = 4 lives, no items (timer + maps: lot 4)
-  world = mkWorld(cfg); rec = []; devs = d; pg = null; saveSettings(localStorage); mChars = players.map(p => roster.find(r => r.id === p.char)!); tlg = []; matchId++; resetResults(); recStart(0, false);
+  world = mkWorld(cfg); rec = []; devs = d; pg = null; saveSettings(localStorage); mChars = players.map(p => roster.find(r => r.id === p.char)!); tlg = []; matchId++; resetResults(); recStart(0, false); lastKo = 0;
 }
 /** Character-select playground: the humans who pressed Parry fight behind the menu (99 stocks, no items). */
 let pg: { w: World; devs: string[] } | null = null;
@@ -74,6 +75,9 @@ const drawFight = (w: World, W: number, H: number): void => {
 /** Held keys + keys tapped since the last frame (legacy tapQ: a press shorter than a frame still counts once). */
 const held = new Set<string>(), tap = new Set<string>(), keys = { has: (k: string): boolean => held.has(k) || tap.has(k) }, now = (): number => performance.now() / 1000;
 const host: UiHost = {
+  tracks: { count: k => MUS.filter(t => t.scr === k).length, rows: k => { const L = MUS.filter(t => t.scr === k), tot = L.reduce((a, t) => a + t.w, 0) || 1; return [{ t: () => '+ Add music files…', f: () => addMusic(k) },
+    ...L.map(t => ({ t: () => t.name + '  ·  weight ' + t.w + ' (' + Math.round(t.w / tot * 100) + '%)  ◀ ▶', lr: (d: number) => setWeight(t, Math.max(1, Math.min(20, t.w + d))), f: () => musPlay(t), del: () => removeMusic(t) })),
+    { t: () => L.length ? '(Enter: listen · Backspace / Y: remove)' : '(no track: silence on this screen)', f: () => {} }]; } },
   sfx: uiSound, audioLocked, nowMs: () => performance.now(), sb: 0, get touch() { return TCH.on; }, music: false, open() { /* online, training, rules... arrive screen by screen */ },
   items: catalog, restart: () => newMatch(lastDevs, lastChars), save: () => { saveSettings(localStorage); saveBinds(localStorage, () => saveProfiles(localStorage)); }, fullscreen: () => !!document.fullscreenElement, toggleFullscreen: () => { try { if (document.fullscreenElement) void document.exitFullscreen(); else void document.documentElement.requestFullscreen(); } catch { /* not allowed */ } }, roster, keys, pads, frame: () => world?.frame ?? 0, start: newMatch, playground, drawPlayground: cc => { if (pg) { void cc; drawFight(pg.w, canvas.width, canvas.height); } },
 };
@@ -112,6 +116,12 @@ function frame(t: number): void {
   const W = canvas.width, H = canvas.height;
   const u: UiCtx = { c, W, H, now: t / 1000, mx, my, fxLow: SET.fxLow, fxOff: SET.fxOff, hot: [], acc: '#ff3355' }; FXF.low = SET.fxLow; FXF.off = SET.fxOff;
   VIEWZ.k = 1; Object.assign(VOLS, SET.vols);
+  { // music screen (legacy musScr) + KO dip
+    const S = world?.slice<CombatState>('combat'), g = APP.mode === 'game' && !!S;
+    const scr = APP.mode === 'title' ? '' : g ? (S!.winner >= 0 && S!.winT >= 100 ? 'results' : LS.on ? 'last' : 'combat') : 'menu';
+    if (g) { const j = juiceOf(world!); if (j.koN !== lastKo) { lastKo = j.koN; musKO(); } }
+    musTick(scr, SET.vols.music * SET.vols.master, g ? juiceOf(world!).endk : 1, false, g && S!.tstop > 0, g);
+  }
   pollNav(pads()[0], t, k => padEv(k, host, t / 1000, APP.mode === 'game' && world ? fview(world) : null));
   if (APP.mode === 'css' && pg) for (let i = 0; i < n; i++) step(pg.w, pg.devs); // playground keeps running behind the select
   if (renderUi(u, host)) { hot = u.hot; tap.clear(); if (canvas.style.filter) canvas.style.filter = ''; requestAnimationFrame(frame); return; }

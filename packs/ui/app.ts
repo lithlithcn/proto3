@@ -10,7 +10,7 @@ import { PZ, drawGameEnd, drawIntro, drawLastStock, drawPause, lsCheck, type Fig
 import { drawResults, type ResP } from './screens/fight/results';
 import { SET, pickPicture, saveNick, saveStats } from './settings';
 import { SUB, drawSub, type Row } from './screens/sub/draw';
-import { helpRows, optionRows, ruleRows, type MenuHost } from './screens/sub/menus';
+import { helpRows, optionRows, ruleRows, type MenuHost, type MusicApi } from './screens/sub/menus';
 import { clamp } from './core';
 import { TXI, drawTXI, txtInput } from './txi';
 import { profOf } from './profiles';
@@ -28,6 +28,7 @@ export interface UiHost {
   roster: RosterEntry[]; /** item catalog in legacy order */ items: CatItem[]; keys: Keys; pads(): Gamepad[]; /** frame counter the character art animates with */ frame(): number;
   /** start the match: device per human, character per fighter (-1 = default) */ start(devs: string[], chars: number[]): void;
   /** live arena behind the select (empty = stop) */ playground(devs: string[], chars: number[]): void; drawPlayground(c: CanvasRenderingContext2D): void;
+  /** music track lists (Sound menu) */ tracks?: MusicApi;
   /** same line-up, new match */ restart(): void; /** persist the settings */ save(): void; fullscreen(): boolean; toggleFullscreen(): void;
 }
 export const APP = { mode: 'title' as Mode, paused: false };
@@ -42,7 +43,7 @@ function openSub(title: string, rows: () => Row[]): void { if (APP.mode === 'sub
 const soon = (what: string): void => openSub(what, () => [{ t: () => 'Coming soon: this screen is being ported', f: () => {} }]);
 const itemsHost = (h: UiHost, now: number): ItemsHost => ({ items: h.items, frame: h.frame(), sfx: h.sfx, nav: ev => nav(ev, h, now), test: () => soon('TRAINING') });
 const bindsHost = (h: UiHost, now: number): BindsHost => ({ keys: h.keys, pads: h.pads(), mouseOn: SET.mouse, sfx: h.sfx, nav: ev => nav(ev, h, now), togMouse: () => { SET.mouse = !SET.mouse; h.save(); h.sfx('se_select00', 0.6); }, save: h.save });
-const menuHost = (h: UiHost): MenuHost => ({ itemName: k => h.items.find(i => i.k === k)?.name, text: (t, v, m, cb) => txtInput(t, v, m, cb, { touch: h.touch, sfx: h.sfx }), open: openSub, title: () => { APP.mode = 'title'; TITLE.t0 = h.nowMs() / 1000; }, controls: () => { APP.mode = 'binds'; BIND.wait = false; }, guide: () => { APP.mode = 'info'; GUIDE.p = 0; GUIDE.scr = 0; }, tutorial: () => soon('HOW TO PLAY (TUTORIAL)'), fullscreen: h.fullscreen, toggleFullscreen: h.toggleFullscreen, soon });
+const menuHost = (h: UiHost): MenuHost => ({ music: h.tracks, itemName: k => h.items.find(i => i.k === k)?.name, text: (t, v, m, cb) => txtInput(t, v, m, cb, { touch: h.touch, sfx: h.sfx }), open: openSub, title: () => { APP.mode = 'title'; TITLE.t0 = h.nowMs() / 1000; }, controls: () => { APP.mode = 'binds'; BIND.wait = false; }, guide: () => { APP.mode = 'info'; GUIDE.p = 0; GUIDE.scr = 0; }, tutorial: () => soon('HOW TO PLAY (TUTORIAL)'), fullscreen: h.fullscreen, toggleFullscreen: h.toggleFullscreen, soon });
 /** Draws the current screen (not 'game'). Returns false when the caller must draw the fight. */
 export function renderUi(u: UiCtx, h: UiHost): boolean {
   if (APP.mode === 'game') return false;

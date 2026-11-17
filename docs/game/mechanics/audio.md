@@ -15,3 +15,13 @@ Damage sound `damage00`: volume 0.3 -> 1.3 and rate +10 % with missing HP, once 
 - Extra `damage00` on spell danmaku / custom heavy hits -> port passed `spd: 1` for every heavy bullet -> `BF.mute`.
 - Missing `se_enep00` when the rifle pierced a heavy bullet -> pierce branch skipped legacy `brk()`.
 - Killing Doll `slice` one frame early / lost after the spell -> it belongs to the first doll's own turn (`BK.dollH`, `p0` marks it), not the volley clock.
+
+# Music
+## Rule
+Each screen has a playlist: built-in tracks (menu, combat, training, results, last = 1v1 last stock) + the player's own files added in Options > Sound > Music (weight 1-20 each). A random track by weight (never the same twice in a row), fade-in, next track at the end; on each KO the music slows by 32 % and dips 45 % for ~2 s; paused while time is stopped; volume = music x master x ENDK.
+## Legacy
+`const BMUS=`, `function musPick`, `function musPlay`, `function musTick`, `const musScr=`, `function addMusic`, IndexedDB `sf_music`.
+## Port
+`packs/audio/music.ts` (`initMusic`, `musTick`, `musKO`, `addMusic`, `setWeight`, `removeMusic`), tracks in `public/music/` (copied from the proto2 repo: the owner's files); screen choice + KO detection (juice `koN`) in `src/main.ts`; track rows in the Sound menu through `UiHost.tracks`.
+## Not ported
+Map music (map maker, lot 4), ducking item (CX.don, themed items), YouTube player.

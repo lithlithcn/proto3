@@ -6,7 +6,9 @@ import { applyBinds } from '../../input/binds';
 import { recordRows } from '../../records';
 
 /** Row lists of the sub-menus (legacy MENU rows filtered by RULESL / OPTL / HELPL, TEAMM, SOUNDM). Rows change SET; the router saves after each change. */
-export interface MenuHost { itemName?(k: string): string | undefined; text(title: string, val: string, max: number, cb: (v: string | null) => void): void; open(title: string, rows: () => Row[]): void; title(): void; controls(): void; guide(): void; tutorial(): void; fullscreen(): boolean; toggleFullscreen(): void; soon(what: string): void }
+/** Music track lists come from the shell (audio lives outside the ui pack). */
+export interface MusicApi { count(scr: string): number; rows(scr: string): Row[] }
+export interface MenuHost { music?: MusicApi; itemName?(k: string): string | undefined; text(title: string, val: string, max: number, cb: (v: string | null) => void): void; open(title: string, rows: () => Row[]): void; title(): void; controls(): void; guide(): void; tutorial(): void; fullscreen(): boolean; toggleFullscreen(): void; soon(what: string): void }
 const TNAME = ['RED', 'BLUE', 'YELLOW', 'GREEN'];
 const teamTxt = (n: number): string => {
   if (!SET.teams) return 'OFF (free for all)'; const g: Record<number, string[]> = {}; for (let i = 0; i < n; i++) (g[SET.teamA[i]!] ??= []).push('P' + (i + 1));
@@ -32,9 +34,9 @@ export const ruleRows = (h: MenuHost): Row[] => [
   { t: () => 'Tempo: ' + SET.nerv + '/10 ' + (SET.nerv < 4 ? '(calm)' : SET.nerv < 8 ? '(relaxed)' : '(frantic)') + '  ◀ ▶', lr: d => { SET.nerv = clamp(SET.nerv + d, 0, 10); } },
 ];
 /** Volumes + per-screen custom music (track lists arrive with the music port: 0 tracks until then). */
-export const soundRows = (h?: Pick<MenuHost, 'soon'>): Row[] => [
+export const soundRows = (h?: Pick<MenuHost, 'soon' | 'music' | 'open'>): Row[] => [
   ...([['Master volume', 'master'], ['Sound effects', 'sfx'], ['Music', 'music']] as const).map(([n, k]) => ({ t: () => n + ': ' + Math.round(SET.vols[k] * 100) + '%  ◀ ▶', lr: (d: number) => { SET.vols[k] = clamp(Math.round(SET.vols[k] * 10 + d) / 10, 0, 1); } })),
-  ...['Menu', 'Combat', 'Training', 'Results'].map(n => ({ t: () => 'Music · ' + n + ': 0 track(s)…', f: () => h?.soon('MUSIC · ' + n.toUpperCase()) })),
+  ...['Menu', 'Combat', 'Training', 'Results'].map(n => { const k = n.toLowerCase(); return { t: () => 'Music · ' + n + ': ' + (h?.music?.count(k) ?? 0) + ' track(s)…', f: () => { if (h?.music) h.open('MUSIC · ' + n.toUpperCase(), () => h.music!.rows(k)); } }; }),
 ];
 export const optionRows = (h: MenuHost, save: () => void = () => {}): Row[] => [
   { t: () => 'Effects: ' + (SET.fxOff ? 'OFF (epilepsy safe)' : SET.fxLow ? 'REDUCED (sensitive)' : 'FULL') + '  ◀ ▶', lr: d => { const v = ((SET.fxOff ? 2 : SET.fxLow ? 1 : 0) + ((d | 0) < 0 ? 2 : 1)) % 3; SET.fxLow = v > 0; SET.fxOff = v === 2; } },
