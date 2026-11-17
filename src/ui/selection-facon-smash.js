@@ -5,7 +5,7 @@ const CS2={sl:[],pv:{},on:false,key:'',acc:0,t0:0,nP0:2,map0:0};
 function cssOpen(){CS2.sl=[0,1,2,3,4,5,6,7].map(i=>({dev:null,ty:SELTY&&SELTY[i]>=CH0?SELTY[i]:CHL[i%CHL.length],rd:false,pg:false}));CS2.pv={};CS2.on=false;CS2.key='';CS2.nP0=nP;CS2.map0=mapI;for(const d of devList())CS2.pv[d]=cssIn(d);mode='css';sfx('ok00')}
 function cssIn(d){const I=devIn(d);if(d[0]==='k'){const m=KB[+d[1]];I.p=kd(m.parry);I.b=d==='k0'&&kd('Escape')||kd('Backspace')&&d==='k0'}else{const g=pads()[+d.slice(1)];if(g){const M=PAD[+d.slice(1)]||PAD[0];I.p=[].concat(M.parry).every(n=>g.buttons[n]&&g.buttons[n].pressed)}}return I}
 function cssTick(){const S=CS2.sl;for(const d of devList()){const I=cssIn(d),p=CS2.pv[d]||{},e=k=>I[k]&&!p[k];CS2.pv[d]=I;const i=S.findIndex(s=>s.dev===d);
-  if(i>=0&&CS2.tb&&e('y')){S[i].tm=((S[i].tm|0)+1)%4;sfx('se_select00',.7)}
+  if(i>=0&&CS2.tb&&e('yb')){S[i].tm=((S[i].tm|0)+1)%4;sfx('se_select00',.7)}
   if(i<0){if(d[0]==='p'&&e('s')&&!S.some(s=>s.dev&&!s.rd)){cssGo();return}if(e('a')){const n=S.findIndex(s=>!s.dev);if(n>=0){S[n].dev=d;S[n].rd=false;S[n].pg=false;sfx('joined',.7)}}else if(e('b')&&!S.some(s=>s.dev)){mode='menu';sfx('cancel00')}continue}
   const s=S[i];
   if(s.pg){if(e('s')||e('b')){s.pg=false;sfx('cancel00')}continue} // dans le playground : Start = revenir à la sélection

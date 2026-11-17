@@ -8,7 +8,7 @@ DEFER(()=>{{const S0=step;step=()=>{const f0=frame;S0();if(mode!=='game'||TEST||
  if(TIMER&&winner<0){const r=TIMER*3600-frame;if(r<=0)timeUp()}
  const al=P.filter(q=>q.stocks>0),gr=new Set(al.map(q=>TEAMS?TEAMA[q.id]:q.id)).size,mh=Math.min(...al.map(q=>q.state==='dead'?T.HP:q.hp));
  const tg=gr===2&&al.every(q=>q.stocks===1)?1+.05*clamp((40-mh)/40,0,1):1;ENDK+=(tg-ENDK)*.02}}}); // derniers survivants, l'un presque mort : le son monte jusqu'à +5 %
-function drawRank(){const L=[...P].sort((a,b)=>(b.kos||0)-(a.kos||0)||(b.outAt||1e9)-(a.outAt||1e9)||(b.dmgDealt||0)-(a.dmgDealt||0)),M=['#ffd23a','#c8d0d8','#d08a4a','#8a8f9a'];
+function drawRank(){const L=[...P].sort(rankCmp),M=['#ffd23a','#c8d0d8','#d08a4a','#8a8f9a'];
  ctx.textAlign='center';L.forEach((p,i)=>{const y=H/2+80+i*30;ctx.font=(i?'':'bold ')+(22-i*2)+'px monospace';ctx.fillStyle=M[i];ctx.fillText('#'+(i+1)+'  '+pname(p)+'   '+(p.kos||0)+' KO'+(p.sd?'  ·  '+p.sd+' self-KO':''),W/2,y)})}
 
 

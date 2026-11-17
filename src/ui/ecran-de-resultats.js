@@ -5,7 +5,10 @@ DEFER(()=>{{const S0=start;start=(...a)=>{const r=S0(...a);TLG=[];RAW=null;retur
 DEFER(()=>{{const S0=step;step=()=>{const w0=WT;S0();if(mode!=='game'||WT===w0||winner>=0)return;if(frame%30===0)TLG[frame/30|0]=P.map(p=>Math.max(0,(p.state==='dead'?Math.max(0,p.stocks):p.stocks-1))*T.HP+(p.state==='dead'?0:Math.max(0,p.hp)))}}});
 DEFER(()=>{{const S0=startSpell;startSpell=(p,...a)=>{p.spN=(p.spN||0)+1;return S0(p,...a)}}});
 // classement : vainqueur, puis sorti le plus tard ; à la fin du temps : vies, puis PV, puis KO/dégâts
-DEFER(()=>{rankList=function(){const out=p=>p.outAt||1e12,al=p=>p.outAt?0:1;return [...P].sort((a,b)=>(TEAMS&&winner>=0?(TEAMA[b.id]===TEAMA[winner])-(TEAMA[a.id]===TEAMA[winner]):0)||(!TEAMS&&winner>=0?(b.id===winner)-(a.id===winner):0)||out(b)-out(a)||al(b)*al(a)*((b.stocks-a.stocks)||(Math.max(0,b.hp)-Math.max(0,a.hp)))||byKD(a,b))};});
+/** Owner's ranking rule: lives left (more is better); among eliminated players (0 lives) the one eliminated later is better;
+ *  then KOs (more), damage dealt (more), damage taken (less). The declared winner (or winning team) stays first. Works for any player count. */
+function rankCmp(a,b){const st=p=>Math.max(0,p.stocks|0),out=p=>p.outAt||0;return st(b)-st(a)||(st(a)===0?out(b)-out(a):0)||(b.kos||0)-(a.kos||0)||(b.dmgDealt||0)-(a.dmgDealt||0)||(a.dmgTk||0)-(b.dmgTk||0)||a.id-b.id}
+DEFER(()=>{rankList=function(){return [...P].sort((a,b)=>(TEAMS&&winner>=0?(TEAMA[b.id]===TEAMA[winner])-(TEAMA[a.id]===TEAMA[winner]):0)||(!TEAMS&&winner>=0?(b.id===winner)-(a.id===winner):0)||rankCmp(a,b))};});
 function resAwards(){const L=P.filter(p=>p),A=new Map,give=(k,lab,col,f,lo)=>{let best=null,bv=lo?1e18:-1e18;for(const p of L){const v=f(p);if(v==null)continue;if(lo?v<bv:v>bv){bv=v;best=p}}if(best&&bv!==0&&(lo||bv>0)){const a=A.get(best.id)||[];if(a.length<2){a.push([lab,col]);A.set(best.id,a)}}};
  give('agr','MOST AGGRESSIVE','#ff5a6a',p=>p.dmgDealt||0);give('kos','KO MACHINE','#ffd23a',p=>p.kos||0);give('par','PARRY MASTER','#6ff',p=>p.parN||0);give('spl','SPELL ADDICT','#c08cff',p=>p.spN||0);
  give('big','HEAVY HITTER','#ff9a3a',p=>p.bigHit||0);give('wal','IRON WALL','#7fa8ff',p=>L.length>1?(p.dmgTk||0)+1:null,1);give('sd','OOPS…','#999',p=>p.sd||0);return A}

@@ -2,7 +2,8 @@
 // ===== écran de résultats animé
 let RSC=[];
 const byKD=(a,b)=>(b.kos||0)-(a.kos||0)||(b.dmgDealt||0)-(a.dmgDealt||0)||(b.outAt||1e9)-(a.outAt||1e9)||a.id-b.id; // classement : KO, puis dégâts infligés
-function bestId(){if(!TEAMS)return [...P].sort(byKD)[0].id;const g={};for(const p of P){const k=TEAMA[p.id];g[k]=g[k]||{ko:0,d:0,m:[]};g[k].ko+=p.kos||0;g[k].d+=p.dmgDealt||0;g[k].m.push(p)}return Object.values(g).sort((a,b)=>b.ko-a.ko||b.d-a.d||a.m[0].id-b.m[0].id)[0].m.sort(byKD)[0].id}
+/** Winner at TIME UP = first by the owner's ranking (rankCmp: lives, KOs, damage dealt, damage taken); teams: summed the same way. */
+function bestId(){if(!TEAMS)return [...P].sort(rankCmp)[0].id;const g={};for(const p of P){const k=TEAMA[p.id];g[k]=g[k]||{st:0,ko:0,d:0,tk:0,m:[]};g[k].st+=Math.max(0,p.stocks|0);g[k].ko+=p.kos||0;g[k].d+=p.dmgDealt||0;g[k].tk+=p.dmgTk||0;g[k].m.push(p)}return Object.values(g).sort((a,b)=>b.st-a.st||b.ko-a.ko||b.d-a.d||a.tk-b.tk||a.m[0].id-b.m[0].id)[0].m.sort(rankCmp)[0].id}
 function rankList(){const out=p=>p.outAt||1e12;return [...P].sort((a,b)=>(TEAMS&&winner>=0?(TEAMA[b.id]===TEAMA[winner])-(TEAMA[a.id]===TEAMA[winner]):0)||(!TEAMS&&winner>=0?(b.id===winner)-(a.id===winner):0)||out(b)-out(a)||byKD(a,b))}
 const eob=u=>{u=clamp(u,0,1);const c1=1.7,c3=c1+1;return 1+c3*Math.pow(u-1,3)+c1*Math.pow(u-1,2)},eo=u=>1-Math.pow(1-clamp(u,0,1),3);
 function drawResults(){const t=winT-100,L=rankList(),n=L.length,M=['#ffd23a','#d8e0ea','#e09a5a','#8a8f9a'];

@@ -2,7 +2,10 @@
 // ===== saisie de texte dans le jeu (pseudo, code de salle, noms) avec son de frappe
 let TXI=null;
 function txtInput(title,val,max,cb,o){TXI={title,val:val||'',max:max||12,cb,up:!!(o&&o.up),allow:(o&&o.allow)||/^[\w \-.!?'#&()+]$/,hint:(o&&o.hint)||'',t:0,sh:0}}
-DEFER(()=>{addEventListener('keydown',e=>{if(!TXI||TXI.dom&&e.target===TXI.dom)return;e.preventDefault();e.stopImmediatePropagation();const T=TXI;
+/** Adds pasted text (Ctrl+V) to the field, keeping only allowed characters. */
+function txiPaste(t){const T=TXI;if(!T||!t)return;let n=0;for(let c of String(t)){if(T.up)c=c.toUpperCase();if(T.allow.test(c)&&T.val.length<T.max){T.val+=c;n++}}if(n){T.t=0;burstUI=8;sfx('se_select00',.55,1.3)}else{T.sh=8;sfx('cancel00',.25)}}
+DEFER(()=>{addEventListener('paste',e=>{if(!TXI||TXI.dom&&e.target===TXI.dom)return;e.preventDefault();TXI.pq=0;txiPaste(e.clipboardData&&e.clipboardData.getData('text'))},true);
+addEventListener('keydown',e=>{if(!TXI||TXI.dom&&e.target===TXI.dom)return;if((e.ctrlKey||e.metaKey)&&(e.key==='v'||e.key==='V')){TXI.pq=1;setTimeout(()=>{if(TXI&&TXI.pq){TXI.pq=0;try{navigator.clipboard.readText().then(txiPaste,()=>{})}catch(_){}}},60);return} /* the 'paste' event when the browser fires it, else the clipboard API */e.preventDefault();e.stopImmediatePropagation();const T=TXI;
  if(e.key==='Enter'){const v=T.val.trim();TXI=null;sfx('ok00');T.cb(v||null);return}
  if(e.key==='Escape'){TXI=null;sfx('cancel00');T.cb(null);return}
  if(e.key==='Backspace'){if(T.val.length){T.val=T.val.slice(0,-1);sfx('se_select00',.45,.8)}else T.sh=8;return}
