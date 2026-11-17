@@ -42,7 +42,7 @@ H['combat:fx-tick'] = ((j: Juice, e: { gf: number; wt: number; sk: number; ia: n
   if (e.gf === 1) snd(j, e.gf, 'ready', 0.9); else if (e.gf === 55) { snd(j, e.gf, 'se_cardget', 0.8); snd(j, e.gf, 'ok00', 0.7); } // match intro (legacy drawIntro, line 3990)
   tickJuice(j, !e.sk); endK(j, e);
   if (!e.sk) for (let p = 0; p * 2 < e.pw.length; p++) { const st = e.pw[p * 2 + 1]!; if (j.stk0[p] !== undefined && st > j.stk0[p]! && e.pw[p * 2]! >= 0) snd(j, e.gf, '1up', 0.7); j.stk0[p] = st; } // legacy chPre5: a life gained
-  if (!e.sk) { j.ia = e.ia; j.SMR = j.SMR.filter(m => --(m['t'] as number) > 0); for (const r of j.RDK) { r['t'] = (r['t'] as number) - 1; if (!r['w']) { r['x'] = (r['x'] as number) + (r['vx'] as number); r['y'] = (r['y'] as number) + (r['vy'] as number); } } j.RDK = j.RDK.filter(r => (r['t'] as number) > 0); } // legacy SMR tick (step wrapper, line 2289)
+  if (!e.sk) { j.ia = e.ia; j.SMR = j.SMR.filter(m => --(m['t'] as number) > 0); for (const r of j.RDK) { r['t'] = (r['t'] as number) - 1; if (!r['w']) { r['x'] = (r['x'] as number) + (r['vx'] as number); r['y'] = (r['y'] as number) + (r['vy'] as number); } } j.RDK = j.RDK.filter(r => (r['t'] as number) > 0); for (const ph of j.PHOTO) ph['t'] = (ph['t'] as number) - 1; j.PHOTO = j.PHOTO.filter(ph => (ph['t'] as number) > 0); } // PHOTO: updWorld tick (line 3236) // legacy SMR tick (step wrapper, line 2289)
   if (!e.sk) e.ia.forEach((a, p) => { const l = j.acts[p]; if (l?.length) j.acts[p] = l.filter(x => a >= 0 && e.gf - x.f < x.T + 30 && !(e.gf - x.f > 90 && !a)); }); // legacy actsPrune (step wrapper, line 2828)
   for (let p = 0; p * 2 < e.pos.length; p++) if ((j.nds[p] ?? 0) > e.gf && e.cn[p] === 'Nue' && e.gf % 2 === 0 && j.FX.length < 480) j.FX.push({ x: e.pos[p * 2]!, y: e.pos[p * 2 + 1]!, vx: 0, vy: 0, t: 18, c: '#1a1028' }); // Nue dash shadow (tick, line 4458)
   if (!e.sk) for (let p = 0; p * 2 < e.pos.length; p++) { const c = j.cc[p] ?? 0; if (c && e.gf - j.ccF[p]! > 18) { if (c >= 5) txt(j, e.pos[p * 2]!, e.pos[p * 2 + 1]! - 52, 'CANCEL x' + c, '#ffd23a', c >= 20 ? 18 : 14); j.cc[p] = 0; } } // step wrapper line 2398, after stepFx
@@ -147,7 +147,7 @@ const onSB = on<Pp>('juice-shield-break', 'combat:shield-break', (j, e) => { // 
   const x = e.px, y = e.py; big(j, 'SHIELD BREAK!', '#fff', 60); j.shake = Math.min(50, j.shake + 20); flash(j, 0.3, '#fff'); j.chroma = Math.max(j.chroma, 30); snd(j, e.gf, 'shield-break', 1); snd(j, e.gf, 'shieldbreaketoiles', 0.6);
   for (let i = 0; i < 10; i++) j.FX.push({ x, y, vx: Math.cos(i * 6.2832 / 10) * 3, vy: Math.sin(i * 6.2832 / 10) * 3, t: 30, c: '#ffd23a' }); j.WAVES.push({ x, y, t: 16, T: 16, spd: 12, th: 30, inv: 1 });
 });
-const onBeamCancel = on<{ p: number; kx: number; ky: number }>('juice-kobeam-cancel', 'combat:kobeam-cancel', (j, e) => txt(j, e.kx, e.ky - 40, 'BEAM CANCELED', '#aaa', 16));
+const onBeamCancel = on<{ p: number; kx: number; ky: number }>('juice-kobeam-cancel', 'combat:kobeam-cancel', (j, e) => { txt(j, e.kx, e.ky - 40, 'BEAM CANCELED', '#aaa', 16); snd(j, e.gf, 'se_invalid', 0.6); });
 // KO beam visuals (legacy fireBeam, line 1911): KOFX gets the beam; a reflected beam keeps the original colour, edged with the reflector's.
 const bcol: string[] = [], bedge: (string | null)[] = [];
 const onFire = on<{ o: number; x: number; y: number; a: number; dep: number }>('juice-kobeam-fire', 'combat:kobeam-fire', (j, e) => { j.KOFX.push({ x: e.x, y: e.y, a: e.a, t: 70, c: e.dep ? bcol[e.o] ?? col(e.o) : col(e.o), edge: e.dep ? bedge[e.o] ?? null : null }); });

@@ -16,7 +16,9 @@ export function itemActive(w: World, s: CombatState, p: number): boolean {
   for (let i = 0; i < s.nent; i++) {
     const k = s.ek[i]!; if (s.et[i]! <= 0) continue;
     if (k === EK_HEAL) return true; // legacy ORBS.length: anyone's healing orbs
-    if (s.eo[i] !== p || (k === EK_BOMB || k === EK_HOLE || k === EK_BUMP || k === EK_FAIRY ? false : R.some(r => r.quiet?.includes(k)))) continue;
+    // ownerless item entities keep their holder elsewhere: bombs/bumpers ew, fairies eg, holes ea
+    const o = k === EK_BOMB || k === EK_BUMP ? s.ew[i] : k === EK_FAIRY ? s.eg[i] : k === EK_HOLE ? s.ea[i] : s.eo[i];
+    if (o !== p || R.some(r => r.quiet?.includes(k))) continue;
     return true;
   }
   if (s.tstop > 0 || s.frz > 0 || s.warp > 0) return true;

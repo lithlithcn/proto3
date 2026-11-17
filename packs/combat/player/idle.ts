@@ -41,8 +41,8 @@ export function updIdle(c: PCtx): void {
   }
   if (pr(c, BTN.melee)) { if (meleeRule(w, s, p)) return; startAtk(s, p, focus ? MV.strong : rel(c) === 'F' ? MV.lunge : MV.jab); return; }
   if (pr(c, BTN.heavy)) {
-    if (s.rifle[p]! > 0) { startRifle(s, p); return; }
-    if (s.cam[p]! > 0) { snap(s, p); return; }
+    if (s.rifle[p]! > 0) { startRifle(c.w, s, p); return; }
+    if (s.cam[p]! > 0) { snap(c.w, s, p); return; }
     const r = rel(c); startAtk(s, p, r === 'F' ? MV.heavyF : r === 'B' ? MV.heavyB : MV.heavyN); return;
   }
   if (held(c, BTN.shot) && s.shotCd[p]! <= 0 && !(s.spk[p]! > 0 && s.spk[p]! < SPARK.fire)) fireLight(c, focus);

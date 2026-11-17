@@ -133,4 +133,3 @@ One row per legacy item not ported yet (legacy ITEMS order). `line` = where its 
 | 127 | nina | Mirage | Nina Watari | 1607 | mirF mirage |  | 11 |
 | 128 | saisen | Donation Box | Reimu Hakurei | 0 |  |  | 0 |
 | 129 | mamizou | Tanuki Transformation | Mamizou Futatsuiwa | 1357 | leaf |  | 5 |
-| 130 | rainbow | Last Word |  | 0 |  |  | 0 |

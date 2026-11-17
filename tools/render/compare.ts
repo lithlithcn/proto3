@@ -8,8 +8,7 @@ import { createRequire } from 'node:module';
 import type { World } from '@kernel';
 import type { CombatState } from '@pack/combat/api';
 import { BF } from '@pack/combat/api';
-import { drawBullet } from '@pack/render/actors';
-import { RENDER_CLOCK, drawActsL, drawPlayerL, drawWorldItemsL } from '@pack/render/ld/bind';
+import { RENDER_CLOCK, drawActsL, drawHeavyL, drawPlayerL, drawWorldItemsL } from '@pack/render/ld/bind';
 import { drawCard } from '@pack/render/cards';
 import { HUDS, drawHudPanel } from '@pack/render/hud';
 import { camLoad, camOf, camSnap, camStart, drawView, renderViews, viewsOf } from '@pack/render/view';
@@ -99,13 +98,14 @@ for (let f = 1; f <= FR; f++) {
     const n = nth(x.name), want = x.ops.filter(o => !isMarker(o));
     let got: Op[] | null = null;
     if (x.name === 'drawHUD' && n < S.n) got = portOps(x.snap, c => { HUDS[n] = structuredClone(hudPre[n]!); drawHudPanel(c, W, S, n, (n % 2 ? WW - 12 : 12) / hk, n % 2 === 1, (n < 2 ? 30 : HH - 100) / hk, 0, () => 0.5); });
-    else if (x.name === 'drawP') got = portOps(x.snap, c => drawPlayerL(c, W, S, n % S.n, () => 0.5)); // one block per player per view
-    else if (x.name === 'drawWorldItems') got = portOps(x.snap, c => { ifxLoad(IZ[n] ?? ifx0); drawWorldItemsL(c, W, S); IZ[n + 1] = ifxSnap(); });
-    else if (x.name === 'drawHeavy' && heavies[n] !== undefined) got = portOps(x.snap, c => drawBullet(c, S, heavies[n]!));
+    else if (x.name === 'drawP') { const per = S.n + (S.tstop > 0 ? 1 : 0), j = n % per; got = portOps(x.snap, c => drawPlayerL(c, W, S, j < S.n ? j : S.tso, () => 0.5)); } // one block per player per view (+ The World's holder redrawn over the grey world)
+    else if (x.name === 'drawWorldItems') got = portOps(x.snap, c => { ifxLoad(IZ[n] ?? ifx0); drawWorldItemsL(c, W, S, viewsOf(S, WW, HH)[n]?.i ?? 0); IZ[n + 1] = ifxSnap(); });
+    else if (x.name === 'drawHeavy' && heavies[n] !== undefined) got = portOps(x.snap, c => drawHeavyL(c, S, heavies[n]!));
     else if (x.name === 'drawActs') got = portOps(x.snap, c => drawActsL(c, W, S, WW, HH));
     else if (x.name === 'drawItem' && n < S.ncard) got = portOps(x.snap, c => drawCard(c, W, S, n));
     if (got) { if (x.name === 'drawHUD' || ((x.name === 'drawP' || x.name === 'drawWorldItems') && S.hitstop > 0)) { const t = (a: Op[]): Op[] => { const i = a.findIndex(o => o[0] === 'translate'); return a.filter((_, j) => j !== i); }; want.splice(0, want.length, ...t(want)); got = t(got); } /* HUD shake uses Math.random: not comparable */ const d = diffOps(canon(want), canon(got), 1e-6);
       if (d && process.env['DIFFCTX'] === x.name && !(globalThis as { __dc?: 1 }).__dc) { (globalThis as { __dc?: 1 }).__dc = 1; const W = (a: Op[]): string => a.slice(Math.max(0, d.i - +(process.env.DIFFN ?? 8)), d.i + 4).map((o, k) => `   ${Math.max(0, d.i - 8) + k}: ${fmt(o)}`).join('\n'); console.log(`DIFFCTX ${x.name} f${f} #${n}\n legacy:\n${W(canon(want))}\n port:\n${W(canon(got))}`); }
+      if (d && process.env["DUMP"] === x.name && !(globalThis as { __du?: 1 }).__du) { (globalThis as { __du?: 1 }).__du = 1; (await import("node:fs")).writeFileSync("/tmp/claude-0/-home-claude/8bba36f7-7b17-57db-97db-463079f370c0/scratchpad/dump.json", JSON.stringify({ snap: x.snap, want, got })); }
       mark(x.name, !d, d ? `f${f} #${n} op ${d.i}: legacy ${fmt(d.a)} | port ${fmt(d.b)}` : ''); }
     else if (x.name !== 'drawView' || n > 0) unported.set(x.name, (unported.get(x.name) ?? 0) + 1);
   }

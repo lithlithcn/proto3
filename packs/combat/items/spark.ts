@@ -1,3 +1,4 @@
+import { addJ, big, flash, maxJ, sfx, sfxStop } from '../jfx';
 import { PI, type World, clamp, cos, sin } from '@kernel';
 import { spRand } from '../bullets/pattern';
 import { bulletArrays, clearBullet, stamp } from '../bullets/arrays';
@@ -18,6 +19,8 @@ export function updateSpark(w: World, s: CombatState, p: number): void {
   if (s.spk[p]! >= SPARK.fire) { s.spkA[p] = s.aim[p]!; return; }
   const da = ((s.aim[p]! - s.spkA[p]!) % TAU + TAU * 1.5) % TAU - PI;
   s.spkA[p] = s.spkA[p]! + clamp(da, -SPARK.turn, SPARK.turn);
+  if (s.spk[p] === 89) { sfxStop(w, 'rsrc' + p); sfx(w, 'se_enep01'); sfx(w, 'mastersparkrelease'); big(w, 'MASTER SPARK!', '#fff5a0', 62); flash(w, 0.4, '#fff5a0'); maxJ(w, 'chroma', 18); maxJ(w, 'zblur', 0.1); }
+  addJ(w, 'shake', 1.2, 30);
   const c = cos(s.spkA[p]!), n = sin(s.spkA[p]!), x = s.x[p]!, y = s.y[p]!;
   if (s.gf % 3 === 0) for (let i = 0; i < 3 && s.nb < MAX_B; i++) { // stars all around
     const a = spRand(s) * TAU, v = 2.2 + spRand(s) * 2, col = SPARK.rainbow[(spRand(s) * 6) | 0]!, b = s.nb++;

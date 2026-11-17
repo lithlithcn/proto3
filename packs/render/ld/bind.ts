@@ -119,22 +119,25 @@ import { bindIfx } from './ifx';
 import { bindThemed } from './themed';
 import { magicCircleL } from './viewfx';
 /** Legacy drawWorldItems + entity drawings (EDR) + Reimu orbs/border + Nue UFOs. Item worlds come from their entities; themed items arrive with lot 3. */
-export function drawWorldItemsL(c: CanvasRenderingContext2D, w: World, s: CombatState): void {
+export function drawWorldItemsL(c: CanvasRenderingContext2D, w: World, s: CombatState, view = 0): void {
   const e: Env = { w, s, th: thOf(w), rnd: () => RANDOM.fn() };
-  bindLegacy(c, e); drawWorldItemsBind(c, w, s); drawWorldItems();
+  bindLegacy(c, e); drawWorldItemsBind(c, w, s, view); drawWorldItems();
 }
-function drawWorldItemsBind(c: CanvasRenderingContext2D, w: World, s: CombatState): void {
+/** `view` = the player whose view is drawn (legacy VIEW, set just before drawWorldItems). */
+function drawWorldItemsBind(c: CanvasRenderingContext2D, w: World, s: CombatState, view = 0): void {
   const ENT = [...Array.from({ length: s.nent }, (_, i) => entView(s, i)).filter(x => !String(x['k']).startsWith('?')), ...juiceOf(w).PE];
   const of = (k: string): Record<string, unknown>[] => ENT.filter(x => x['k'] === k);
   const KOB = Array.from({ length: s.nkb }, (_, i) => ({ o: s.kbO[i], x: s.kbX[i], y: s.kbY[i], a: s.kbA[i], t: s.kbT[i], T: s.kbTT[i] })).filter(k => (k.t ?? 0) >= 0);
-  const ORBS = of('heal'), FAIRIES = of('fairy').map(f => ({ ...f, o: s.eg[f['_i'] as number] })), HOLES = of('hole').map(h => Object.assign(h, { a: (360 - (h['t'] as number)) * 0.1 })), BUMPS = of('bump').map(u => Object.assign(u, { hit: s.eh[u['_i'] as number] ?? 0 })), ZONES = of('bomb');
+  const ORBS = of('heal'), FAIRIES = of('fairy').map(f => Object.assign(f, { o: s.eg[f['_i'] as number] })) /* in place: the trail caches key on the object */, HOLES = of('hole').map(h => Object.assign(h, { a: (360 - (h['t'] as number)) * 0.1 })), BUMPS = of('bump').map(u => Object.assign(u, { hit: s.eh[u['_i'] as number] ?? 0 })), ZONES = of('bomb');
   ctxViewFx(c, s.gf); bindThemed({ T: { ...TT, MAP_W: s.mapW, MAP_H: s.mapH, EDGE: s.edge }, SMR: juiceOf(w).SMR, RDK: juiceOf(w).RDK, ctx: c, frame: s.gf, P: cur, CX: cxOf(w), ENT, B: bulletsView(s), bodyR: (q: { id: number }) => bodyR(s, q.id) });
-  bindIfx({ ITEMK: itemK(w), performance: RENDER_CLOCK, ctx: c, frame: s.gf, P: cur, ENT: ENT.filter(x => !['heal', 'bomb', 'hole', 'bump', 'fairy'].includes(x['k'] as string)), ORBS, FAIRIES, HOLES, BUMPS, ZONES, PHOTO: [], WARP: s.warp, VIEW: 0, bodyR: (q: { id: number }) => bodyR(s, q.id) });
+  bindIfx({ ITEMK: itemK(w), performance: RENDER_CLOCK, ctx: c, frame: s.gf, P: cur, ENT: ENT.filter(x => !['heal', 'bomb', 'hole', 'bump', 'fairy'].includes(x['k'] as string)), ORBS, FAIRIES, HOLES, BUMPS, ZONES, PHOTO: juiceOf(w).PHOTO, WARP: s.warp, VIEW: view, bodyR: (q: { id: number }) => bodyR(s, q.id) });
   bindWorld({ ctx: c, frame: s.gf, P: cur, CX: cxOf(w), B: [], ENT: ENT.filter(x => !['heal', 'bomb', 'hole', 'bump', 'fairy'].includes(x['k'] as string)), KOB,
-    HOLES, BUMPS, PHOTO: [], ZONES, ORBS, FAIRIES, IM: { rifle: { start: 40 } }, bodyR: (q: { id: number }) => bodyR(s, q.id), magicCircle: magicCircleL });
+    HOLES, BUMPS, PHOTO: juiceOf(w).PHOTO, ZONES, ORBS, FAIRIES, IM: { rifle: { start: 40 } }, bodyR: (q: { id: number }) => bodyR(s, q.id), magicCircle: magicCircleL });
 }
 
-import { bindView, drawView as drawViewLegacy } from './view';
+import { bindView, drawHeavyWith, drawView as drawViewLegacy } from './view';
+/** One heavy bullet, legacy drawHeavy chain (knives, dango, stones, gungnir, rifle, plain). */
+export function drawHeavyL(c: CanvasRenderingContext2D, s: CombatState, i: number): void { drawHeavyWith(c, bulletsView(s)[i]); }
 import { CARD_ULT, MAXP as MP, T as TT } from '@pack/combat/api';
 /** Clock of time-based décor (legacy performance.now); parity probes pin it to the legacy harness clock (0). */
 /** Cosmetic randomness of the copied legacy code (jitters, particles); parity probes pin it. */
@@ -151,7 +154,7 @@ export function drawViewL(c: CanvasRenderingContext2D, w: World, s: CombatState,
   bindView({ ctx: c, frame: s.gf, P: cur, CX: cxOf(w), B, ENT, cams, performance: RENDER_CLOCK, STOCKS: [j.stock0], stI: 0, MVIEW: {}, T: { ...TT, MAP_W: s.mapW, MAP_H: s.mapH, EDGE: s.edge }, BGH: [], CARDS, ITEMS: items, item: CARDS[0] ?? null, hitstop: s.hitstop,
     FX: j.FX, TX: j.TX, RINGS: j.RINGS, WAVES: j.WAVES, LINES: j.LINES, KOFX: j.KOFX, CRACK: j.CRACK, GZ: j.GZ.map(g => ({ ...g, p: cur[g['p'] as number] })), invF: j.invF, TSTOP: s.tstop, TSO: s.tso,
     shake: j.shake, kx: j.kx, ky: j.ky, zk: j.zk, bgF: j.bgF, NERV: s.tempo, slow: s.slow, WARP: s.warp, TEAMS: s.teams, H: v.h, SCv: sc, bodyR: (q: { id: number }) => bodyR(s, q.id), coreR: (q: { id: number }) => coreR(s, q.id) });
-  drawWorldItemsBind(c, w, s);
+  drawWorldItemsBind(c, w, s, v.i);
   drawViewLegacy(v);
 }
 /** Legacy ITEMS (k = content id without pack prefix, name, colour, description, character) in the card-draw order; ITEMK = the same by key. */

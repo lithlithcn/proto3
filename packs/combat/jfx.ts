@@ -23,6 +23,8 @@ export const pushJc = (w: World, list: string, cap: number, ...kv: JfxArg[]): vo
 /** Legacy sfx(name, vol, rate) at its exact site (the audio player applies SFXG gain, ALIAS and the time-stop reverb). */
 export const sfx = (w: World, n: string, v = 1, r = 1): void => jfx(w, 'sfx', n, v, r);
 /** Legacy `sfx(base + (1 + Math.random() * k | 0), v)` (random variant, cosmetic). `from` = first index. */
+/** Stops a keyed sound (legacy `p.rsrc.stop()`); harmless when nothing plays under that key. */
+export const sfxStop = (w: World, k: string): void => jfx(w, 'sfxstop', k);
 export const sfxR = (w: World, base: string, k: number, v = 1, from = 1): void => jfx(w, 'sfxr', base, k, v, from);
 /** Legacy sfxDmg(victim): damage00 pitched by missing HP, at most once per 3 frames. */
 export const sfxDmg = (w: World, hp: number): void => jfx(w, 'sfxdmg', hp);

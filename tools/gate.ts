@@ -12,7 +12,7 @@ import { makePair } from '../tests/parity/harness';
 
 const argv = process.argv.slice(2), has = (k: string): boolean => argv.includes('--' + k), opt = (k: string, d: string): string => { const i = argv.indexOf('--' + k); return i >= 0 ? argv[i + 1]! : d; };
 /** Items checked by the render step (forced give, every draw block + sounds + juice identical), with the blocks still excused. Every ported item joins once it passes. */
-const RITEMS: [string, string[]][] = [['rumia', []], ['daiyousei', []], ['rin', []], ['meiling', []], ['koakuma', []], ['mirror', []], ['clone', []], ['oni', []], ['bumpers', []]];
+const RITEMS: [string, string[]][] = ['yellow', 'white', 'green', 'purple', 'blue', 'orange', 'mirror', 'gap', 'clone', 'spark', 'freeze', 'world', 'oni', 'elixir', 'camera', 'bumpers', 'rainbow', 'rumia', 'daiyousei', 'rin', 'meiling', 'koakuma'].map(k => [k, [] as string[]]);
 const GAMES = opt('games', '40'), FRAMES = opt('frames', '2000'), BASE = 'docs/coverage.baseline.json';
 const run = (name: string, cmd: string, args: string[]): void => { console.log(`\n== ${name}`); const r = spawnSync(cmd, args, { stdio: 'inherit' }); if (r.status !== 0) { console.log(`\nGATE FAIL ${name}`); process.exit(1); } };
 run('check (typecheck + lint + tests)', 'pnpm', ['-s', 'check']);

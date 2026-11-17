@@ -89,6 +89,8 @@ function drawHeavy_2520(b){const H0=drawHeavy_2513;if(!b.dango)return H0(b);cons
 function drawHeavy_2608(b){const H0=drawHeavy_2520;if(!b.stone)return H0(b);ctx.fillStyle='#9a8c78';ctx.strokeStyle=COLS[b.owner]||'#5a5044';ctx.lineWidth=2.5;ctx.beginPath();for(let i=0;i<7;i++){const a=i*TAU/7+frame*.2,r=b.r*(.85+.3*hz(i,7));i?ctx.lineTo(b.x+Math.cos(a)*r,b.y+Math.sin(a)*r):ctx.moveTo(b.x+Math.cos(a)*r,b.y+Math.sin(a)*r)}ctx.closePath();ctx.fill();ctx.stroke()}
 function drawHeavy_2787(b){const H0=drawHeavy_2608;if(!b.knife)return H0(b);const a=Math.atan2(b.vy,b.vx);ctx.save();ctx.translate(b.x,b.y);ctx.rotate(a);ctx.fillStyle='#e8f4ff';ctx.strokeStyle=COLS[b.owner]||'#9ab';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(16,0);ctx.lineTo(-2,-4);ctx.lineTo(-2,4);ctx.closePath();ctx.fill();ctx.stroke();ctx.fillStyle='#556';ctx.fillRect(-12,-2.5,10,5);ctx.fillStyle='#ffd040';ctx.fillRect(-3,-6,2,12);ctx.restore()}
 const drawHeavy=drawHeavy_2787;
+/** One heavy bullet through the legacy draw chain on canvas `c` (the render compare checks it alone). */
+export const drawHeavyWith = (c, b) => { const c0 = ctx; ctx = c; drawHeavy(b); ctx = c0; };
 function sgTree(e){const x=e.x,y=e.y,S=1.9,sw=Math.sin(frame*.015)*6;
  ctx.fillStyle='#2a1420';ctx.beginPath();ctx.moveTo(x-46*S,y+40);ctx.bezierCurveTo(x-20*S,y-10,x-26*S,y-70*S,x-14*S+sw,y-120*S);ctx.lineTo(x+14*S+sw,y-120*S);ctx.bezierCurveTo(x+24*S,y-70*S,x+18*S,y-10,x+50*S,y+40);ctx.closePath();ctx.fill();
  ctx.strokeStyle='#3e2030';ctx.lineWidth=6;for(const s of[-1,1]){ctx.beginPath();ctx.moveTo(x+s*4*S+sw*.5,y-90*S);ctx.quadraticCurveTo(x+s*50*S,y-140*S,x+s*95*S+sw,y-150*S);ctx.stroke();ctx.beginPath();ctx.moveTo(x+s*6*S+sw*.6,y-110*S);ctx.quadraticCurveTo(x+s*30*S,y-170*S,x+s*55*S+sw,y-195*S);ctx.stroke()}

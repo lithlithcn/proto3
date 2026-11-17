@@ -1,8 +1,9 @@
+import { addJ, big, flash, pushJ, sfx } from '../jfx';
 import { type World, cos, sin } from '@kernel';
 import { spRand } from '../bullets/pattern';
 import { customHeavy } from '../bullets/spawn';
 import { ISRC } from '../moves';
-import { MAX_B, PS, type CombatState } from '../state';
+import { BT, MAX_B, PS, type CombatState } from '../state';
 import { TAU } from '../tuning';
 
 /** Item `world` (The World): 3 s charge, then 4 s of stopped time (everyone but the holder frozen, bullets frozen); knives gather around the frozen foes and fly in when time resumes. */
@@ -10,8 +11,7 @@ export const WORLD = { charge: 180, stop: 240, knife: { dmg: 4, kb: 3, stun: 12,
 
 /** End-of-step (legacy `step` wrapper): charge countdown, time-stop start, knife spawning while time is stopped. */
 export function updateTimeStop(w: World, s: CombatState): void {
-  void w;
-  if (s.zawT > 0 && --s.zawT <= 0) { const p = s.zawO; if (s.state[p] !== PS.dead) { s.tstop = WORLD.stop; s.tso = p; } }
+  if (s.zawT > 0 && --s.zawT <= 0) { const p = s.zawO; if (s.state[p] !== PS.dead) { s.tstop = WORLD.stop; s.tso = p; sfx(w, 'timestop', 1); big(w, 'THE WORLD!', '#00d0a0', 80); pushJ(w, 'WAVES', 'x', s.x[p]!, 'y', s.y[p]!, 't', 30, 'T', 30, 'spd', 60, 'th', 120, 'inv', 1); addJ(w, 'shake', 20, 40); flash(w, 0.3, '#fff'); } }
   if (s.tstop > 0 && s.gf % WORLD.every === 0) {
     const o = s.tso;
     for (let q = 0; q < s.n; q++) {
@@ -19,7 +19,7 @@ export function updateTimeStop(w: World, s: CombatState): void {
       for (let j = 0; j < 2; j++) {
         const a = spRand(s) * TAU, r = WORLD.rMin + spRand(s) * WORLD.rSpan;
         const b = customHeavy(s, o, s.x[q]! + cos(a) * r, s.y[q]! + sin(a) * r, 0, 0, WORLD.knifeR, WORLD.knife, WORLD.knifeLife, 0xe8f4ff);
-        if (b >= 0) { s.bvx[b] = -cos(a) * WORLD.knifeSpeed; s.bvy[b] = -sin(a) * WORLD.knifeSpeed; s.bmv[b] = ISRC.sknife; }
+        if (b >= 0) { s.bvx[b] = -cos(a) * WORLD.knifeSpeed; s.bvy[b] = -sin(a) * WORLD.knifeSpeed; s.bmv[b] = ISRC.sknife; s.btag[b] = BT.knife; }
       }
     }
   }

@@ -1,5 +1,6 @@
 import { cos, hypot, sin } from '@kernel';
 import { hit } from '../player/hit';
+import { sfxR } from '../jfx';
 import { parryFx } from '../player/parry';
 import { ISRC } from '../moves';
 import { PS, MAXP, type CombatState } from '../state';
@@ -18,7 +19,7 @@ export function updateBlade(s: CombatState, w: import('@kernel').World, p: numbe
       if (hypot(s.x[q]! - bx, s.y[q]! - by) < T.BODY_R + 12) {
         s.bCD[p * MAXP + q] = s.gf + 24;
         if (s.state[q] === PS.parry) { parryFx(w, s, q); continue; }
-        hit(w, s, q, p, s.x[q]! - s.x[p]!, s.y[q]! - s.y[p]!, BLADE, ISRC.blade, 1, false);
+        sfxR(w, 'hit', 3, 0.7); hit(w, s, q, p, s.x[q]! - s.x[p]!, s.y[q]! - s.y[p]!, BLADE, ISRC.blade, 1, false);
       }
     }
   }

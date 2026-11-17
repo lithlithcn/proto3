@@ -1,3 +1,4 @@
+import { addJ, burst, maxJ, pushJ, sfx } from '../jfx';
 import { type World, hypot } from '@kernel';
 import { addEnt } from '../ents';
 import { hit } from '../player/hit';
@@ -13,12 +14,12 @@ const BOMB = { dmg: 12, kb: 13, stun: 30 };
 const clamp = (v: number, a: number, b: number): number => (v < a ? a : v > b ? b : v);
 
 /** Item `orange`: for 8 s a zone appears near a random foe, ever faster, exploding after 180 frames. Draw order of the shared RNG: foe, x, y. */
-export function spawnBombs(s: CombatState, p: number): void {
+export function spawnBombs(w: World, s: CombatState, p: number): void {
   if (s.bombs[p]! <= 0) return;
   s.bombs[p]!--;
   s.bombN[p] = (s.bombN[p]! || 1) - 1;
   if (s.bombN[p]! > 0) return;
-  s.bombN[p] = Math.round(10 + 70 * s.bombs[p]! / 480);
+  s.bombN[p] = Math.round(10 + 70 * s.bombs[p]! / 480); sfx(w, 'bombtick', 0.7);
   const al: number[] = [];
   for (let q = 0; q < s.n; q++) if (q !== p && s.state[q] !== PS.dead) al.push(q);
   if (!al.length) return;
@@ -31,7 +32,9 @@ export function spawnBombs(s: CombatState, p: number): void {
 /** Zones explode on the frame their timer reaches 0 (the generic entity tick runs right after this, so `et === 1` here). */
 export function explodeBombs(w: World, s: CombatState): void {
   for (let i = 0; i < s.nent; i++) {
-    if (s.ek[i] !== EK_BOMB || s.et[i]! !== 1) continue;
+    if (s.ek[i] !== EK_BOMB) continue;
+    if (s.et[i]! !== 1) { if ((s.et[i]! - 1) % 60 === 0 && s.et[i]! > 1) sfx(w, 'timeout', 0.35); continue; } // legacy `if(--z.t>0){if(z.t%60===0)…}`
+    const x = s.ex[i]!, y = s.ey[i]!; pushJ(w, 'WAVES', 'x', x, 'y', y, 't', 16, 'T', 16, 'spd', 9, 'th', 40, 'inv', 1); burst(w, x, y, '#ff9a2a', 30); sfx(w, 'se_enep00', 0.8); addJ(w, 'shake', 10, 30); maxJ(w, 'chroma', 10);
     const o = s.ew[i]!;
     for (let q = 0; q < s.n; q++) {
       if (q === o || s.state[q] === PS.dead || s.inv[q]! > 0) continue;

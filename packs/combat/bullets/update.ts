@@ -62,7 +62,7 @@ export function updateBullets(w: World, s: CombatState): void {
       if (!(s.bflags[i]! & BF.grazed) && d < r + T.GRAZE_R) { s.bflags[i] = s.bflags[i]! | BF.grazed; graze(w, s, t, bx, by, 1); }
       if (s.state[t] !== PS.dash && s.inv[t]! <= 0 && d < r * 0.68 + coreR(s, t)) { if (bulletRule(w, s, i, t)) continue; s.bflags[i] = s.bflags[i]! | BF.dead; if (s.bsea[i]) { seaHit(s, i, t, owner); jfx(w, 'chg', owner, 2.2); } lightHit(w, s, t, owner, s.bdmg[i]!); }
     }
-    if (nf && !(s.bflags[i]! & BF.dead) && hitFairy(s, i)) s.bflags[i] = s.bflags[i]! | BF.dead;
+    if (nf && !(s.bflags[i]! & BF.dead) && hitFairy(w, s, i)) s.bflags[i] = s.bflags[i]! | BF.dead;
   }
   heavyClash(w, s);
   // compact in order; zero the freed tail so identical live states hash identically

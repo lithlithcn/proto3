@@ -4,11 +4,12 @@ const TAU = 6.2832;
 let ctx, frame, P, ENT = [], B = [], CX = {}, bodyR;
 let T = { MAP_W: 2000, MAP_H: 1350, BODY_R: 16, HP: 100 }, SMR = [], RDK = [];
 const ELN9 = ['', 'FIRE', 'WATER', 'ICE', 'THUNDER', 'WIND', 'EARTH', 'NATURE', 'DARK', 'LIGHT'], ELC9 = ['#fff', '#ff5030', '#3a8aff', '#9ae8ff', '#f0e040', '#9affc8', '#c09060', '#5cd040', '#9a3ae0', '#fff6b0']; /* legacy line 1759 */
+const nearFoe = (o, x, y, max = 1e9) => { let q = null, bd = max; for (const c of P) if (c.id !== o && c.state !== 'dead' && !(TEAMS && TEAMA[P[o]?.id] === TEAMA[c.id])) { const d = Math.hypot(c.x - x, c.y - y); if (d < bd) { bd = d; q = c; } } return q; }; // legacy nearFoe (render copy)
 const RB = ['#ff4a4a', '#ffa63a', '#ffe83a', '#5cff7a', '#4ab3ff', '#c06cff'], clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 const rainbowCol = () => `hsl(${frame * 6 % 360},100%,65%)`;
 // themed-item helpers / data: real versions arrive with lot 3 (until then their CX/ENT state never exists, so these are never reached)
 const nop = () => {}, TUT = null, TSTEPS = [], TEAMS = 0, TEAMA = [], TCOL = [], ITEMS = [], UFC = [], STC = [], ELC2 = [], TC = [];
-const yinYang = nop, xDrawGap = nop, xFour = () => [], tutZ = nop, nearFoe = () => null, laserFX = nop, drawYTrain = nop, drawUnzan = nop, drawTails = nop, drawMech = nop, drawFist = nop, drawDragon = nop;
+const yinYang = nop, xDrawGap = nop, xFour = () => [], tutZ = nop, laserFX = nop, drawYTrain = nop, drawUnzan = nop, drawTails = nop, drawMech = nop, drawFist = nop, drawDragon = nop;
 const auraOf = t => t.aura && t.aura.t > frame ? t.aura.el : t.burn > 0 ? 1 : t.wet > frame ? 2 : t.frozen > 0 ? 3 : t.pois > 0 ? 7 : 0; // legacy line 1767
 export const bindThemed = (v) => { ({ ctx, frame, P, CX, ENT, B, bodyR, T, SMR, RDK } = v); };
 function chDraw(){const al=P.filter(q=>q.state!=='dead');ctx.textAlign='center';

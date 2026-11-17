@@ -16,7 +16,7 @@ export const NSRC = 128;
 export const PS = { idle: 0, dash: 1, dashlag: 2, dead: 3, hitstun: 4, atk: 5, spell: 6, parry: 7, parrylag: 8, parrystun: 9, eaten: 10, cocoon: 11, pray: 12, rifle: 13, bursting: 14, succeeded: 15, broken: 16 } as const;
 export type PlayerState = (typeof PS)[keyof typeof PS];
 /** Legacy bullet tags (b.star, b.note, b.flower ...) read by item rules and draws; `elset` = legacy b.el already assigned, `rxd` = legacy b.rxD (its element was applied). */
-export const BT = { star: 1, note: 2, flower: 4, yy: 8, pure: 16, weird: 32, water: 64, coc: 128, anni: 256, gung: 512, sway: 1024, rxd: 2048, elset: 4096 } as const;
+export const BT = { star: 1, note: 2, flower: 4, yy: 8, pure: 16, weird: 32, water: 64, coc: 128, anni: 256, gung: 512, sway: 1024, rxd: 2048, elset: 4096, knife: 8192 } as const;
 /** Bullet flags. */
 export const BF = { heavy: 1, dead: 2, grazed: 4, breaker: 8, np: 16, frozen: 32, pierce: 64, oneshot: 128, rifle: 256, hgr: 512, fake: 1024, mute: 2048, dark: 4096 } as const;
 

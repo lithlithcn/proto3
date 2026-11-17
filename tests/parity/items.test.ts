@@ -32,6 +32,16 @@ describe('parity: item cards and the first items (vs legacy)', () => {
     for (let f = 1; f <= 2400; f++) { k.step(sc, f); k.compare('lastword'); got = Math.max(got, k.legacy.eval('P[0].ult?1:0') as number); }
     expect(got).toBe(1);
   });
+  it('Last Word cast: Spell with the card unleashes the Prismatic Danmaku Storm (rainbow spiral, aimed fan, small bullets) for its whole duration', () => {
+    const k = makePair(['reimu', 'marisa'], 9);
+    let big = 0;
+    for (let f = 1; f <= 900; f++) {
+      if (f === 30) { k.legacy.eval("give(P[0],'rainbow')"); giveItem(k.world, k.s, 0, -2, k.s.x[0]!, k.s.y[0]!); }
+      k.step([g => ({ btn: g === 60 ? ['spell'] : [] }), () => ({})], f); k.compare('lastword-cast');
+      big = Math.max(big, k.legacy.eval("B.filter(b=>b.heavy&&b.owner===0).length") as number);
+    }
+    expect(big, 'big rainbow balls').toBeGreaterThan(20);
+  });
   it('Mirror Aura bounces bullets (light + heavy) back at the shooter; Oni Giant: reach x1.6, damage x1.5, half knockback, bigger body', () => {
     const k = makePair(['reimu', 'reimu'], 7, { items: ['green'] });
     k.legacy.eval('P[0].mirror=400;P[1].giant=400'); k.s.mirror[0] = 400; k.s.giant[1] = 400;

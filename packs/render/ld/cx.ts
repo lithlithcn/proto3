@@ -5,7 +5,8 @@ import type { World } from '@kernel';
 type Cols = Record<string, ArrayLike<number>>;
 export function thOf(w: World): Cols { const t = w.slice<Cols | undefined>('themed'); return t ? { ...w.slice<Cols>('touhou'), ...t } : w.slice<Cols>('touhou'); }
 export function cxOf(w: World): Record<string, unknown> {
-  const t = w.slice<Record<string, number> | undefined>('themed'), C: Record<string, unknown> = {}; if (!t) return C;
+  const t = w.slice<Record<string, number> | undefined>('themed') ?? {}, C: Record<string, unknown> = {};
+  const c = w.slice<Record<string, number>>('combat'); if (c['zawT']! > 0) C['zaw'] = { o: c['zawO'], t: c['zawT'] }; // The World's charge (combat)
   if (t['anon']! > 0) C['anon'] = t['anon'];
   if (t['wallO']! >= 0) C['wall'] = { x: t['wallX'], o: t['wallO'], t: t['wallT'] };
   return C;

@@ -1,3 +1,4 @@
+import { ULT } from './ult';
 import { jfx, sfx } from '../jfx';
 import { hypot, type World } from '@kernel';
 import { spellPool } from '../api';
@@ -50,7 +51,7 @@ export function updSpell(c: PCtx): void {
   s.t[p] = s.t[p]! + 1;
   if (s.t[p]! <= T.SPELL_CUTIN) { s.vx[p] = s.vx[p]! * 0.8; s.vy[p] = s.vy[p]! * 0.8; return; }
   s.vx[p] = s.vx[p]! + (c.ix * T.FOCUS_SPEED - s.vx[p]!) * 0.35; s.vy[p] = s.vy[p]! + (c.iy * T.FOCUS_SPEED - s.vy[p]!) * 0.35;
-  const k = s.t[p]! - T.SPELL_CUTIN - 1, pool = spellPool(w), d = s.ultS[p] ? undefined : pool[s.spI[p]!];
+  const k = s.t[p]! - T.SPELL_CUTIN - 1, pool = spellPool(w), d = s.ultS[p] ? ULT : pool[s.spI[p]!];
   d?.fn({ w, s, p, o: s.tgt[p]!, k });
   if (k > 0 && k % (d?.loop ?? 60) === 0) jfx(w, 'kira'); // presentation: the pattern restarts (rate-limited sound), last-3-seconds countdown
   { const rem = T.SPELL_CUTIN + (s.ultS[p] ? T.ULT_T : T.SPELL_T) - s.t[p]!; if (rem <= 180 && rem % 60 === 0) sfx(w, 'timeout', 0.6); }

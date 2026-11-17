@@ -1,4 +1,4 @@
-import { sfx, sfxDmg } from '../jfx';
+import { sfx, sfxDmg, sfxStop } from '../jfx';
 import { pow, hypot, type World } from '@kernel';
 import { T } from '../tuning';
 import { inEdge, kS } from '../stats';
@@ -27,6 +27,7 @@ export function hit(w: World, s: CombatState, v: number, a: number, dx: number, 
   if (a !== v) { s.lastBy[v] = a; s.lastByF[v] = s.gf; }
   if (s.inv[v]! > 0 || s.state[v] === PS.dead) return;
   { const R = rulesOf(w); if (R.length) { const c = { w, s, v, a, dx, dy, m, mult, heavy }; for (const r of R) if (r.hit?.(c)) return; } } // legacy chHit (themed items)
+  sfxStop(w, 'rsrc' + v); // legacy stopRifle(v)
   if (s.state[v] === PS.spell && !melee) { // a spell card is only broken by melee or a very big hit; small hits just chip
     const raw = m.dmg * mult;
     if (raw < 16 && s.hp[v]! > raw * 1.6) {

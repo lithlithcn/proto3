@@ -88,3 +88,13 @@ Written by `pnpm parity keep ... --cause ... [--attempts "tried X: failed"]`; re
 ## Appearance rings, reflected trails, reflect / clone / Rumia feedback
 - Symptoms (render compare per item): bullet appearance ring drawn one frame early (legacy `b.bf` is stamped at the next full step, wrapper line 2394); reflected heavy bullets left no `#6ff` trail (line 773) and no burst / MAX POWER banner (765); clone soak had no bursts / "DOPPELGANGER DESTROYED"; clone soaked fake bullets; Rumia's harmless dark wisps (RDK, line 2283) missing; CANCEL xN shown on hit-stop frames.
 - Fix in: `packs/combat/systems.ts` (bbf stamp, rules `late`), `bullets/update.ts`, `bullets/heavy.ts`, `items/clone.ts`, `packs/themed/rumia.ts`, juice `RDK`/`SMR`/`stk0` (1up sound on a life gained, chPre5).
+
+## Last Word card cast fired nothing
+- Symptom: casting the Last Word (rainbow card) started the spell state but no bullet appeared (forced-give session: sim divergence f197).
+- Cause: legacy `ULT` pattern (line 667) never ported; the spell runner skipped `fn` when `ultS`.
+- Fix in: `packs/combat/player/ult.ts`, `packs/combat/player/spell.ts`. Test: `tests/parity/items.test.ts` (Last Word cast). Not detected earlier: the item matrix skips the rainbow card.
+
+## Base items silent / without feedback
+- Symptoms (forced-give render sweep): Blade hits had no `hitN` sound; Rifle aiming had no charge sound (and its stop); Master Spark charge/release sounds, banner, flash, shake missing; bombs: no `bombtick`, `timeout` countdown, explosion wave/burst/sound/shake; Perfect Freeze: banners and sounds (give, repeats, SHATTER); healing orbs: no +100 text / burst / sound; WARP OVER; fairies: STOLEN / +LOOT / FAIRY DOWN, bursts; Hourai Elixir banners + immortality juice; Tengu Camera: photo sounds, flash, PHOTO glow, SNAP! text; The World: give / start sounds, banners, wave, shake, flash, the charging clock (CX.zaw), knife look; TIME RESUMES; KO beam cancel sound.
+- Also: thief fairies' ribbons never drawn (objects rebuilt each frame broke the trail cache); legacy draws during The World redraw the holder (compare mapping); ifx VIEW was always 0; render compare checked heavy bullets with a dead renderer (`actors.ts`, removed).
+- Fix in: `packs/combat/items/*` (jfx at the legacy sites), `packs/touhou/items/*`, `packs/render/ld/bind.ts`, `packs/render/juice/*`, `tools/render/compare.ts`.
