@@ -6,7 +6,9 @@ import { CS2, cssOpen, cssTick, type CssHost } from './screens/css/state';
 import { drawCss } from './screens/css/draw';
 import type { RosterEntry } from './core';
 import type { Keys } from './input/devices';
-import { PZ, drawGameEnd, drawIntro, drawPause, type FightView, type PauseItem } from './screens/fight/overlays';
+import { PZ, drawGameEnd, drawIntro, drawLastStock, drawPause, lsCheck, type FightView, type PauseItem } from './screens/fight/overlays';
+import { drawResults, type ResP } from './screens/fight/results';
+import { SET, saveStats } from './settings';
 
 /** UI router (legacy `mode` + the render()/nav()/onKey() wrapper chains, flattened). 'game' is drawn by the render pack. */
 export type Mode = 'title' | 'menu' | 'css' | 'game';
@@ -65,12 +67,19 @@ const pauseItems = (h: UiHost): PauseItem[] => [
   { t: 'RESTART MATCH', f: () => { APP.paused = false; h.restart(); h.sfx('ok00'); } },
   { t: PZ.cf ? 'QUIT? PRESS AGAIN' : 'QUIT TO MENU', f: () => { if (!PZ.cf) { PZ.cf = 1; h.sfx('cancel00'); return; } APP.paused = false; APP.mode = 'menu'; h.sfx('cancel00'); } },
 ];
-/** Overlays drawn over the fight (after the fight HUD). */
-export function renderFightUi(u: UiCtx, h: UiHost, v: FightView): void {
+/** Overlays drawn over the fight (after the fight HUD), legacy order: pause, GAME! / results, intro, last stock. `tlg` = match-flow samples. */
+export function renderFightUi(u: UiCtx, h: UiHost, v: FightView, P: ResP[], tlg: (number[] | undefined)[], matchId: number, counts: boolean): void {
   u.hot.length = 0;
+  if (lsCheck(u.now, matchId, v.f, v.winner, P, counts)) { h.sfx('critical_hit', 1); h.sfx('alert', 0.8); h.sfx('se_enep01', 0.6); }
   if (APP.paused) drawPause(u, pauseItems(h)); else PZ.t0 = 0;
-  if (v.winner >= 0) drawGameEnd(u, v); // results screen (winT >= 100) comes with its port
-  drawIntro(u, v);
+  if (v.winner >= 0) {
+    if (v.winT < 100) drawGameEnd(u, v);
+    else {
+      if (v.winT === 101 && counts) { const me = P.find(p => !p.cpu); if (me) { SET.st.m++; SET.st.k += me.kos; if (v.teams ? v.teamA[me.id] === v.teamA[v.winner] : me.id === v.winner) SET.st.w++; saveStats(); } }
+      drawResults(u, { t: v.winT - 100, winner: v.winner, teams: v.teams, teamA: v.teamA, P, tlg, touch: h.touch }, h.frame());
+    }
+  }
+  drawIntro(u, v); drawLastStock(u, v, P);
 }
 /** Keys during a fight: Esc = pause, pause menu navigation, M = quit (legacy onKey game branch + PZ nav). Returns true when consumed. */
 export function fightKey(code: string, h: UiHost, v: FightView): boolean {

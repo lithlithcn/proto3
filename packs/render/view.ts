@@ -18,6 +18,8 @@ export function viewsOf(s: CombatState, W: number, H: number): VW[] {
   if (hum.length === 2) return hum.map((p, k) => ({ x: k ? W / 2 + 2 : 0, y: 0, w: W / 2 - 2, h: H, i: p }));
   return hum.map((p, k) => ({ x: k % 2 ? W / 2 + 2 : 0, y: k > 1 ? H / 2 + 2 : 0, w: W / 2 - 2, h: H / 2 - 2, i: p, q: 1 as const }));
 }
+/** Presentation knobs set by the shell: last-stock punch-in zoom (legacy LSZoom) and the reduced-effects flag (zoom kick ×0.2). */
+export const VIEWZ = { k: 1, fxLow: false };
 /** Legacy render() view loop + split bars. */
 export function renderViews(c: CanvasRenderingContext2D, w: World, s: CombatState, W: number, H: number): void {
   const vs = viewsOf(s, W, H); syncJuice(juiceOf(w), s);
@@ -27,7 +29,7 @@ export function renderViews(c: CanvasRenderingContext2D, w: World, s: CombatStat
 
 /** One player's view: the verbatim legacy drawView (ld/view.ts) fed by the view-model; scale as legacy render() computes it. Caller has translated by v.y. */
 export function drawView(c: CanvasRenderingContext2D, w: World, v: VW): void {
-  const s = w.slice<CombatState>('combat'), sc = v.h / VIEW_H * (v.q ? 1.2 : 1) * (1 + juiceOf(w).zk);
+  const s = w.slice<CombatState>('combat'), sc = v.h / VIEW_H * (v.q ? 1.2 : 1) * (1 + juiceOf(w).zk * (VIEWZ.fxLow ? 0.2 : 1)) * VIEWZ.k;
   for (let p = 0; p < 32; p++) cams[p] ??= newCam();
   if (camW !== w || s.gf < camF) { camW = w; for (let p = 0; p < s.n; p++) { cams[p]!.x = s.x[p]!; cams[p]!.y = s.y[p]!; } } // legacy start(): cameras begin on their player
   camF = s.gf;

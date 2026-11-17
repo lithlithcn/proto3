@@ -9,6 +9,7 @@ Same screens and look as the legacy game: title (warp stars, galaxy, planet, log
 - Character select: `packs/ui/screens/css/state.ts` (`cssOpen`, `cssTick`, `cssGo`, `cssTapTile`), `packs/ui/screens/css/draw.ts`; character art through `packs/render/ld/portrait.ts` (`drawCharArt`); roster texts = `role` / `desc` of each character content file.
 - Devices + bindings: `packs/ui/input/devices.ts` (`devIn` menu reading, `readDev` fight reading with pad chords), `packs/ui/input/binds.ts` (`sf_binds3`). The shell keeps a one-frame tap buffer (legacy tapQ) so a press shorter than a frame still counts.
 - Fight overlays: `packs/ui/screens/fight/overlays.ts` (`drawIntro` READY?/FIGHT!, `drawGameEnd` GAME!, `drawPause` + menu with quit confirm, `PZ`), routed by `renderFightUi` / `fightKey` in `packs/ui/app.ts`; auto-pause on blur / hidden tab / pad unplugged (shell).
+- Results: `packs/ui/screens/fight/results.ts` (`rankList`, `resAwards` titles, podium + art, stats panel, MATCH FLOW curve sampled every 30 frames by the shell, confetti); hub stats (`sf_stats`) counted at results start. LAST STOCK! banner + camera punch-in: `lsCheck` / `drawLastStock` / `lsZoom` in overlays.ts, zoom applied through `VIEWZ` (`packs/render/view.ts`, also carries the reduced-effects zoom factor).
 - Match end: once a winner exists the sim only counts `winT` and ticks the effects (combat `gate`, legacy loop `stepFx();winT++`); the oracle runner does the same.
 - Settings with the legacy storage keys: `packs/ui/settings.ts` (`SET`, `loadSettings`, `saveSettings`).
 ## Tests
@@ -16,4 +17,4 @@ Same screens and look as the legacy game: title (warp stars, galaxy, planet, log
 ## Bugs
 - Legacy pad reading in the character select overwrote the vertical stick with the Y button (`I.y=bt(3)`): pads could not move up/down and Y moved down. Port keeps the team-flag button apart (`t`) — deliberate fix.
 ## Not ported yet
-Results screen (winT >= 100), last-stock banner, sub-menus (rules/options/help/sound/profiles/teams), items list, controls, guide, training, online lobby, map maker, YouTube sidebar (`sb` = 0), touch layer, pad menu polling (pollNav), CPU AI (CPUs stand still until lot 4), profiles' per-player bindings.
+Replay (V), sub-menus (rules/options/help/sound/profiles/teams), items list, controls, guide, training, online lobby, map maker, YouTube sidebar (`sb` = 0), touch layer, pad menu polling (pollNav), CPU AI (CPUs stand still until lot 4), profiles' per-player bindings.

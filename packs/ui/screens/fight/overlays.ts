@@ -45,3 +45,36 @@ export function drawPause(u: UiCtx, items: PauseItem[] | null): void {
   if (PZ.why) { c.globalAlpha = 1; c.fillStyle = '#ff9a3a'; c.font = 'bold ' + Math.round(H * 0.024) + 'px monospace'; c.fillText(PZ.why, W * 0.07, H * 0.62 - H * 0.04 - H * 0.02); }
   c.restore();
 }
+/** LAST STOCK! (legacy LS / lsCheck / drawLastStock / LSZoom, line ~4024): in a 1v1 that started with more than one stock, when one fighter
+ *  is down to its last life: red heartbeat vignette, letterbox, streaks, slammed banner, name line, camera punch-in. */
+export const LS = { on: 0, t0: 0, id: -1, init: 0, p: -1 };
+export interface LsPlayer { id: number; stocks: number; cpu: boolean }
+/** Once per frame before the fight draw. `matchId` changes on every new match. Returns true the frame the banner starts (play its sounds). */
+export function lsCheck(now: number, matchId: number, f: number, winner: number, P: LsPlayer[], on: boolean): boolean {
+  if (!on) { LS.on = 0; return false; }
+  if (LS.id !== matchId) { LS.id = matchId; LS.on = 0; LS.init = 0; }
+  if (f < 10) LS.init = Math.max(LS.init, ...P.map(p => p.stocks));
+  if (!LS.on && winner < 0 && P.length === 2 && LS.init > 1 && P.every(p => p.stocks > 0)) { const q = P.find(p => p.stocks === 1); if (q) { LS.on = 1; LS.t0 = now; LS.p = q.id; return true; } }
+  return false;
+}
+export const lsZoom = (now: number, fxLow: boolean): number => {
+  if (!LS.on) return 1; const d = now - LS.t0, env = d < 0.12 ? d / 0.12 : d < 0.7 ? 1 : d < 1.8 ? 1 - (d - 0.7) / 1.1 : 0, beat = Math.pow(Math.max(0, Math.sin(now * Math.PI * 2 * 1.1)), 12);
+  return 1 + (fxLow ? 0.12 : 0.32) * env + 0.025 * beat;
+};
+export function drawLastStock(u: UiCtx, v: FightView, P: LsPlayer[]): void {
+  if (!LS.on || v.winner >= 0 && v.winT >= 100) return;
+  const { c, W, H } = u, t = u.now, d = t - LS.t0, q = P[LS.p]; c.save(); c.setTransform(1, 0, 0, 1, 0, 0);
+  const beat = Math.pow(Math.max(0, Math.sin(t * Math.PI * 2 * 1.1)), 8), vg = c.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, H * 0.95); vg.addColorStop(0, 'rgba(255,0,40,0)'); vg.addColorStop(1, 'rgba(255,0,40,' + (0.12 + 0.16 * beat) + ')'); c.fillStyle = vg; c.fillRect(0, 0, W, H);
+  if (d < 2.6) {
+    if (d < 0.18) { c.globalAlpha = (1 - d / 0.18) * 0.8; c.fillStyle = '#fff'; c.fillRect(0, 0, W, H); c.globalAlpha = 1; }
+    const inn = clamp(d / 0.2, 0, 1), out = clamp((d - 2.1) / 0.5, 0, 1), lb = H * 0.13 * inn * (1 - out); c.fillStyle = '#000'; c.fillRect(0, 0, W, lb); c.fillRect(0, H - lb, W, lb);
+    for (let i = 0; i < 5; i++) { const uu = clamp((d - i * 0.05) / 0.35, 0, 1), x = -W + uu * W * 2.6; c.globalAlpha = 0.5 * (1 - out); c.fillStyle = i % 2 ? '#ff2d55' : '#fff'; c.beginPath(); c.moveTo(x, H * (0.2 + i * 0.13)); c.lineTo(x + W * 0.6, H * (0.16 + i * 0.13)); c.lineTo(x + W * 0.6, H * (0.165 + i * 0.13)); c.lineTo(x, H * (0.205 + i * 0.13)); c.fill(); }
+    c.globalAlpha = 1;
+    const e = clamp(d / 0.16, 0, 1), sc = e < 1 ? 2.6 - 1.6 * e : 1 + 0.03 * Math.sin(d * 18), sh = d < 0.4 ? (Math.random() - 0.5) * 18 * (1 - d / 0.4) : 0; c.translate(W / 2 + sh + out * W, H * 0.45 + sh); c.rotate(-0.07); c.globalAlpha = 1 - out;
+    c.fillStyle = 'rgba(5,6,12,.88)'; skewRect(c, -W * 0.42, -H * 0.1, W * 0.84, H * 0.2, H * 0.07); c.fill(); c.fillStyle = '#ff2d55'; c.fillRect(-W * 0.42, -H * 0.1, W * 0.84, 6); c.fillRect(-W * 0.42 + H * 0.0, H * 0.1 - 6, W * 0.84, 6);
+    c.save(); c.scale(sc, sc); c.font = UFI(Math.min(H * 0.14, W * 0.1)); c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round'; c.lineWidth = 14; c.strokeStyle = '#05060c'; c.strokeText('LAST STOCK!', 0, 0);
+    if (!u.fxLow) { c.fillStyle = '#2df0ff'; c.fillText('LAST STOCK!', -5, 2); c.fillStyle = '#ff2d6a'; c.fillText('LAST STOCK!', 5, -2); } c.fillStyle = '#fff'; c.fillText('LAST STOCK!', 0, 0); c.restore();
+    if (q && d > 0.25) { const uu = clamp((d - 0.25) / 0.25, 0, 1); c.globalAlpha = (1 - out) * uu; c.font = UF(900, H * 0.03); c.textAlign = 'center'; c.fillStyle = COLS[q.id % 8]!; c.fillText(((q.cpu ? 'CPU ' : 'P') + (q.id + 1)).toUpperCase() + '  ·  ONE LIFE LEFT', (1 - uu) * 80, H * 0.135); }
+  }
+  c.restore();
+}

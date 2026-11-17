@@ -33,3 +33,5 @@ export function saveSettings(s: Store): void {
   put(s, 'sf_opts', JSON.stringify({ nP: SET.nP, nH: SET.nH, stI: SET.stI, mapI: SET.mapI, itemsOn: SET.itemsOn, fxLow: SET.fxLow, itemOn: SET.itemOn, cpuLv: SET.cpuLv, maxC: SET.maxC, TEAMS: SET.teams, TEAMA: SET.teamA, NERV: SET.nerv }));
   put(s, 'sf_comp', SET.comp ? '1' : '0'); put(s, 'sf_timer', String(SET.timer)); put(s, 'sf_fxoff', SET.fxOff ? '1' : '0');
 }
+/** Hub profile stats (wins, KOs, games) — saved right after a counted match (legacy sf_stats). */
+export function saveStats(s: Pick<Storage, 'setItem'> | undefined = typeof localStorage !== 'undefined' ? localStorage : undefined): void { try { s?.setItem('sf_stats', JSON.stringify(SET.st)); } catch { /* quota */ } }

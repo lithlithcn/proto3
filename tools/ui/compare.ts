@@ -13,7 +13,8 @@ import { UIHUB } from '@pack/ui/screens/hub/hub';
 import { CS2, CSA, cssOpen } from '@pack/ui/screens/css/state';
 import type { CharacterDef } from '@pack/combat/api';
 import touhou from '@pack/touhou/pack';
-import { PZ, drawGameEnd, drawIntro, drawPause } from '@pack/ui/screens/fight/overlays';
+import { LS, PZ, drawGameEnd, drawIntro, drawLastStock, drawPause } from '@pack/ui/screens/fight/overlays';
+import { drawResults, resetResults, type ResP } from '@pack/ui/screens/fight/results';
 
 const req = createRequire(import.meta.url);
 const { createLegacy } = req('../parity/legacy.cjs') as { createLegacy(o: object): Legacy };
@@ -55,6 +56,13 @@ const SC: Sc[] = [
   ...[20, 60, 70, 100].map(f => ({ name: `intro-f${f}`, ms: 30000, block: 'drawIntro', legacy: `mode='game';winner=-1;paused=false;MINTRO.on=true;frame=${f}`, port() {}, draw: (u: UiCtx) => drawIntro(u, { f, winner: -1, winT: 0, teams: false, teamA: [], intro: true }) })),
   ...[3, 12, 30].map(t => ({ name: `gameend-t${t}`, ms: 30000, block: 'drawGameEnd', legacy: `mode='game';winner=1;winT=${t};paused=false;frame=500`, port() {}, draw: (u: UiCtx) => drawGameEnd(u, { f: 500, winner: 1, winT: t, teams: false, teamA: [], intro: true }) })),
   { name: 'pause', ms: 30000, block: 'drawPause', legacy: "mode='game';winner=-1;paused=true;UIP.t0=29.8;PZ.sel=1;PZ.cf=0;PZ.why='';frame=500", port() { PZ.t0 = 29.8; PZ.sel = 1; PZ.cf = 0; PZ.why = ''; }, draw: (u: UiCtx) => drawPause(u, ['RESUME', 'RESTART MATCH', 'SOUND…', 'QUIT TO MENU'].map(t => ({ t, f() {} }))) },
+  ...[30, 60, 160].map(t => ({ name: `results-t${t}`, ms: 30000, block: 'drawResults',
+    legacy: `mode='game';paused=false;winner=0;winT=${100 + t};RAW=null;RSC=[];TLG=[[300,300],[260,280],[240,180],[200,90]];frame=900;Object.assign(P[0],{kos:2,dmgDealt:150.4,dmgTk:40,parN:3,spN:1,bigHit:22,sd:0,outAt:0,stocks:1,hp:64,state:'idle'});Object.assign(P[1],{kos:0,dmgDealt:40,dmgTk:150.4,parN:5,spN:2,bigHit:9,sd:1,outAt:850,stocks:0,hp:0,state:'dead'})`,
+    port() { resetResults(); },
+    draw: (u: UiCtx) => { const P: ResP[] = [{ id: 0, cpu: false, key: 'reimu', col: '#ff3a4a', kos: 2, dmgDealt: 150.4, dmgTk: 40, parN: 3, spN: 1, bigHit: 22, sd: 0, outAt: 0, stocks: 1, hp: 64, dead: false }, { id: 1, cpu: false, key: 'marisa', col: roster[1]!.col, kos: 0, dmgDealt: 40, dmgTk: 150.4, parN: 5, spN: 2, bigHit: 9, sd: 1, outAt: 850, stocks: 0, hp: 0, dead: true }];
+      drawResults(u, { t, winner: 0, teams: false, teamA: [], P, tlg: [[300, 300], [260, 280], [240, 180], [200, 90]], touch: false }, 900); } })),
+  ...[0.1, 0.3, 0.5, 2.3, 4].map(d => ({ name: `laststock-${d}`, ms: 30000, block: 'drawLastStock', legacy: `mode='game';paused=false;winner=-1;LS.on=1;LS.t0=${30 - d};LS.p=1;P[1].stocks=1;lsCheck=()=>{}`,
+    port() { LS.on = 1; LS.t0 = 30 - d; LS.p = 1; }, draw: (u: UiCtx) => drawLastStock(u, { f: 500, winner: -1, winT: 0, teams: false, teamA: [], intro: true }, [{ id: 0, stocks: 2, cpu: false }, { id: 1, stocks: 1, cpu: false }]) })),
 ];
 const want = process.argv.slice(2).filter(a => !a.startsWith('-'));
 const roster = [touhou].flatMap(p => Object.entries((p.content?.['character'] ?? {}) as Record<string, CharacterDef>).map(([k, d]) => ({ id: `${p.id}:${k}`, key: k, name: d.name, col: d.color, role: d.role ?? '', desc: d.desc ?? '', o: d.order }))).sort((a, b) => a.o - b.o);
