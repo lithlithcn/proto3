@@ -1,4 +1,4 @@
-import { jfx } from '../jfx';
+import { jfx, pushJc } from '../jfx';
 import { bulletArrays, clearBullet, copyBullet } from './arrays';
 import { type World, atan2, clamp, cos, hypot, sin, PI } from '@kernel';
 import { TAU } from '../tuning';
@@ -41,6 +41,7 @@ export function updateBullets(w: World, s: CombatState): void {
     }
     s.bx[i] = s.bx[i]! + s.bvx[i]! * k; s.by[i] = s.by[i]! + s.bvy[i]! * k;
     if (s.bflags[i]! & BF.heavy) s.bdist[i] = s.bdist[i]! + hypot(s.bvx[i]!, s.bvy[i]!) * k;
+    { const rf = s.brefl[i]!; if (rf) pushJc(w, 'FX', 500, 'x', s.bx[i]!, 'y', s.by[i]!, 'vx', 0, 'vy', 0, 't', 8 + rf * 3, 'c', '#6ff', 'r', s.br[i]! * (1 + rf * 0.3)); } // reflected bullet trail (legacy line 773)
     s.blife[i] = s.blife[i]! - k;
     const bx = s.bx[i]!, by = s.by[i]!;
     if (s.blife[i]! <= 0 || bx < -20 || by < -20 || bx > s.mapW + 20 || by > s.mapH + 20) { s.bflags[i] = s.bflags[i]! | BF.dead; continue; }

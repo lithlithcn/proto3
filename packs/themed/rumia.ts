@@ -1,5 +1,5 @@
 import { type World, atan2, cos, hypot, sin } from '@kernel';
-import { BF, FXS, ISRC, MAX_FX, PS, T, type CombatState, type HitCtx, customHeavy, jBig, ko, nearFoe, pushJ, sfx, addJ, jFlash, jBurst } from '@pack/combat/api';
+import { BF, FXS, ISRC, MAX_FX, PS, T, type CombatState, type HitCtx, customHeavy, jfx, jBig, ko, nearFoe, pushJ, sfx, addJ, jFlash, jBurst } from '@pack/combat/api';
 import type { ThemedState } from './state';
 
 /** Rumia, The Darkness Feeds (legacy GIVE.rumia / chPre dark orbs / chBullet b.dark / chHit xSwallow / updEaten / xSpitWall). */
@@ -53,3 +53,5 @@ export function spitWall(w: World, s: CombatState, p: number, ax: number): boole
   s.pips[p] = s.pips[p]! - 1; w.emit('combat:wall-pip', { p, pips: s.pips[p]! }); if (ax) s.vy[p] = s.vy[p]! * -0.3; else s.vx[p] = s.vx[p]! * -0.3;
   return true;
 }
+/** Legacy step wrapper (line 2283): every 28 frames of darkness, 12 harmless dark wisps + a dark wave (presentation: juice RDK). */
+export function rumiaLate(w: World, s: CombatState, p: number): void { if (eat(s, p) > 0 && s.gf % 28 === 0) jfx(w, 'rdk', s.x[p]!, s.y[p]!); }

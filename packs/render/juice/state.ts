@@ -10,12 +10,12 @@ export interface Juice {
   FX: P2[]; PE: P2[]; TX: P2[]; RINGS: P2[]; WAVES: P2[]; LINES: P2[]; KOFX: P2[]; CRACK: P2[]; GZ: P2[]; BIG: P2[];
   lastGf: number; rnd: () => number; q: { ev: string; gf: number }[]; cc: number[]; ccF: number[]; chG: number[]; nds: number[]; stock0: number; camSnap: number[];
   /** sounds of the frame being drained (name, vol, rate); the audio player and the oracle consume it. `sl` = legacy rate limiters (last frame). */
-  SND: { n: string; v: number; r: number; gf: number; k?: string }[]; /** legacy ENDK: sound swell while the last two survivors are on their last stock */ endk: number; sl: Record<string, number>; /** keyed (stoppable) sounds started / stop requests (legacy `p.chS=sfx(...)` / `.stop()`) */ stop: string[]; /** items handed out (player, pool index) since the shell last drained it — records screen */ gives: { p: number; kind: number }[]; /** KO counter (the music dips on each KO) */ koN: number; pw: [number, number][]; /** legacy p.acts: item activation list per player (drawActs, item auras) */ acts: { k: string; f: number; T: number; ht: boolean }[][]; /** legacy xActive per player at the last full step */ ia: number[]; /** legacy SMR: kick / sword arcs (Meiling, Momiji) */ SMR: Record<string, unknown>[];
+  SND: { n: string; v: number; r: number; gf: number; k?: string }[]; /** legacy ENDK: sound swell while the last two survivors are on their last stock */ endk: number; sl: Record<string, number>; /** keyed (stoppable) sounds started / stop requests (legacy `p.chS=sfx(...)` / `.stop()`) */ stop: string[]; /** items handed out (player, pool index) since the shell last drained it — records screen */ gives: { p: number; kind: number }[]; /** KO counter (the music dips on each KO) */ koN: number; pw: [number, number][]; /** legacy p.acts: item activation list per player (drawActs, item auras) */ acts: { k: string; f: number; T: number; ht: boolean }[][]; /** legacy xActive per player at the last full step */ ia: number[]; /** legacy SMR: kick / sword arcs (Meiling, Momiji) */ SMR: Record<string, unknown>[]; /** legacy RDK: Rumia's dark wisps / waves */ RDK: Record<string, unknown>[]; /** legacy p.stk0 (stocks at the last full step, for the 1up sound) */ stk0: number[];
 }
 const cache = new WeakMap<World, Juice>();
 export function juiceOf(w: World): Juice {
   let j = cache.get(w);
-  if (!j) { j = { shake: 0, zk: 0, kx: 0, ky: 0, chroma: 0, bright: 0, focusL: 0, zblur: 0, flashS: 0, flashCol: '#fff', invF: 0, bgF: { c: '#fff', t: 0 }, borderF: { c: '#fff', t: 0 }, FX: [], PE: [], TX: [], RINGS: [], WAVES: [], LINES: [], KOFX: [], CRACK: [], GZ: [], BIG: [], lastGf: -1, rnd: () => Math.random(), q: [], cc: [], ccF: [], chG: [], nds: [], stock0: 0, camSnap: [], SND: [], endk: 1, sl: {}, stop: [], gives: [], koN: 0, pw: [], acts: [], ia: [], SMR: [] }; /* late-bound rnd: juiceOf may first run inside the sanitized step */ cache.set(w, j); }
+  if (!j) { j = { shake: 0, zk: 0, kx: 0, ky: 0, chroma: 0, bright: 0, focusL: 0, zblur: 0, flashS: 0, flashCol: '#fff', invF: 0, bgF: { c: '#fff', t: 0 }, borderF: { c: '#fff', t: 0 }, FX: [], PE: [], TX: [], RINGS: [], WAVES: [], LINES: [], KOFX: [], CRACK: [], GZ: [], BIG: [], lastGf: -1, rnd: () => Math.random(), q: [], cc: [], ccF: [], chG: [], nds: [], stock0: 0, camSnap: [], SND: [], endk: 1, sl: {}, stop: [], gives: [], koN: 0, pw: [], acts: [], ia: [], SMR: [], RDK: [], stk0: [] }; /* late-bound rnd: juiceOf may first run inside the sanitized step */ cache.set(w, j); }
   return j;
 }
 
@@ -34,7 +34,7 @@ export function tickJuice(j: Juice, cap = true): void {
 }
 /** Drains the journaled events in order (fx-tick events run `tickJuice`). Call before drawing; hooks themselves only journal because they run inside the sanitized sim window. */
 export function syncJuice(j: Juice, s: CombatState): void {
-  if (j.lastGf > s.gf) { j.lastGf = -1; j.q.length = 0; j.acts = []; j.ia = []; j.SMR = []; } // new match / rewind
+  if (j.lastGf > s.gf) { j.lastGf = -1; j.q.length = 0; j.acts = []; j.ia = []; j.SMR = []; j.RDK = []; j.stk0 = []; } // new match / rewind
   for (const e of j.q) runJuiceEvent(j, e);
   j.q.length = 0;
 }

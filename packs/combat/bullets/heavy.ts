@@ -1,4 +1,4 @@
-import { jfx } from '../jfx';
+import { big, burst, jfx } from '../jfx';
 import { type World, atan2, cos, hypot, sin } from '@kernel';
 import { graze } from '../player/graze';
 import { hit } from '../player/hit';
@@ -20,7 +20,8 @@ function reflect(w: World, s: CombatState, i: number, t: number): void {
   if (s.bflags[i]! & BF.rifle) s.bflags[i] = s.bflags[i]! | BF.oneshot; // a returned rifle bolt kills its shooter
   s.state[t] = PS.idle; s.inv[t] = 10;
   parryFx(w, s, t, s.brefl[i]!);
-  if (s.brefl[i]! >= 7) s.bflags[i] = s.bflags[i]! | BF.np;
+  if (s.brefl[i]! >= 7) { s.bflags[i] = s.bflags[i]! | BF.np; s.bcol[i] = 0xffffff; big(w, "MAX POWER! (CAN'T BE PARRIED)", '#fff', 50); }
+  burst(w, s.bx[i]!, s.by[i]!, '#6ff', 12); // legacy reflect tail (line 765)
   w.emit('combat:reflect', { p: t, refl: s.brefl[i]!, x: s.bx[i]!, y: s.by[i]! });
 }
 

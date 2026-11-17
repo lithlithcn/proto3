@@ -15,6 +15,8 @@ export const NSRC = 128;
 /** Player states (legacy strings → ints). */
 export const PS = { idle: 0, dash: 1, dashlag: 2, dead: 3, hitstun: 4, atk: 5, spell: 6, parry: 7, parrylag: 8, parrystun: 9, eaten: 10, cocoon: 11, pray: 12, rifle: 13, bursting: 14, succeeded: 15, broken: 16 } as const;
 export type PlayerState = (typeof PS)[keyof typeof PS];
+/** Legacy bullet tags (b.star, b.note, b.flower ...) read by item rules and draws; `elset` = legacy b.el already assigned, `rxd` = legacy b.rxD (its element was applied). */
+export const BT = { star: 1, note: 2, flower: 4, yy: 8, pure: 16, weird: 32, water: 64, coc: 128, anni: 256, gung: 512, sway: 1024, rxd: 2048, elset: 4096 } as const;
 /** Bullet flags. */
 export const BF = { heavy: 1, dead: 2, grazed: 4, breaker: 8, np: 16, frozen: 32, pierce: 64, oneshot: 128, rifle: 256, hgr: 512, fake: 1024, mute: 2048, dark: 4096 } as const;
 
@@ -53,6 +55,7 @@ export const combatSchema: Schema = {
   bx: f64s(MAX_B), by: f64s(MAX_B), bvx: f64s(MAX_B), bvy: f64s(MAX_B), br: f64s(MAX_B), bdmg: f64s(MAX_B), blife: f64s(MAX_B), bhome: f64s(MAX_B), bdist: f64s(MAX_B), bmult: f64s(MAX_B),
   bid: i32s(MAX_B), bborn: i32s(MAX_B), bowner: i32s(MAX_B), bflags: i32s(MAX_B), bcol: i32s(MAX_B), brefl: i32s(MAX_B), bmv: i32s(MAX_B), bkb: f64s(MAX_B), bstun: f64s(MAX_B), barm: f64s(MAX_B), bspl: f64s(MAX_B), bmst: f64s(MAX_B), bct: f64s(MAX_B), bsea: i32s(MAX_B), bnsf: f64s(MAX_B), bwav: f64s(MAX_B), bph: f64s(MAX_B), btx: f64s(MAX_B), bty: f64s(MAX_B),
   // programmable bullets (spell patterns): age, behaviour kind + params, steering, shape id, group tag
+  /** legacy boolean bullet tags used by item rules (BT) and the element of the bullet (legacy b.el; BT.elset = assigned) */ btag: i32s(MAX_B), bel: i32s(MAX_B), /** legacy b.bf + 1 (0 = unset): frame stamped on the bullet at the first full step after its birth (wrapper line 2394; draws its appearance ring) */ bbf: i32s(MAX_B),
   bag: i32s(MAX_B), bkind: i32s(MAX_B), bsh: i32s(MAX_B), bgrp: i32s(MAX_B), bang: f64s(MAX_B), brot: f64s(MAX_B), bdrg: f64s(MAX_B), bacc: f64s(MAX_B), bvmax: f64s(MAX_B), bp0: f64s(MAX_B), bp1: f64s(MAX_B), bcast: i32s(MAX_B), bp2: f64s(MAX_B),
 };
 
@@ -77,5 +80,6 @@ export interface CombatState {
   nkb: number; kbO: Int32Array; kbPP: Int32Array; kbDep: Int32Array; kbX: Float64Array; kbY: Float64Array; kbA: Float64Array; kbT: Float64Array; kbTT: Float64Array;
   bx: Float64Array; by: Float64Array; bvx: Float64Array; bvy: Float64Array; br: Float64Array; bdmg: Float64Array; blife: Float64Array; bhome: Float64Array; bdist: Float64Array; bmult: Float64Array;
   bid: Int32Array; bborn: Int32Array; bowner: Int32Array; bflags: Int32Array; bcol: Int32Array; brefl: Int32Array; bmv: Int32Array; bkb: Float64Array; bstun: Float64Array; barm: Float64Array; bspl: Float64Array; bmst: Float64Array; bct: Float64Array; bsea: Int32Array; bnsf: Float64Array; bwav: Float64Array; bph: Float64Array; btx: Float64Array; bty: Float64Array;
+  btag: Int32Array; bel: Int32Array; bbf: Int32Array;
   bag: Int32Array; bkind: Int32Array; bsh: Int32Array; bgrp: Int32Array; bang: Float64Array; brot: Float64Array; bdrg: Float64Array; bacc: Float64Array; bvmax: Float64Array; bp0: Float64Array; bp1: Float64Array; bcast: Int32Array; bp2: Float64Array;
 }

@@ -4,7 +4,7 @@ import { statusPool } from './api';
 
 export { MAX_FX };
 /** Status slots: one column of `MAX_FX` timers per player (legacy `p.fx.<name>` frame counters). Slots are stable ids shared by content (like `ISRC`): append, never renumber. */
-export const FXS = { elx: 0, imm: 1, eat: 2 } as const;
+export const FXS = { elx: 0, imm: 1, eat: 2, pact: 3 } as const;
 
 /** Content type `status`: a timed effect. `perm` = never counts down on its own (legacy PERMFX); `end` runs the frame the timer reaches 0. */
 export interface StatusDef { slot: number; name: string; perm?: boolean; end?(c: { w: World; s: CombatState; p: number }): void }

@@ -41,10 +41,11 @@ H['combat:fx-tick'] = ((j: Juice, e: { gf: number; wt: number; sk: number; ia: n
   { const k = e.gf + e.wt * 1e7; if (k === j.lastGf) return; j.lastGf = k; } // after the match ends gf stops but the effects keep ticking (winT counts)
   if (e.gf === 1) snd(j, e.gf, 'ready', 0.9); else if (e.gf === 55) { snd(j, e.gf, 'se_cardget', 0.8); snd(j, e.gf, 'ok00', 0.7); } // match intro (legacy drawIntro, line 3990)
   tickJuice(j, !e.sk); endK(j, e);
-  if (!e.sk) { j.ia = e.ia; j.SMR = j.SMR.filter(m => --(m['t'] as number) > 0); } // legacy SMR tick (step wrapper, line 2289)
+  if (!e.sk) for (let p = 0; p * 2 < e.pw.length; p++) { const st = e.pw[p * 2 + 1]!; if (j.stk0[p] !== undefined && st > j.stk0[p]! && e.pw[p * 2]! >= 0) snd(j, e.gf, '1up', 0.7); j.stk0[p] = st; } // legacy chPre5: a life gained
+  if (!e.sk) { j.ia = e.ia; j.SMR = j.SMR.filter(m => --(m['t'] as number) > 0); for (const r of j.RDK) { r['t'] = (r['t'] as number) - 1; if (!r['w']) { r['x'] = (r['x'] as number) + (r['vx'] as number); r['y'] = (r['y'] as number) + (r['vy'] as number); } } j.RDK = j.RDK.filter(r => (r['t'] as number) > 0); } // legacy SMR tick (step wrapper, line 2289)
   if (!e.sk) e.ia.forEach((a, p) => { const l = j.acts[p]; if (l?.length) j.acts[p] = l.filter(x => a >= 0 && e.gf - x.f < x.T + 30 && !(e.gf - x.f > 90 && !a)); }); // legacy actsPrune (step wrapper, line 2828)
   for (let p = 0; p * 2 < e.pos.length; p++) if ((j.nds[p] ?? 0) > e.gf && e.cn[p] === 'Nue' && e.gf % 2 === 0 && j.FX.length < 480) j.FX.push({ x: e.pos[p * 2]!, y: e.pos[p * 2 + 1]!, vx: 0, vy: 0, t: 18, c: '#1a1028' }); // Nue dash shadow (tick, line 4458)
-  for (let p = 0; p * 2 < e.pos.length; p++) { const c = j.cc[p] ?? 0; if (c && e.gf - j.ccF[p]! > 18) { if (c >= 5) txt(j, e.pos[p * 2]!, e.pos[p * 2 + 1]! - 52, 'CANCEL x' + c, '#ffd23a', c >= 20 ? 18 : 14); j.cc[p] = 0; } } // step wrapper line 2398, after stepFx
+  if (!e.sk) for (let p = 0; p * 2 < e.pos.length; p++) { const c = j.cc[p] ?? 0; if (c && e.gf - j.ccF[p]! > 18) { if (c >= 5) txt(j, e.pos[p * 2]!, e.pos[p * 2 + 1]! - 52, 'CANCEL x' + c, '#ffd23a', c >= 20 ? 18 : 14); j.cc[p] = 0; } } // step wrapper line 2398, after stepFx
 }) as never;
 const onTick: HookDef<{ gf: number }> = { id: 'juice-tick', event: 'combat:fx-tick', phase: 'after', run(w, ev) {
   const s = combatOf(w), tr: number[] = [];
@@ -113,6 +114,8 @@ const onFx = on<{ op: string; a: (number | string)[]; gf: number }>('juice-fx', 
     case 'camsnap': j.camSnap.push(a[0] as number); break;
     case 'brk': if (e.gf - (j.sl['brk'] ?? -99) > 4) { j.sl['brk'] = e.gf; snd(j, e.gf, 'se_enep00', 0.6); } break; // legacy brk(): big bullet destroyed
     case 'mir': if (e.gf - (j.sl['mir'] ?? -99) > 3) { j.sl['mir'] = e.gf; snd(j, e.gf, 'tan02', 0.3); } break; // legacy mirrorRef sMir throttle
+    case 'rdk': { const x = a[0] as number, y = a[1] as number, L: Record<string, unknown>[] = []; for (let i = 0; i < 12; i++) { const g = i * 6.2832 / 12 + e.gf * 0.05; L.push({ x, y, vx: Math.cos(g) * 3.2, vy: Math.sin(g) * 3.2, t: 110, r: 16 }); } L.push({ x, y, w: 1, t: 34 });
+      for (const r of L) { r['t'] = (r['t'] as number) - 1; if (!r['w']) { r['x'] = (r['x'] as number) + (r['vx'] as number); r['y'] = (r['y'] as number) + (r['vy'] as number); } } j.RDK.push(...L); break; } // Rumia's harmless darkness (legacy line 2283), ticked once in the frame it appears
     case 'kira': if (e.gf - (j.sl['kira'] ?? -99) > 40) { j.sl['kira'] = e.gf; snd(j, e.gf, 'se_kira00', 0.7); } break;
     case 'sfxk': snd(j, e.gf, a[1] as string, a[2] as number, 1, a[0] as string); break; // keyed: a later sfxstop with the same key cuts it
     case 'sfxstop': j.stop.push(a[0] as string); break;

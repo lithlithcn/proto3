@@ -1,4 +1,5 @@
-import { atan2, hypot } from '@kernel';
+import { type World, atan2, hypot } from '@kernel';
+import { big, burst } from '../jfx';
 import { PS, BF, type CombatState } from '../state';
 import { T } from '../tuning';
 
@@ -15,14 +16,14 @@ export function cloneAim(s: CombatState, p: number): number {
 }
 
 /** End-of-step soak (legacy post-step wrapper): foreign bullets touching the twin are destroyed and wear it down. */
-export function updateClone(s: CombatState, p: number): void {
+export function updateClone(w: World, s: CombatState, p: number): void {
   if (s.clone[p]! <= 0) return;
   const [x, y] = clonePos(s, p);
   for (let i = 0; i < s.nb; i++) {
     const o = s.bowner[i]!;
-    if ((s.bflags[i]! & BF.dead) || o === p || (s.teams !== 0 && s.team[o] === s.team[p]) || hypot(s.bx[i]! - x, s.by[i]! - y) >= s.br[i]! + T.BODY_R) continue;
+    if ((s.bflags[i]! & (BF.dead | BF.fake)) || o === p || (s.teams !== 0 && s.team[o] === s.team[p]) || hypot(s.bx[i]! - x, s.by[i]! - y) >= s.br[i]! + T.BODY_R) continue;
     s.bflags[i] = s.bflags[i]! | BF.dead;
-    s.cloneHP[p] = s.cloneHP[p]! - (s.bflags[i]! & BF.heavy ? CLONE.heavyCost : 1);
-    if (s.cloneHP[p]! <= 0) { s.clone[p] = 0; break; }
+    s.cloneHP[p] = s.cloneHP[p]! - (s.bflags[i]! & BF.heavy ? CLONE.heavyCost : 1); burst(w, x, y, '#8a9a50', 4);
+    if (s.cloneHP[p]! <= 0) { s.clone[p] = 0; burst(w, x, y, '#fff', 30); big(w, 'DOPPELGANGER DESTROYED', '#aaa', 34); break; }
   }
 }

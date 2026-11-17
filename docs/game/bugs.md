@@ -80,3 +80,11 @@ Written by `pnpm parity keep ... --cause ... [--attempts "tried X: failed"]`; re
 - Symptom: render compare drawView f600: a flea-burst particle one tick older than legacy (alpha .6 vs .667).
 - Cause: legacy runs bullet behaviours (rot/drg/acc/fn) in a step wrapper (line 2119) after the base step's stepFx; the port ran `bullet-motion` before `base-end` (the effects tick).
 - Fix in: `packs/combat/systems.ts` (base-end → bullet-motion → item-late). Sim order unchanged (base-end only emits the tick).
+
+## Shared rng drift invisible to the oracle
+- Symptom: none yet — an rng draw with no visible effect (e.g. the element grid scan) would desync later draws without failing the frame it happened.
+- Fix in: `tests/parity/harness.ts` compares the shared rng state (port `spSeed` vs legacy `seed`) every frame.
+
+## Appearance rings, reflected trails, reflect / clone / Rumia feedback
+- Symptoms (render compare per item): bullet appearance ring drawn one frame early (legacy `b.bf` is stamped at the next full step, wrapper line 2394); reflected heavy bullets left no `#6ff` trail (line 773) and no burst / MAX POWER banner (765); clone soak had no bursts / "DOPPELGANGER DESTROYED"; clone soaked fake bullets; Rumia's harmless dark wisps (RDK, line 2283) missing; CANCEL xN shown on hit-stop frames.
+- Fix in: `packs/combat/systems.ts` (bbf stamp, rules `late`), `bullets/update.ts`, `bullets/heavy.ts`, `items/clone.ts`, `packs/themed/rumia.ts`, juice `RDK`/`SMR`/`stk0` (1up sound on a life gained, chPre5).

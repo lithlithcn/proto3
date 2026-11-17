@@ -1,4 +1,4 @@
-import { MAX_FX, MAXP, MAX_ENT, PS, MV_NAMES, moveOf, bodyR, coreR, charOf, FXS, BF, type CombatState } from '@pack/combat/api';
+import { MAX_FX, MAXP, MAX_ENT, PS, MV_NAMES, moveOf, bodyR, coreR, charOf, FXS, BF, BT, type CombatState } from '@pack/combat/api';
 import { sortBy, type World } from '@kernel';
 import { COLS } from '../colors';
 import { bindChars, CHDRAW } from './chars';
@@ -47,6 +47,7 @@ export function makeQ(e: Env, p: number): Record<string, unknown> {
       case 'chM': if (key() === 'flandre') return 1; break;
       case 'chG': return juiceOf(w).chG[p] ?? undefined;
       case 'acts': return juiceOf(w).acts[p] ?? [];
+      case 'aura': return th.auraT?.[p] ? { el: th.auraEl![p], t: th.auraT[p] } : undefined; // legacy p.aura (elements)
       case 'burst': return s.skip || (s.tstop > 0 && p !== s.tso) || s.state[p] === PS.dead ? 0 : 0.08; // legacy burst is a dead feature (reset every step, then one regen tick); its mini-HUD bar shows that
       case 'tgt': return s.tgt[p]! >= 0 ? cur[s.tgt[p]!] : undefined;
       case 'nOrig': return th.nOr?.[p] ? th.nOc![p] : undefined;
@@ -70,9 +71,11 @@ const SHN = ['orb', 'rice', 'kunai', 'star', 'bubble', 'pill', 'flea'];
 export const bulletsView = (s: CombatState): Record<string, unknown>[] => Array.from({ length: s.nb }, (_, i) => {
   const f = s.bflags[i]!, sh = SHN[s.bsh[i]!];
   return { id: s.bid[i], x: s.bx[i], y: s.by[i], vx: s.bvx[i], vy: s.bvy[i], r: s.br[i], dead: !!(f & BF.dead), heavy: !!(f & BF.heavy), breaker: !!(f & BF.breaker), oneshot: !!(f & BF.oneshot), rifle: !!(f & BF.rifle),
-    owner: s.bowner[i], refl: s.brefl[i], dist: s.bdist[i], bf: s.bborn[i], ang: s.bang[i], sh: sh === 'orb' ? undefined : sh, m: f & BF.heavy ? { arm: s.barm[i], dmg: s.bdmg[i] } : undefined,
-    c: s.bcol[i] ? '#' + (s.bcol[i]! & 0xffffff).toString(16).padStart(6, '0') : undefined };
+    owner: s.bowner[i], refl: s.brefl[i], dist: s.bdist[i], bf: s.bbf[i] ? s.bbf[i]! - 1 : undefined, ang: s.bang[i], sh: sh === 'orb' ? undefined : sh, m: f & BF.heavy ? { arm: s.barm[i], dmg: s.bdmg[i] } : undefined,
+    c: s.bcol[i] ? '#' + (s.bcol[i]! & 0xffffff).toString(16).padStart(6, '0') : undefined, dark: !!(f & BF.dark),
+    ...(s.btag[i] ? btags(s.btag[i]!) : {}), el: s.btag[i]! & BT.elset ? s.bel[i] : undefined };
 });
+const btags = (g: number): Record<string, true> => { const o: Record<string, true> = {}; for (const [k, v] of Object.entries(BT)) if (g & v) o[k] = true; return o; };
 /** Everything the copied legacy drawing code touches, rebuilt per frame (cheap: <= 8 players, lazy bullet/entity views). */
 export function bindLegacy(c: CanvasRenderingContext2D, e: Env): void {
   const { w, s } = e, P = qsOf(e), cache: { B?: unknown[]; ENT?: unknown[] } = {};
@@ -125,7 +128,7 @@ function drawWorldItemsBind(c: CanvasRenderingContext2D, w: World, s: CombatStat
   const of = (k: string): Record<string, unknown>[] => ENT.filter(x => x['k'] === k);
   const KOB = Array.from({ length: s.nkb }, (_, i) => ({ o: s.kbO[i], x: s.kbX[i], y: s.kbY[i], a: s.kbA[i], t: s.kbT[i], T: s.kbTT[i] })).filter(k => (k.t ?? 0) >= 0);
   const ORBS = of('heal'), FAIRIES = of('fairy').map(f => ({ ...f, o: s.eg[f['_i'] as number] })), HOLES = of('hole').map(h => Object.assign(h, { a: (360 - (h['t'] as number)) * 0.1 })), BUMPS = of('bump').map(u => Object.assign(u, { hit: s.eh[u['_i'] as number] ?? 0 })), ZONES = of('bomb');
-  ctxViewFx(c, s.gf); bindThemed({ T: { ...TT, MAP_W: s.mapW, MAP_H: s.mapH, EDGE: s.edge }, SMR: juiceOf(w).SMR, ctx: c, frame: s.gf, P: cur, CX: cxOf(w), ENT, B: bulletsView(s), bodyR: (q: { id: number }) => bodyR(s, q.id) });
+  ctxViewFx(c, s.gf); bindThemed({ T: { ...TT, MAP_W: s.mapW, MAP_H: s.mapH, EDGE: s.edge }, SMR: juiceOf(w).SMR, RDK: juiceOf(w).RDK, ctx: c, frame: s.gf, P: cur, CX: cxOf(w), ENT, B: bulletsView(s), bodyR: (q: { id: number }) => bodyR(s, q.id) });
   bindIfx({ ITEMK: itemK(w), performance: RENDER_CLOCK, ctx: c, frame: s.gf, P: cur, ENT: ENT.filter(x => !['heal', 'bomb', 'hole', 'bump', 'fairy'].includes(x['k'] as string)), ORBS, FAIRIES, HOLES, BUMPS, ZONES, PHOTO: [], WARP: s.warp, VIEW: 0, bodyR: (q: { id: number }) => bodyR(s, q.id) });
   bindWorld({ ctx: c, frame: s.gf, P: cur, CX: cxOf(w), B: [], ENT: ENT.filter(x => !['heal', 'bomb', 'hole', 'bump', 'fairy'].includes(x['k'] as string)), KOB,
     HOLES, BUMPS, PHOTO: [], ZONES, ORBS, FAIRIES, IM: { rifle: { start: 40 } }, bodyR: (q: { id: number }) => bodyR(s, q.id), magicCircle: magicCircleL });

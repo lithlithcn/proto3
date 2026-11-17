@@ -4,7 +4,7 @@ import { bulletArrays, clearBullet, stamp } from '../bullets/arrays';
 import { hit } from '../player/hit';
 import { parryFx } from '../player/parry';
 import { ISRC } from '../moves';
-import { BF, MAX_B, PS, type CombatState } from '../state';
+import { BF, BT, MAX_B, PS, type CombatState } from '../state';
 import { TAU } from '../tuning';
 import { bodyR } from '../stats';
 
@@ -22,7 +22,7 @@ export function updateSpark(w: World, s: CombatState, p: number): void {
   if (s.gf % 3 === 0) for (let i = 0; i < 3 && s.nb < MAX_B; i++) { // stars all around
     const a = spRand(s) * TAU, v = 2.2 + spRand(s) * 2, col = SPARK.rainbow[(spRand(s) * 6) | 0]!, b = s.nb++;
     clearBullet(bulletArrays(s), b); stamp(s, b);
-    s.bx[b] = x; s.by[b] = y; s.bvx[b] = cos(a) * v; s.bvy[b] = sin(a) * v; s.br[b] = 6; s.bdmg[b] = 1; s.blife[b] = 220; s.bowner[b] = p; s.bcol[b] = col; s.bmult[b] = 1;
+    s.bx[b] = x; s.by[b] = y; s.bvx[b] = cos(a) * v; s.bvy[b] = sin(a) * v; s.br[b] = 6; s.bdmg[b] = 1; s.blife[b] = 220; s.bowner[b] = p; s.bcol[b] = col; s.bmult[b] = 1; s.btag[b] = BT.star;
   }
   for (let i = 0; i < s.nb; i++) {
     if (s.bowner[i] === p || (s.bflags[i]! & BF.frozen)) continue;

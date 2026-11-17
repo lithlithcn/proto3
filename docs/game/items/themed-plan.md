@@ -14,7 +14,7 @@ Themed items do not live in one place: each one adds a branch to SHARED legacy f
 - Every item: content file `packs/touhou/items/<key>.ts` (legacy key, `order` = legacy index), sheet `docs/game/items/<key>.md`, parity scenario in `tests/parity/themed-*.test.ts` (give at frame 60, compare every frame, probe the effect happened).
 - Item entities (legacy ENT kinds handled in `updEnt`): kind ids 300+ declared in `packs/themed`, logic in `RulesDef.ent` (called per entity by `updateEnts` after its timer ticks), render name in `packs/render/ld/bind.ts` EKN, oracle mapping in `tools/parity/legacy.cjs` (`E:` themed map). Shared fire helpers (`hb`/`fb`/`ring`/`xR`/`xOnR`): `packs/themed/fire.ts`.
 - Per item, besides the sim scenario: render check `PLAN=<key>@100/0 pnpm render compare reimu,marisa 450` (drawActs/drawWorldItems/drawHeavy/sounds/juice identical) and add the key to `RITEMS` in `tools/gate.ts` (run by `pnpm gate --items`). CX globals reach the copied draws through `packs/render/ld/cx.ts`; per-player themed columns through `thOf`.
-- Ported so far: rumia, daiyousei, rin, meiling.
+- Ported so far: rumia, daiyousei, rin, meiling, koakuma. Elements (tags/auras, no reactions): `docs/game/mechanics/elements.md`.
 - Per-player themed columns are compared automatically by the parity harness against the legacy field of the same name (legacy `undefined` = 0, or `THEMED_UNSET`).
 - Port in legacy section order: TH6-9 (lines 877-1155), TH10-12 + Reimu (1156), TH13-16 + Yukari (1339), TH17-20 (1574), lots 1-4 (2518-2830).
 
@@ -25,7 +25,6 @@ One row per legacy item not ported yet (legacy ITEMS order). `line` = where its 
 | # | key | name | character | line | state | ents | refs |
 |---|---|---|---|---|---|---|---|
 | 10 | reimu | Fantasy Sky | Reimu Hakurei | 1181 | rei |  | 3 |
-| 15 | koakuma | Devil Pact | Koakuma | 881 | pact |  | 3 |
 | 16 | patchouli | Philosopher Stone | Patchouli Knowledge | 882 | terr |  | 18 |
 | 17 | remilia | Spear the Gungnir | Remilia Scarlet | 883 | gung |  | 3 |
 | 18 | flandre | Four of a Kind | Flandre Scarlet | 884 | four |  | 5 |

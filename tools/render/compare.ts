@@ -105,14 +105,14 @@ for (let f = 1; f <= FR; f++) {
     else if (x.name === 'drawActs') got = portOps(x.snap, c => drawActsL(c, W, S, WW, HH));
     else if (x.name === 'drawItem' && n < S.ncard) got = portOps(x.snap, c => drawCard(c, W, S, n));
     if (got) { if (x.name === 'drawHUD' || ((x.name === 'drawP' || x.name === 'drawWorldItems') && S.hitstop > 0)) { const t = (a: Op[]): Op[] => { const i = a.findIndex(o => o[0] === 'translate'); return a.filter((_, j) => j !== i); }; want.splice(0, want.length, ...t(want)); got = t(got); } /* HUD shake uses Math.random: not comparable */ const d = diffOps(canon(want), canon(got), 1e-6);
-      if (d && process.env['DIFFCTX'] === x.name && !(globalThis as { __dc?: 1 }).__dc) { (globalThis as { __dc?: 1 }).__dc = 1; const W = (a: Op[]): string => a.slice(Math.max(0, d.i - 8), d.i + 4).map((o, k) => `   ${Math.max(0, d.i - 8) + k}: ${fmt(o)}`).join('\n'); console.log(`DIFFCTX ${x.name} f${f} #${n}\n legacy:\n${W(canon(want))}\n port:\n${W(canon(got))}`); }
+      if (d && process.env['DIFFCTX'] === x.name && !(globalThis as { __dc?: 1 }).__dc) { (globalThis as { __dc?: 1 }).__dc = 1; const W = (a: Op[]): string => a.slice(Math.max(0, d.i - +(process.env.DIFFN ?? 8)), d.i + 4).map((o, k) => `   ${Math.max(0, d.i - 8) + k}: ${fmt(o)}`).join('\n'); console.log(`DIFFCTX ${x.name} f${f} #${n}\n legacy:\n${W(canon(want))}\n port:\n${W(canon(got))}`); }
       mark(x.name, !d, d ? `f${f} #${n} op ${d.i}: legacy ${fmt(d.a)} | port ${fmt(d.b)}` : ''); }
     else if (x.name !== 'drawView' || n > 0) unported.set(x.name, (unported.get(x.name) ?? 0) + 1);
   }
   // drawView: the whole legacy block (camera, floor, cards, bullets, players, items, effects, tags, indicators), one per view; cameras replayed from their pre-frame state
   const vs = viewsOf(S, WW, HH), camPost = camSnap(); let vi = 0;
   for (const dv of bl.filter(x => x.name === 'drawView')) { const v = vs[vi++]; if (!v) break; camLoad(camPre); ifxLoad(IZ[vi - 1] ?? ifx0); const got = portOps(dv.snap, c => drawView(c, W, v)), want = dv.ops.filter(o => !isMarker(o)), d = diffOps(canon(want), canon(got), 1e-5); /* floats derived through the camera/zoom chain drift ~1e-6 */
-    if (d && process.env['DIFFCTX'] === 'drawView' && !(globalThis as { __dv?: 1 }).__dv) { (globalThis as { __dv?: 1 }).__dv = 1; const Wn = (a: Op[]): string => a.slice(Math.max(0, d.i - 8), d.i + 4).map((o, k) => `   ${Math.max(0, d.i - 8) + k}: ${fmt(o)}`).join('\n'); console.log(`DIFFCTX drawView f${f}\n legacy:\n${Wn(canon(want))}\n port:\n${Wn(canon(got))}`); }
+    if (d && process.env['DIFFCTX'] === 'drawView' && !(globalThis as { __dv?: 1 }).__dv) { (globalThis as { __dv?: 1 }).__dv = 1; const Wn = (a: Op[]): string => a.slice(Math.max(0, d.i - +(process.env.DIFFN ?? 8)), d.i + 4).map((o, k) => `   ${Math.max(0, d.i - 8) + k}: ${fmt(o)}`).join('\n'); console.log(`DIFFCTX drawView f${f}\n legacy:\n${Wn(canon(want))}\n port:\n${Wn(canon(got))}`); }
     mark('drawView', !d, d ? `f${f} view ${vi - 1} op ${d.i}/${want.length}: legacy ${fmt(d.a)} | port ${fmt(d.b)}` : ''); }
   camLoad(camPost); ifxLoad(ifx1);
 }

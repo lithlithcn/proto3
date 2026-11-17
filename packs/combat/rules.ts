@@ -21,6 +21,7 @@ export interface RulesDef {
   speed?(w: World, s: CombatState, p: number): number;
   kill?(w: World, s: CombatState, v: number): void;
   /** an item state (eaten / cocoon / pray) for one frame */ state?(w: World, s: CombatState, p: number): boolean;
+  /** legacy step wrapper (line 2277) per live player, before the clone soak: item ticks that run after the whole step */ late?(w: World, s: CombatState, p: number): void;
   /** legacy updEnt switch: one item entity for one frame (after its timer ticked, owner alive) */ ent?(w: World, s: CombatState, i: number): void;
   /** legacy xActive: an item global of this rule set owned by `p` is running (CX.x.o === p, CX.anon, GFX, p.pick...) */ active?(w: World, s: CombatState, p: number): boolean;
   /** entity kinds that do not keep an item active (legacy xActive exclusion list) */ quiet?: number[];
