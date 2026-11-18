@@ -3,7 +3,7 @@
 (() => {
   const ctx = new Proxy({}, { get: (o, k) => k in o ? o[k] : k === 'measureText' ? (t => ({ width: String(t).length * 8 })) : k === 'getImageData' ? (() => ({ data: new Uint8ClampedArray(4) })) : (k === 'createLinearGradient' || k === 'createRadialGradient' || k === 'createPattern') ? (() => ({ addColorStop() {} })) : k === 'canvas' ? { width: 1280, height: 720 } : (() => {}), set: (o, k, v) => { o[k] = v; return true; } });
   // any DOM element: a callable proxy that tolerates every access (querySelector().classList.add()..., numbers read as 0)
-  const el = () => { const o = { style: {}, dataset: {}, children: [], childNodes: [], width: 1280, height: 720, value: '', textContent: '', innerHTML: '' };
+  const el = () => { const o = { style: { setProperty() {}, removeProperty() {}, getPropertyValue: () => '' }, dataset: {}, children: [], childNodes: [], width: 1280, height: 720, value: '', textContent: '', innerHTML: '' };
     return new Proxy(function () {}, { get: (t, k) => k in o ? o[k] : k === 'getContext' ? () => ctx : k === 'then' ? undefined : k === Symbol.toPrimitive ? () => 0 : k === 'getBoundingClientRect' ? () => ({ left: 0, top: 0, width: 1280, height: 720 }) : k === 'querySelectorAll' || k === 'getElementsByTagName' ? () => [] : k === 'contains' ? () => false : el(),
       set: (t, k, v) => { o[k] = v; return true; }, apply: () => el() }); };
   const EVH = self.__EVH = {}; // window/document listeners, kept so the UI monkey (monkey.js) can fire real key events

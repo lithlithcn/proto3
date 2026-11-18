@@ -39,7 +39,7 @@ function drawMaker(){hot=[];const m=mUp(MK.m),pw=Math.min(430,W*.42),sb=Math.min
  ctx.fillStyle='rgba(10,12,20,.9)';ctx.fillRect(px-10,62,pw+12,vis*rh+16);ctx.textAlign='left';
  MKTABS.forEach((t,i)=>{const tw=pw/MKTABS.length,x=px+i*tw,s=i===(MK.tab||0);ctx.fillStyle=s?'#ffd23a':'#1a1d2b';ctx.fillRect(x,40,tw-3,20);ctx.fillStyle=s?'#10121c':'#aaa';ctx.font='bold 10px monospace';ctx.textAlign='center';ctx.fillText(t,x+tw/2,54);hot.push({x,y:40,w:tw-3,h:20,hover:()=>{},click:()=>{MK.tab=i;MK.row=0;MK.scr=0;sfx('se_select00',.6)}})});ctx.textAlign='left';
  for(let j=0;j<vis&&MK.scr+j<L.length;j++){const i=MK.scr+j,r=L[i],y=86+j*rh,s=MK.foc===1&&i===MK.row;let tx=r.t();ctx.font=(s?'bold ':'')+'13px monospace';while(tx.length>4&&ctx.measureText(tx).width>pw-20)tx=tx.slice(0,-2);ctx.fillStyle=s?'#ffd23a':i===0?'#9fe0c0':'#bbb';ctx.fillText((s?'▶ ':'  ')+tx,px,y);
-  hot.push({x:px,y:y-18,w:pw,h:rh,hover:()=>{MK.foc=1;MK.row=i},click:x=>{if(r.lr&&x!==undefined&&!r.f)r.lr(x<px+pw/2?-1:1);else nav('ok')}})}
+  hot.push({x:px,y:y-18,w:pw,h:rh,hover:()=>{if(!MK)return;MK.foc=1;MK.row=i},click:x=>{if(!MK)return;if(r.lr&&x!==undefined&&!r.f)r.lr(x<px+pw/2?-1:1);else nav('ok')}})}
  if(L.length>vis){ctx.fillStyle='#555';const sh=vis/L.length*(vis*rh);ctx.fillRect(px+pw-4,70+MK.scr/L.length*(vis*rh),3,sh)}
  ctx.font='11px monospace';ctx.fillStyle='#888';['Grid: arrows + Enter / mouse drag · Backspace: erase','Esc: grid ↔ panel · ◀ ▶ change · Shift: ×10','Q / E: tool · tabs at the top of the panel'].forEach((l,i)=>ctx.fillText(l,px,H-60+i*15))}
 const tpCol=i=>'hsl('+((i>>1)*80+180)%360+',90%,65%)';

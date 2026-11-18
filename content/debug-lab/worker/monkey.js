@@ -34,6 +34,21 @@ function lmkFakePeer(name) {
   F.close = () => { try { ch.close(); } catch (e) {} }; return F;
 }
 const lmkDeadPeer = function () { const o = { id: 'lab', destroyed: false, on() { return o; }, off() { return o; }, connect() { const k = { open: false, on() { return k; }, send() {}, close() {} }; return k; }, destroy() { o.destroyed = true; }, disconnect() {}, reconnect() {} }; return o; };
+/** Online desync detail: every checksum frame keeps a flat snapshot (players, rng, bullets, entities, effects); on a desync the peers
+ *  swap their snapshot of that frame on the room channel and report WHICH values differ (the game only says "P1,bullets"). */
+function lmkFlat() { const o = { rng: seed, frame, B: B.length, Bxy: Math.round(B.reduce((a, b) => a + b.x + b.y * 3, 0)) };
+  P.forEach((p, i) => { for (const k in p) { const v = p[k]; if (typeof v === 'number' || typeof v === 'string' || typeof v === 'boolean') o['P' + (i + 1) + '.' + k] = typeof v === 'number' ? Math.round(v * 100) / 100 : v; } if (p.fx) for (const k in p.fx) if (p.fx[k]) o['P' + (i + 1) + '.fx.' + k] = typeof p.fx[k] === 'number' ? Math.round(p.fx[k] * 100) / 100 : 1; });
+  const ek = {}; for (const e of ENT) ek[e.k] = (ek[e.k] || 0) + 1; for (const k in ek) o['ENT.' + k] = ek[k];
+  for (const k in CX) { const v = CX[k]; if (typeof v === 'number' || typeof v === 'boolean' || typeof v === 'string') o['CX.' + k] = v; else if (v && typeof v === 'object') o['CX.' + k] = Object.keys(v).length; }
+  return o; }
+function lmkNetHooks() { if (LMK.nh) return; LMK.nh = 1;
+  { const G0 = give0; give0 = (p, k) => { if (LMK.on && NET && LMK.giv) { LMK.giv.push([frame, NET.L, p && p.id, k, String(new Error().stack).split('\n').slice(2, 7).map(x => x.trim().replace(/^at /, '').replace(/\?v=\w+/g, '')).join(' < ')]); if (LMK.giv.length > 12) LMK.giv.shift(); } return G0(p, k); }; }
+  { const S0 = netSim; netSim = k => { const r = S0(k); if (LMK.on && LMK.S && LMK.S.online && k % NSUMEV === 0) { const D = LMK.det || (LMK.det = new Map()); D.set(k, lmkFlat()); if (D.size > 40) D.delete(D.keys().next().value); } return r; }; }
+  { const D0 = netDesyncRep; netDesyncRep = (k, a, b) => { D0(k, a, b); if (LMK.on && LMK.S && LMK.S.rc && LMK.det && LMK.det.has(k)) LMK.S.rc.postMessage({ ds: k, room: ONL && ONL.code, from: NET ? NET.L : -1, det: LMK.det.get(k) }); }; }
+}
+function lmkDetail(m) { const mine = LMK.det && LMK.det.get(m.ds); if (!mine || !NET || m.from === NET.L) return;
+  const ks = [...new Set([...Object.keys(mine), ...Object.keys(m.det)])].filter(k => mine[k] !== m.det[k]), first = ks.filter(k => !/^(frame)$/.test(k)).slice(0, 14);
+  labIssue('desync-detail', new Error('values that differ at frame ' + m.ds + ': ' + first.join(', ')), Object.assign(lmkCtx('desync detail'), { gives: LMK.giv, values: first.map(k => [k, mine[k], m.det[k]]), me: NET.L, other: m.from })); }
 function lmkSetPeer(P0) { globalThis.Peer = P0; try { Peer = P0; } catch (e) {} }
 function lmkBegin(c, online) {
   LAB.rng = (c.seed >>> 0) || 1; LAB.issues = []; LAB.seen.clear(); LAB.ev = []; LAB.st = []; LAB.cfg = c; LMK.trail = []; LMK.inp = []; LMK.held.clear();
@@ -42,7 +57,7 @@ function lmkBegin(c, online) {
   S.NAV = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', 'Enter', 'Enter', 'Escape'];
   // never reach the owner's servers (TURN worker, playlist search) nor WebRTC; kept after the run (async lobby code may resume later)
   globalThis.fetch = () => Promise.reject(new Error('offline (lab)')); if (typeof onlIce === 'function') onlIce = async () => [];
-  if (online) { S.fp = lmkFakePeer('lab-net-' + c.room); lmkSetPeer(S.fp); S.rc = new BroadcastChannel('lab-room-' + c.room); S.rc.onmessage = e => { if (e.data && e.data.code) LMK.code = e.data.code; }; LMK.code = null; } else lmkSetPeer(lmkDeadPeer);
+  if (online) { S.fp = lmkFakePeer('lab-net-' + c.room); lmkSetPeer(S.fp); S.rc = new BroadcastChannel('lab-room-' + c.room); S.rc.onmessage = e => { const d = e.data; if (d && d.code) LMK.code = d.code; if (d && d.ds !== undefined) try { lmkDetail(d); } catch (x) {} }; lmkNetHooks(); LMK.det = new Map(); LMK.giv = []; LMK.code = null; } else lmkSetPeer(lmkDeadPeer);
   LMK.pads = Array.from({ length: Math.max(0, np - 2) }, (_, i) => lmkPad(i)); globalThis.__PADS = LMK.pads;
   S.saved = { now: performance.now, errRep, rnd: Math.random };
   errRep = (w, e) => { if (LMK.on) labIssue(w === 'desync' ? 'desync' : 'crash', e, lmkCtx('caught by the game (' + w + ')')); else try { S.saved.errRep(w, e); } catch (x) {} };
@@ -82,7 +97,7 @@ function lmkRoom() {
   if (c.role === 'host' && ONL && ONL.code && S.f % 60 === 0) S.rc.postMessage({ code: ONL.code });
   // like real players deciding: get ready in the online select / on the results, the host sends everyone to the select
   const R = labRand; try {
-    if (mode === 'css' && CS2.onl && R() < .012) { const m = CS2.sl[ONL.id]; if (m) { if (!m.dev) m.dev = 'k0'; m.rd = true; lmkInp('lab: ready in select'); } }
+    if (mode === 'css' && CS2.onl && ONL && R() < .012) { const m = CS2.sl[ONL.id]; if (m) { if (!m.dev) m.dev = 'k0'; m.rd = true; lmkInp('lab: ready in select'); } }
     else if (mode === 'game' && winner >= 0 && ONL && R() < .01) { onlReady(true); lmkInp('lab: rematch'); }
     else if (c.role === 'host' && mode === 'online' && ONL && ONL.st === 'lobby' && ONL.cl.some(k => k.ok) && R() < .006) { onlBcast({ t: 'gocss' }); cssOnline(); lmkInp('lab: host CHOOSE FIGHTERS'); } }
   catch (e) { labIssue('crash', e, lmkCtx('lab player decision')); }
